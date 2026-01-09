@@ -1,37 +1,25 @@
 import products from '@assets/data/products';
 import ProductListItem from '@components/ProductListItem';
 import React from 'react';
+import { FlatList } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-export default function MenuScreen() {  
+const GAP = 16;
+const NUM_COLUMNS = 3; // change to 3 safely
 
+export default function MenuScreen() {
   return (
-    <SafeAreaView >
-      
-      <ProductListItem product={products[5]} />
-      <ProductListItem product={products[0]} />
-      
+    <SafeAreaView style={{ flex: 1 }}>
+      <FlatList
+        key={`columns-${NUM_COLUMNS}`} // ← CRITICAL
+        data={products}
+        renderItem={({ item }) => <ProductListItem product={item} numColumns={NUM_COLUMNS} />}
+        keyExtractor={(item) => item.id.toString()}
+        numColumns={NUM_COLUMNS}
+        contentContainerStyle={{ padding: GAP / 2 }}
+        showsVerticalScrollIndicator={false}
+      />
     </SafeAreaView>
   );
-};
+}
 
-
-
-
-
-
-/*return (
-    <SafeAreaView >
-      
-      <ProductListItem product={products[5]} />
-      <ProductListItem product={products[0]} />
-      
-      { <FlatList
-        data={products}
-        renderItem={renderItem}
-        keyExtractor={(item) => item.id.toString()}
-        contentContainerStyle={styles.listContainer}
-        showsVerticalScrollIndicator={false}
-      /> }
-    </SafeAreaView>
-  );*/

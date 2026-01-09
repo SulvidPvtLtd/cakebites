@@ -84,3 +84,19 @@ Now, we can use this aliases when importing files and assets.
 
 `import products from '@assets/data/products';`
 
+# FlatLIST
+
+A FlatList is a React Native component that helps us render Vertical and Horizontal Scrollable Lists of data. 
+Usually, designed for infinite scrollable lists, such as the Instagram feed. 
+
+We will use a FlatList to render the list of products on our home screen.
+
+It’s quite easy to render a simple list, because it has only 2 required properties
+
+<FlatList
+  data={products}
+  renderItem={({ item }) => <ProductListItem product={item} />}
+/>
+
+- data: an array of items. In our cases, it’s an array of products
+- renderItem: a function that will render 1 item from the array.
