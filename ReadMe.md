@@ -43,3 +43,44 @@ Temporarily save uncommitted code	`git stash`
 Delete last commit	`git reset --hard HEAD~1`
 Revert pushed submission	`git reset --hard <hash> && git push --force`
 Undo commit safely	`git revert HEAD`
+
+
+# Predefined types
+
+Create a file in the `src` file for `types.ts` and define types.
+
+These types will make the components type-safe and mak sure who ever is using it will send a valid product object.
+
+# Craete Typescript Path Aliases
+
+With typescript path aliases, we can define path shortcuts to some folders that we often import from, and then our import statements will look much cleaner.
+
+For that, we have to enable this experiment inside `app.json`
+
+{
+  "expo": {
+    "experiments": {
+      "tsconfigPaths": true
+    }
+  }
+}
+
+And define our path aliases inside tsconfig.json
+
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"],
+      "@components/*": ["src/components/*"],
+      "@assets/*": ["assets/*"]
+    }
+  }
+}
+
+Now, we can use this aliases when importing files and assets. 
+
+`import products from '../../../assets/data/products';`
+
+`import products from '@assets/data/products';`
+

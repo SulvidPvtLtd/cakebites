@@ -1,7 +1,7 @@
+import products from '@assets/data/products';
+import ProductListItem from '@components/ProductListItem';
 import React from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import products from '../../../assets/data/products';
-import ProductListItem from '../../components/ProductListItem';
 
 export default function MenuScreen() {  
 

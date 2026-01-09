@@ -6,7 +6,7 @@ import {
     useColorScheme,
     View
 } from 'react-native';
-import Colors from '../constants/Colors';
+import Colors from '@constants/Colors';
 import { ProductType} from '../types';
 
 export const defaultPizzaImage = 'https://notjustdev-dummy.s3.us-east-2.amazonaws.com/food/peperoni.png';
