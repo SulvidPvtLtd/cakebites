@@ -7,21 +7,21 @@ import {
     View
 } from 'react-native';
 import Colors from '../constants/Colors';
+import { ProductType} from '../types';
 
-type Product = {
-  id: string | number;
-  name: string;
-  price: number;
-  image: string;
+export const defaultPizzaImage = 'https://notjustdev-dummy.s3.us-east-2.amazonaws.com/food/peperoni.png';
+
+type ProductListItemProps = {
+  product: ProductType;
 };
 
-const ProductListItem: React.FC<{ product: Product }> = ({ product }) => {
+const ProductListItem = ({ product }: ProductListItemProps) => {
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme ?? 'light']; // Fallback to light if null
 
   return (
     <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}>
-      <Image source={{ uri: product.image }} style={styles.image} />
+      <Image source={{ uri: product.image || defaultPizzaImage }} style={styles.image} />
       <View style={styles.textContainer}>
         <Text style={[styles.title, { color: theme.textPrimary }]}>
           {product.name}

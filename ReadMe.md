@@ -43,4 +43,3 @@ Temporarily save uncommitted code	`git stash`
 Delete last commit	`git reset --hard HEAD~1`
 Revert pushed submission	`git reset --hard <hash> && git push --force`
 Undo commit safely	`git revert HEAD`
-
