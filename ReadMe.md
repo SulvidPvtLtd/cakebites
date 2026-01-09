@@ -100,3 +100,37 @@ It’s quite easy to render a simple list, because it has only 2 required proper
 
 - data: an array of items. In our cases, it’s an array of products
 - renderItem: a function that will render 1 item from the array.
+
+# Create screens using Expo Router
+
+Create a new page for the details screen.
+
+`app/product.tsx` -> We ca link to this page when we press on a `ProductListItem`
+
+
+Card
+ ├─ Image
+ └─ TextContainer
+     ├─ Title
+     ├─ Price
+     └─ Go to details
+
+When you press the Product with a Pressable event from the `ProductListItem`, 
+
+const ProductListItem = ({ product }: ProductListItemProps) => {
+  return (
+    <Link href={'/product'} asChild>
+      <Pressable style={styles.container}>
+				....
+
+how do you know which product we are directing ourselves to on the  `app/product.tsx`.
+
+You can convert the file `product.tsx` into a dynamic file by renaming it to `app/[id].tsx`
+
+When linking to it, send the product id as part of the link
+
+<Link href={`/${product.id}`} asChild>
+
+Read the path parameter inside the Product details screen using
+
+const { id } = useLocalSearchParams();
