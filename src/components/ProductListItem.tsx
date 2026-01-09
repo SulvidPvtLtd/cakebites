@@ -60,7 +60,7 @@ const ProductListItem = ({ product, numColumns }: ProductListItemProps) => {
         <Image
           source={{ uri: imageUri }}
           style={styles.image}
-          resizeMode="cover"
+          resizeMode="contain"
         />
 
         <View style={styles.textContainer}>
