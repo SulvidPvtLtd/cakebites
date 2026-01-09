@@ -5,7 +5,7 @@ import { FlatList } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const GAP = 16;
-const NUM_COLUMNS = 3; // change to 3 safely
+const NUM_COLUMNS = 2; // change to 3 safely
 
 export default function MenuScreen() {
   return (

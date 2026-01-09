@@ -57,11 +57,14 @@ const ProductListItem = ({ product, numColumns }: ProductListItemProps) => {
           { backgroundColor: theme.card, borderColor: theme.border },
         ]}
       >
-        <Image
-          source={{ uri: imageUri }}
-          style={styles.image}
-          resizeMode="contain"
-        />
+        <View style={styles.imageContainer}>
+          <Image
+            source={{ uri: imageUri }}
+            style={styles.image}
+            resizeMode="contain"
+          />
+        </View>
+
 
         <View style={styles.textContainer}>
           <Text
@@ -98,6 +101,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 12,
     elevation: 8,
+  },
+  imageContainer: {
+    padding: 5,   // ← gap from card border
   },
   image: {
     width: '100%',
