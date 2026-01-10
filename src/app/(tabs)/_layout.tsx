@@ -27,7 +27,7 @@ export default function TabLayout() {
         headerShown: useClientOnlyValue(false, true),
       }}>
 
-      // Disable the "index" tab by setting href to null
+      {/* Disable the "index" tab by setting href to null */}
       <Tabs.Screen name="index" options={{ href: null}}/>
 
       <Tabs.Screen

@@ -195,3 +195,95 @@ How do we do that?
 
 - In the Stack navigation's Tabs.Screen, set its option to `headerShown: false`,
 
+
+# Setting Options to our screens
+
+Expo Router uses file-based routing, and screen configuration is done with:
+
+1. Stack.Screen
+2. Tabs.Screen
+3. useNavigation / useRouter
+4. screenOptions
+
+In our case our default is 
+<Tabs screenOptions={}>
+
+  <Tabs.Screen  name="index" options={ { title:'Home'} } />
+
+</Tabs>.
+
+You can override options per screen:
+
+<Stack.Screen
+  name="details"
+  options={{
+    title: 'Product Details',
+    headerShown: true,
+    presentation: 'modal',
+  }}
+/>
+
+In this project we will move from a self closing Stack in our menu layout file:
+
+export default function MenuStack(){
+    return <Stack/>;
+}
+
+to 
+
+export default function MenuStack(){
+    return <Stack></Stack>;
+}
+
+- In-between the stack, we want to have Stack.Screens.
+
+export default function MenuStack(){
+    return 
+        (<Stack>
+            <Stack.Screen />
+        </Stack>
+    );
+}
+
+NB: behind the scenes expoRouter is using the react navigation, this means we can use all the configurations that we can find in Recat Navigation under Configuring the Header Bar.
+
+https://reactnavigation.org/docs/headers?config=dynamic
+
+The name you should assigne to the Stack.Secreen should match exactly the name given to the screen/page/file eg index for index.tsx.
+
+So we want the default Header of the target `index.tsx` file which is name="index" to appear optionally, titled: "Menu"
+
+We can apply 
+
+export default function MenuStack(){
+    return (
+        <Stack>
+            <Stack.Screen  name="index" options={{ title:'Menu'}} />
+        </Stack>
+    );
+}
+
+The above is one way of doing it.
+Another way is to go directly to the page that is displaying our components ProductDetailsScreen in our project 
+`app/(tabs)/menu/[id].tsx`
+, in this case [id].tsx and return a view that use the same <Stack.Screen />, 
+
+From 
+
+  return (
+    <View>
+      <Text style={{ color: 'orange', fontSize:20 }}> Product Details Screen for id: {id}</Text>
+    </View>
+  )
+
+  to 
+
+  return (
+    <View>
+      <Stack.Screen options={{ title: "Details" }}>
+      <Text style={{ color: 'orange', fontSize:20 }}> Product Details Screen for id: {id}</Text>
+    </View>
+  )
+
+
+

@@ -1,5 +1,5 @@
 import { Text, View } from 'react-native'
-import { useLocalSearchParams } from 'expo-router'
+import { Stack, useLocalSearchParams } from 'expo-router'
 
 const ProductDetailsScreen = () => {
 
@@ -7,6 +7,7 @@ const ProductDetailsScreen = () => {
 
   return (
     <View>
+      <Stack.Screen options={{ title: "Details: " + id }}/>
       <Text style={{ color: 'orange', fontSize:20 }}> Product Details Screen for id: {id}</Text>
     </View>
   )
