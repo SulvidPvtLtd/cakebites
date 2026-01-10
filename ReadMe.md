@@ -134,3 +134,64 @@ When linking to it, send the product id as part of the link
 Read the path parameter inside the Product details screen using
 
 const { id } = useLocalSearchParams();
+
+
+# Nested Stack Navigator
+
+We want the product details page to be displayed under the Menu tab. 
+That means that the menu tab will consist of multiple screen: 
+1. The list of products and 
+2. product details. 
+
+Let’s group them in a separate folder `app/(tabs)/menu`with 2 screens (`index.tsx` and `[id].tsx`) and a `_layout.tsx`.
+
+The layout can simply export the `<Stack />` component, to use a Stack navigator for the child routes.
+
+- `src/app/(tabs)/_layout.tsx`
+import { Stack } from 'expo-router';
+
+export default function MenuLayout() {
+  return <Stack />;
+};
+
+
+- By doing that, our `(tabs)/index.tsx` should simply redirect to the menu page.
+
+import { Redirect } from 'expo-router';
+
+export default function TabIndex () {
+  return <Redirect href={'/menu/'} />;
+};
+
+
+Now, configure the `(tabs)/_layout.tsx` and hide the index route, rename the other routes and change the icons.
+
+How do you do that?
+- In the `app//(tabs)/_layout.tsx`, 
+
+// Disable the "index" tab by setting href to null
+<Tabs.Screen name="index" options={{ href: null}}/>
+
+
+When we click on a product item, we get directed to "This screen doesn't exist".
+
+So we need to go to our compenent "ProductListItem" , when we navigate to our product, the new path is no longer:
+
+ `<Link href={`/${product.id}`} asChild>` 
+ 
+ but should now be pointing to the menu folder fisrt as 
+ 
+ `<Link href={`/menu/${product.id}`} asChild>`
+
+
+Hidding Two page Headers on the Menu page's stack navigator.
+
+- Menu and Index.
+One is coming from the `(tabs)/_layout.tsx` and the other coming form ``(tabs)/menu/_layout.tsx`. 
+
+So we will hide the header of the same file path `(tabs)/_layout.tsx` where we set the redirect to null previously.
+
+How do we do that?
+
+- In the Stack navigation's Tabs.Screen, set its option to `headerShown: false`,
+

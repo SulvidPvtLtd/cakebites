@@ -54,7 +54,7 @@ export default function ProductListItem({
         { width: `${100 / numColumns}%` },
       ]}
     >
-      <Link href={`/${product.id}`} asChild>
+      <Link href={`/menu/${product.id}`} asChild>
         <Pressable style={styles.shadowWrapper}>
           <View
             style={[
