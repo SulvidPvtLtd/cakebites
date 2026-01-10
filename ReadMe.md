@@ -285,5 +285,25 @@ From
     </View>
   )
 
+# Product Details Screen
 
+ Implementation
 
+- Start by rendering the Image, price and title
+- Render the size selector component
+
+State
+
+- State allows us to keep track of data that changes inside the component. In this case, we will use as state variable to keep track of the selected size. We can use it’s value to highlight the selected size.
+
+# Button component
+
+Let’s create a reusable button component inside `components/Button.tsx`
+
+First change the header in [id].tsx from title asigned value `"Details: " + id` to `product?.name`
+
+<Stack.Screen options={{ title: "Details: " + id }}/>
+
+to 
+
+<Stack.Screen options={{ title: product?.name }}/>
