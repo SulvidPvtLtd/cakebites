@@ -307,3 +307,5 @@ First change the header in [id].tsx from title asigned value `"Details: " + id` 
 to 
 
 <Stack.Screen options={{ title: product?.name }}/>
+
+1:26:17
