@@ -5,7 +5,7 @@ const products = [
     image:
       'https://notjustdev-dummy.s3.us-east-2.amazonaws.com/food/peperoni.png',
     price: 12.99,
-    description: 'A classic pepperoni pizza with extra cheese.',
+    description: 'Loaded with generous layers of bold, savory pepperoni (including crispy-edged cups for maximum flavor and texture), blanketed in a rich blend of melted mozzarella, provolone, and a sprinkle of nutty Parmesan & Asiago. Finished with a dusting of aromatic oregano for that perfect herby kick.',
   },
   {
     id: 2,
@@ -13,7 +13,7 @@ const products = [
     image:
       'https://notjustdev-dummy.s3.us-east-2.amazonaws.com/food/extravaganzza.png',
     price: 14.99,
-    description: 'Loaded with pepperoni, sausage, veggies, and more.',
+    description: 'Loaded with pepperoni, savory ham, bold Italian sausage, hearty beef, plus fresh onions, crisp green peppers, earthy mushrooms, and briny black olives — all layered between double cheese with provolone and 100% real mozzarella for extra gooey, melty perfection.',
   },
   {
     id: 3,
@@ -21,7 +21,7 @@ const products = [
     image:
       'https://notjustdev-dummy.s3.us-east-2.amazonaws.com/food/peperoni.png',
     price: 13.47,
-    description: 'A meat lover’s dream with pepperoni, sausage, and ham.',
+    description: 'This meat-lover masterpiece is piled high with pepperoni, savory ham, hearty Italian sausage, and seasoned beef — all generously layered and sandwiched between two layers of cheese for maximum meltiness. We\'re talking a double dose of gooey 100% real mozzarella plus provolone to hold all that juicy, flavorful meat together',
   },
   {
     id: 4,

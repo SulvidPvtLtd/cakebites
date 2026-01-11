@@ -1,25 +1,22 @@
 import {
   View,
   Text,
-  Image,
   StyleSheet,
   ActivityIndicator,
   Pressable,
-  Platform,
   ScrollView,
   useWindowDimensions,
+  Animated,
 } from 'react-native';
 import { Stack, Redirect, useLocalSearchParams } from 'expo-router';
-import { useMemo, useState } from 'react';
-
-import products from '@/assets/data/products';
-import { defaultPizzaImage } from '@/src/components/ProductListItem';
-import Colors from '../../../constants/Colors';
+import { useMemo, useRef, useState } from 'react';
 import { useColorScheme } from 'react-native';
 
-/**
- * Route params MUST be declared at top level
- */
+import products from '@/assets/data/products';
+import { defaultPizzaImage } from '@components/ProductListItem';
+import Colors from '@constants/Colors';
+import Button from '@/src/components/Button';
+
 type ProductDetailsParams = {
   id?: string;
 };
@@ -28,82 +25,61 @@ const AVAILABLE_SIZES = ['S', 'M', 'L', 'XL'] as const;
 
 export default function ProductDetailsScreen() {
   const params = useLocalSearchParams<ProductDetailsParams>();
-  const { height: windowHeight } = useWindowDimensions();
+  const { width } = useWindowDimensions();
   const colorScheme = useColorScheme() ?? 'light';
   const theme = Colors[colorScheme];
 
-  /**
-   * Validate and normalize product ID
-   */
+  /* ---------------- Validation ---------------- */
+
   const productId = useMemo<number | null>(() => {
     if (!params.id) return null;
-
-    const parsedId = Number(params.id);
-    if (!Number.isInteger(parsedId) || parsedId <= 0) return null;
-
-    return parsedId;
+    const parsed = Number(params.id);
+    return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
   }, [params.id]);
 
-  /**
-   * Guard invalid route access
-   */
   if (!productId) {
     return <Redirect href="/(tabs)/menu" />;
   }
 
-  /**
-   * Lookup product (local data for now)
-   */
   const product = useMemo(
     () => products.find((p) => p.id === productId),
     [productId]
   );
 
-  /**
-   * Local UI state
-   */
+  /* ---------------- State ---------------- */
+
   const [selectedSize, setSelectedSize] =
     useState<(typeof AVAILABLE_SIZES)[number]>('M');
 
-  /**
-   * Loading / Not found state
-   */
+  const [expanded, setExpanded] = useState(false);
+
+  const imageOpacity = useRef(new Animated.Value(0)).current;
+
   if (!product) {
     return (
       <View style={[styles.center, { backgroundColor: theme.background }]}>
         <ActivityIndicator size="large" color={theme.tint} />
-        <Text style={[styles.infoText, { color: theme.textSecondary }]}>
-          Loading product…
-        </Text>
       </View>
     );
   }
-
-  /**
-   * Defensive formatting
-   */
-  const price =
-    typeof product.price === 'number'
-      ? `$${product.price.toFixed(2)}`
-      : '--';
 
   const imageSource =
     typeof product.image === 'string' && product.image.length > 0
       ? { uri: product.image }
       : { uri: defaultPizzaImage };
 
+  const handleAddToCart = () => {
+    console.warn('Add to Cart | Size:', selectedSize);
+  };
+
+  /* ---------------- UI ---------------- */
+
   return (
-    <View
-      style={[
-        styles.page,
-        { backgroundColor: Platform.OS === 'web' ? theme.background : theme.background },
-      ]}
-    >
+    <View style={[styles.page, { backgroundColor: theme.background }]}>
       <View style={[styles.container, { backgroundColor: theme.card }]}>
         <Stack.Screen
           options={{
             title: product.name ?? 'Product',
-            headerBackTitle: 'Back',
             headerStyle: { backgroundColor: theme.card },
             headerTintColor: theme.textPrimary,
           }}
@@ -111,57 +87,64 @@ export default function ProductDetailsScreen() {
 
         <ScrollView
           contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={Platform.OS === 'web'}
+          showsVerticalScrollIndicator={false}
+          showsHorizontalScrollIndicator={false}
+          persistentScrollbar={false}
         >
-          <Image
-            source={imageSource}
-            style={[
-              styles.image,
-              {
-                maxHeight: windowHeight * 0.5,
-                backgroundColor: theme.placeholder,
-              },
-            ]}
-            accessibilityRole="image"
-            accessibilityLabel={product.name ?? 'Product image'}
-          />
+          {/* IMAGE */}
+          <View style={styles.imageWrapper}>
+            <Animated.Image
+              source={imageSource}
+              resizeMode="contain"
+              onLoad={() => {
+                Animated.timing(imageOpacity, {
+                  toValue: 1,
+                  duration: 300,
+                  useNativeDriver: true,
+                }).start();
+              }}
+              style={[
+                styles.image,
+                {
+                  width: Math.min(width * 0.75, 320),
+                  opacity: imageOpacity,
+                },
+              ]}
+              accessibilityRole="image"
+              accessibilityLabel={product.name ?? 'Product image'}
+            />
+          </View>
 
+          {/* CONTENT */}
           <View style={styles.content}>
             <Text style={[styles.name, { color: theme.textPrimary }]}>
               {product.name}
             </Text>
 
             <Text style={[styles.price, { color: theme.tint }]}>
-              {price}
+              ${product.price.toFixed(2)}
             </Text>
 
-            <Text
-              style={[
-                styles.sectionLabel,
-                { color: theme.textSecondary },
-              ]}
-            >
+            <Text style={[styles.sectionLabel, { color: theme.textSecondary }]}>
               Select size
             </Text>
 
             <View style={styles.sizesRow}>
               {AVAILABLE_SIZES.map((size) => {
-                const isSelected = selectedSize === size;
+                const active = selectedSize === size;
 
                 return (
                   <Pressable
                     key={size}
                     onPress={() => setSelectedSize(size)}
                     accessibilityRole="button"
-                    accessibilityLabel={`Select size ${size}`}
-                    style={({ pressed }) => [
+                    style={[
                       styles.sizeButton,
                       {
-                        backgroundColor: isSelected
+                        backgroundColor: active
                           ? theme.tint
                           : theme.card,
                         borderColor: theme.border,
-                        opacity: pressed ? 0.8 : 1,
                       },
                     ]}
                   >
@@ -169,7 +152,7 @@ export default function ProductDetailsScreen() {
                       style={[
                         styles.sizeText,
                         {
-                          color: isSelected
+                          color: active
                             ? '#FFFFFF'
                             : theme.textPrimary,
                         },
@@ -182,21 +165,33 @@ export default function ProductDetailsScreen() {
               })}
             </View>
 
+            {/* DESCRIPTION */}
             <Text
-              style={[
-                styles.description,
-                { color: theme.textSecondary },
-              ]}
+              numberOfLines={expanded ? undefined : 2}
+              style={[styles.description, { color: theme.textSecondary }]}
             >
               {product.description?.trim() ||
-                'No description available for this product.'}
+                'No description available.'}
             </Text>
+
+            <Pressable
+              onPress={() => setExpanded((v) => !v)}
+              accessibilityRole="button"
+            >
+              <Text style={[styles.readMore, { color: theme.tint }]}>
+                {expanded ? 'Read Less' : 'Read More'}
+              </Text>
+            </Pressable>
+
+            <Button text="Add to Cart" onPress={handleAddToCart} />
           </View>
         </ScrollView>
       </View>
     </View>
   );
 }
+
+/* ---------------- Styles ---------------- */
 
 const styles = StyleSheet.create({
   page: {
@@ -211,34 +206,27 @@ const styles = StyleSheet.create({
   },
 
   scrollContent: {
-    paddingBottom: 24,
+    paddingBottom: 32,
   },
 
-  center: {
-    flex: 1,
-    justifyContent: 'center',
+  imageWrapper: {
     alignItems: 'center',
-  },
-
-  infoText: {
-    marginTop: 12,
-    fontSize: 14,
+    paddingVertical: 24,
+    paddingHorizontal: 16,
   },
 
   image: {
-    width: '100%',
     aspectRatio: 1,
-    resizeMode: 'contain',
   },
 
   content: {
-    padding: 16,
+    paddingHorizontal: 16,
   },
 
   name: {
     fontSize: 22,
     fontWeight: '600',
-    marginBottom: 6,
+    marginBottom: 4,
   },
 
   price: {
@@ -249,8 +237,8 @@ const styles = StyleSheet.create({
 
   sectionLabel: {
     fontSize: 14,
-    fontWeight: '500',
     marginBottom: 8,
+    fontWeight: '500',
   },
 
   sizesRow: {
@@ -264,8 +252,8 @@ const styles = StyleSheet.create({
     height: 44,
     borderRadius: 22,
     borderWidth: 1,
-    alignItems: 'center',
     justifyContent: 'center',
+    alignItems: 'center',
   },
 
   sizeText: {
@@ -276,5 +264,17 @@ const styles = StyleSheet.create({
   description: {
     fontSize: 15,
     lineHeight: 21,
+  },
+
+  readMore: {
+    marginTop: 6,
+    marginBottom: 20,
+    fontWeight: '600',
+  },
+
+  center: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
