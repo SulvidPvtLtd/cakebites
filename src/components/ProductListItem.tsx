@@ -3,13 +3,13 @@ import { Link } from 'expo-router';
 import React from 'react';
 import {
   Image,
+  Pressable,
   StyleSheet,
   Text,
   useColorScheme,
   View,
-  Pressable,
 } from 'react-native';
-import { ProductType } from '../types';
+import { Product } from '../types';
 
 export const defaultPizzaImage =
   'https://notjustdev-dummy.s3.us-east-2.amazonaws.com/food/peperoni.png';
@@ -36,7 +36,7 @@ const truncateTitle = (title: string, maxLength = 16): string =>
   title.length <= maxLength ? title : title.slice(0, maxLength) + '...';
 
 type ProductListItemProps = {
-  product: ProductType;
+  product: Product;
   numColumns: number;
 };
 

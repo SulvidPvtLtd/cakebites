@@ -1,19 +1,21 @@
-export type ProductType = {
+export type Product = {
   id: number;
   image: string | null;
   name: string;
   price: number;
 };
 
-export type PizzaSize = 'S' | 'M' | 'L' | 'XL';
+export type ProductSize = 'S' | 'M' | 'L' | 'XL';
 
 export type CartItem = {
   id: string;
-  product: ProductType;
+  product: Product;
   product_id: number;
-  size: PizzaSize;
+  size: ProductSize;
   quantity: number;
 };
+
+export type OrderStatus = 'New' | 'Cooking' | 'Delivering' | 'Delivered';
 
 export const OrderStatusList: OrderStatus[] = [
   'New',
@@ -22,24 +24,21 @@ export const OrderStatusList: OrderStatus[] = [
   'Delivered',
 ];
 
-export type OrderStatus = 'New' | 'Cooking' | 'Delivering' | 'Delivered';
-
 export type Order = {
   id: number;
   created_at: string;
   total: number;
   user_id: string;
   status: OrderStatus;
-
   order_items?: OrderItem[];
 };
 
 export type OrderItem = {
   id: number;
   product_id: number;
-  products: ProductType;
+  products: Product;
   order_id: number;
-  size: PizzaSize;
+  size: ProductSize;
   quantity: number;
 };
 
@@ -47,3 +46,4 @@ export type Profile = {
   id: string;
   group: string;
 };
+

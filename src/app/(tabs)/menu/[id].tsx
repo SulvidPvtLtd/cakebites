@@ -14,6 +14,8 @@ import {
 
 import products from '@/assets/data/products';
 import Button from '@/src/components/Button';
+import { useCart } from '@/src/providers/CartProvider';
+import { ProductSize } from '@/src/types';
 import { defaultPizzaImage } from '@components/ProductListItem';
 import Colors from '@constants/Colors';
 
@@ -21,7 +23,10 @@ type ProductDetailsParams = {
   id?: string;
 };
 
-const AVAILABLE_SIZES = ['S', 'M', 'L', 'XL'] as const;
+/**
+ * Sizes are now typed using your predefined domain type
+ */
+const AVAILABLE_SIZES: ProductSize[] = ['S', 'M', 'L', 'XL'];
 
 export default function ProductDetailsScreen() {
   const params = useLocalSearchParams<ProductDetailsParams>();
@@ -46,11 +51,11 @@ export default function ProductDetailsScreen() {
     [productId]
   );
 
+  const { addItem } = useCart();
+
   /* ---------------- State ---------------- */
 
-  const [selectedSize, setSelectedSize] =
-    useState<(typeof AVAILABLE_SIZES)[number]>('M');
-
+  const [selectedSize, setSelectedSize] = useState<ProductSize>('M');
   const [expanded, setExpanded] = useState(false);
 
   const imageOpacity = useRef(new Animated.Value(0)).current;
@@ -68,9 +73,18 @@ export default function ProductDetailsScreen() {
       ? { uri: product.image }
       : { uri: defaultPizzaImage };
 
-  const handleAddToCart = () => {
-    console.warn('Add to Cart | Size:', selectedSize);
+  const AddToCart = () => {
+    console.warn('Add to Cart', {
+      productId: product.id,
+      size: selectedSize,
+    });
+     if (!product) {
+      return ;
+    }
+    addItem( product, selectedSize );
   };
+
+ 
 
   /* ---------------- UI ---------------- */
 
@@ -89,7 +103,6 @@ export default function ProductDetailsScreen() {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
           showsHorizontalScrollIndicator={false}
-          persistentScrollbar={false}
         >
           {/* IMAGE */}
           <View style={styles.imageWrapper}>
@@ -174,16 +187,13 @@ export default function ProductDetailsScreen() {
                 'No description available.'}
             </Text>
 
-            <Pressable
-              onPress={() => setExpanded((v) => !v)}
-              accessibilityRole="button"
-            >
+            <Pressable onPress={() => setExpanded((v) => !v)}>
               <Text style={[styles.readMore, { color: theme.tint }]}>
                 {expanded ? 'Read Less' : 'Read More'}
               </Text>
             </Pressable>
 
-            <Button text="Add to Cart" onPress={handleAddToCart} />
+            <Button text="Add to Cart" onPress={AddToCart} />
           </View>
         </ScrollView>
       </View>

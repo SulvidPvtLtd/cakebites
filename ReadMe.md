@@ -355,4 +355,99 @@ export default function MenuStack(){
 
 You may delete the modal file after you are done copying it and configuring the cart.
 
+#  Context provider
+
+The data about the items in the cart will be needed in the multiple parts of the applications. For example, we will add items to the cart from the Product Details page, and will display them on the Cart screen. That is already something that cannot easily be accomplished with simple `useState`.
+
+We will use a React Context, that will keep track of the cart data on a global level, and other components will be able to access the same data.
+
+Steps:
+
+- Define a simple Context provider
+- Add the items state, and also implement the add to cart functionality
+- Call the add to cart function from Product Details
+- Consume the cart items array on Cart Screen
+- Render the total items in the cart near the shopping cart icon
+
+
+1. Create a context:
+===================
+
+import { createContext, useContext } from "react";
+
+
+export const CartContext = createContext({});
+
+// Provide details of the context value and methods to manipulate the cart
+const CartProvider = ({children}) => {
+    return (
+        // The provider need values we will send to the context.consumer or useContext.
+        <CartContext.Provider value={{ items: [], onAddItem: () => {}, onRemoveItem: () => {} }}>
+            {/* whatever is in this provider -the children- would be able to consume the values set in value={{items: [], onAddItem: () => {} }}  */}
+            {children}
+        </CartContext.Provider>
+    );
+}
+
+export default CartProvider;
+
+explanation
+=============================
+
+- Convert this explanation into diagrams.
+
+  `How createContext() Works`
+
+Think of it as a global box:
+
+┌───────────────────────────┐
+│       CartContext         │
+│                           │
+│  items: []                │
+│  onAddItem()              │
+│  onRemoveItem()           │
+└───────────────────────────┘
+
+At this point:
+- The box exists
+- But it’s empty until a Provider fills it
+
+What CartContext.Provider Does ?
+
+<CartContext.Provider value={{ items, onAddItem, onRemoveItem }}>
+  {children}
+</CartContext.Provider>
+
+Diagram:
+
+┌───────────────────────────────────────┐
+│ CartContext.Provider                  │
+│                                       │
+│   value = {                           │
+│     items: [1,2,3,4],                 │
+│     onAddItem(),                      │
+│     onRemoveItem()                    │
+│   }                                   │
+│                                       │
+│  ┌─────────── children ────────────┐  │
+│  │ MenuScreen                      │  │
+│  │ ProductDetails                  │  │
+│  │ CartScreen                      │  │
+│  └─────────────────────────────────┘  │
+└───────────────────────────────────────┘
+
+- Everything inside now shares the same cart.
+
+If a component is:
+- inside it can access cart
+- outside it cannot access cart
+
+
+<CartProvider>
+   ├── MenuScreen
+   ├── ProductDetails
+   └── CartScreen
+</CartProvider>
+
+
 
