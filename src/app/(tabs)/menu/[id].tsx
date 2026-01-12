@@ -1,21 +1,21 @@
+import { Redirect, Stack, useLocalSearchParams } from 'expo-router';
+import { useMemo, useRef, useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
   ActivityIndicator,
+  Animated,
   Pressable,
   ScrollView,
+  StyleSheet,
+  Text,
+  useColorScheme,
   useWindowDimensions,
-  Animated,
+  View,
 } from 'react-native';
-import { Stack, Redirect, useLocalSearchParams } from 'expo-router';
-import { useMemo, useRef, useState } from 'react';
-import { useColorScheme } from 'react-native';
 
 import products from '@/assets/data/products';
+import Button from '@/src/components/Button';
 import { defaultPizzaImage } from '@components/ProductListItem';
 import Colors from '@constants/Colors';
-import Button from '@/src/components/Button';
 
 type ProductDetailsParams = {
   id?: string;

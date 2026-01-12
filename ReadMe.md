@@ -308,4 +308,51 @@ to
 
 <Stack.Screen options={{ title: product?.name }}/>
 
-1:26:17
+
+
+# Shopping Cart
+
+We will implement a Shopping Cart system using React Context which help us to o share data across components.
+
+Start by create a new Screen app/cart.tsx based on the existing modal i the menu _layout.tsx.
+
+From 
+===========================================
+export default function MenuStack(){
+    return (
+        <Stack>
+            <Stack.Screen  name="index" options={{ title:'Menu'}}/>
+        </Stack>
+    );
+}
+
+To 
+============================================
+export default function MenuStack(){
+    return (
+        <Stack screenOptions={{
+            headerRight: () => (
+                        <Link href="/modal" asChild>
+                          <Pressable>
+                            {({ pressed }) => (
+                              <FontAwesome
+                                name="info-circle"
+                                size={25}
+                                color={Colors.light.tint}
+                                style={{ marginRight: 15, opacity: pressed ? 0.5 : 1 }}
+                              />
+                            )}
+                          </Pressable>
+                        </Link>
+                      ),
+        }}>
+            <Stack.Screen  name="index" options={{ title:'Menu'}}/>
+        </Stack>
+    );
+}
+
+
+
+You may delete the modal file after you are done copying it and configuring the cart.
+
+
