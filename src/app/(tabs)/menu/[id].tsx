@@ -1,5 +1,12 @@
+// src/app/(tabs)/menu/[id].tsx
 import { Redirect, Stack, useLocalSearchParams } from 'expo-router';
-import { useMemo, useRef, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import {
   ActivityIndicator,
   Animated,
@@ -24,41 +31,59 @@ type ProductDetailsParams = {
 };
 
 /**
- * Sizes are now typed using your predefined domain type
+ * In real-world apps, sizes should come from the API.
+ * This is intentionally data-driven for future-proofing.
  */
-const AVAILABLE_SIZES: ProductSize[] = ['S', 'M', 'L', 'XL'];
+const AVAILABLE_SIZES: readonly ProductSize[] = ['S', 'M', 'L', 'XL'];
 
 export default function ProductDetailsScreen() {
-  const params = useLocalSearchParams<ProductDetailsParams>();
+  const { id } = useLocalSearchParams<ProductDetailsParams>();
   const { width } = useWindowDimensions();
   const colorScheme = useColorScheme() ?? 'light';
   const theme = Colors[colorScheme];
 
+  const { addItem } = useCart();
+
   /* ---------------- Validation ---------------- */
 
-  const productId = useMemo<number | null>(() => {
-    if (!params.id) return null;
-    const parsed = Number(params.id);
-    return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
-  }, [params.id]);
+  const productId = useMemo(() => {
+    if (!id) return null;
+    const parsed = Number(id);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+  }, [id]);
 
   if (!productId) {
     return <Redirect href="/(tabs)/menu" />;
   }
 
-  const product = useMemo(
-    () => products.find((p) => p.id === productId),
-    [productId]
-  );
+  /* ---------------- Data ---------------- */
 
-  const { addItem } = useCart();
+  const product = useMemo(() => {
+    return products.find((p) => p.id === productId) ?? null;
+  }, [productId]);
 
   /* ---------------- State ---------------- */
 
   const [selectedSize, setSelectedSize] = useState<ProductSize>('M');
   const [expanded, setExpanded] = useState(false);
+  const [adding, setAdding] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
 
   const imageOpacity = useRef(new Animated.Value(0)).current;
+
+  /* ---------------- Effects ---------------- */
+
+  useEffect(() => {
+    if (imageLoaded) {
+      Animated.timing(imageOpacity, {
+        toValue: 1,
+        duration: 250,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [imageLoaded, imageOpacity]);
+
+  /* ---------------- Guards ---------------- */
 
   if (!product) {
     return (
@@ -73,130 +98,147 @@ export default function ProductDetailsScreen() {
       ? { uri: product.image }
       : { uri: defaultPizzaImage };
 
-  const AddToCart = () => {
-    console.warn('Add to Cart', {
-      productId: product.id,
-      size: selectedSize,
-    });
-     if (!product) {
-      return ;
-    }
-    addItem( product, selectedSize );
-  };
+  /* ---------------- Actions ---------------- */
 
- 
+  const handleAddToCart = useCallback(() => {
+    if (adding) return;
+    if (!product) return;
+
+    try {
+      setAdding(true);
+      addItem(product, selectedSize);
+    } finally {
+      // UX delay prevents accidental multi-taps
+      setTimeout(() => setAdding(false), 300);
+    }
+  }, [adding, addItem, product, selectedSize]);
 
   /* ---------------- UI ---------------- */
 
   return (
     <View style={[styles.page, { backgroundColor: theme.background }]}>
-      <View style={[styles.container, { backgroundColor: theme.card }]}>
-        <Stack.Screen
-          options={{
-            title: product.name ?? 'Product',
-            headerStyle: { backgroundColor: theme.card },
-            headerTintColor: theme.textPrimary,
-          }}
-        />
+      <Stack.Screen
+        options={{
+          title: product.name ?? 'Product',
+          headerStyle: { backgroundColor: theme.card },
+          headerTintColor: theme.textPrimary,
+        }}
+      />
 
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-          showsHorizontalScrollIndicator={false}
-        >
-          {/* IMAGE */}
-          <View style={styles.imageWrapper}>
-            <Animated.Image
-              source={imageSource}
-              resizeMode="contain"
-              onLoad={() => {
-                Animated.timing(imageOpacity, {
-                  toValue: 1,
-                  duration: 300,
-                  useNativeDriver: true,
-                }).start();
-              }}
+      <ScrollView
+        contentContainerStyle={[
+          styles.scrollContent,
+          { alignItems: 'center' },
+        ]}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* IMAGE */}
+        <View style={styles.imageWrapper}>
+          {!imageLoaded && (
+            <View
               style={[
-                styles.image,
-                {
-                  width: Math.min(width * 0.75, 320),
-                  opacity: imageOpacity,
-                },
+                styles.imagePlaceholder,
+                { backgroundColor: theme.border },
               ]}
-              accessibilityRole="image"
-              accessibilityLabel={product.name ?? 'Product image'}
             />
-          </View>
+          )}
 
-          {/* CONTENT */}
-          <View style={styles.content}>
-            <Text style={[styles.name, { color: theme.textPrimary }]}>
-              {product.name}
-            </Text>
+          <Animated.Image
+            source={imageSource}
+            resizeMode="contain"
+            onLoad={() => setImageLoaded(true)}
+            style={[
+              styles.image,
+              {
+                width: Math.min(width * 0.75, 320),
+                opacity: imageOpacity,
+              },
+            ]}
+            accessibilityRole="image"
+            accessibilityLabel={product.name ?? 'Product image'}
+          />
+        </View>
 
-            <Text style={[styles.price, { color: theme.tint }]}>
-              ${product.price.toFixed(2)}
-            </Text>
+        {/* CONTENT */}
+        <View style={[styles.content, { backgroundColor: theme.card }]}>
+          <Text style={[styles.name, { color: theme.textPrimary }]}>
+            {product.name}
+          </Text>
 
-            <Text style={[styles.sectionLabel, { color: theme.textSecondary }]}>
-              Select size
-            </Text>
+          <Text style={[styles.price, { color: theme.tint }]}>
+            ${product.price.toFixed(2)}
+          </Text>
 
-            <View style={styles.sizesRow}>
-              {AVAILABLE_SIZES.map((size) => {
-                const active = selectedSize === size;
+          <Text
+            style={[styles.sectionLabel, { color: theme.textSecondary }]}
+          >
+            Select size
+          </Text>
 
-                return (
-                  <Pressable
-                    key={size}
-                    onPress={() => setSelectedSize(size)}
-                    accessibilityRole="button"
+          <View style={styles.sizesRow}>
+            {AVAILABLE_SIZES.map((size) => {
+              const active = selectedSize === size;
+
+              return (
+                <Pressable
+                  key={size}
+                  onPress={() => setSelectedSize(size)}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: active }}
+                  style={[
+                    styles.sizeButton,
+                    {
+                      backgroundColor: active
+                        ? theme.tint
+                        : theme.card,
+                      borderColor: theme.border,
+                    },
+                  ]}
+                >
+                  <Text
                     style={[
-                      styles.sizeButton,
+                      styles.sizeText,
                       {
-                        backgroundColor: active
-                          ? theme.tint
-                          : theme.card,
-                        borderColor: theme.border,
+                        color: active
+                          ? '#FFFFFF'
+                          : theme.textPrimary,
                       },
                     ]}
                   >
-                    <Text
-                      style={[
-                        styles.sizeText,
-                        {
-                          color: active
-                            ? '#FFFFFF'
-                            : theme.textPrimary,
-                        },
-                      ]}
-                    >
-                      {size}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-
-            {/* DESCRIPTION */}
-            <Text
-              numberOfLines={expanded ? undefined : 2}
-              style={[styles.description, { color: theme.textSecondary }]}
-            >
-              {product.description?.trim() ||
-                'No description available.'}
-            </Text>
-
-            <Pressable onPress={() => setExpanded((v) => !v)}>
-              <Text style={[styles.readMore, { color: theme.tint }]}>
-                {expanded ? 'Read Less' : 'Read More'}
-              </Text>
-            </Pressable>
-
-            <Button text="Add to Cart" onPress={AddToCart} />
+                    {size}
+                  </Text>
+                </Pressable>
+              );
+            })}
           </View>
-        </ScrollView>
-      </View>
+
+          <Text
+            numberOfLines={expanded ? undefined : 2}
+            style={[
+              styles.description,
+              { color: theme.textSecondary },
+            ]}
+          >
+            {product.description?.trim() ||
+              'No description available.'}
+          </Text>
+
+          <Pressable
+            onPress={() => setExpanded((v) => !v)}
+            accessibilityRole="button"
+          >
+            <Text style={[styles.readMore, { color: theme.tint }]}>
+              {expanded ? 'Read Less' : 'Read More'}
+            </Text>
+          </Pressable>
+
+          <Button
+            text={adding ? 'Adding…' : 'Add to Cart'}
+            onPress={handleAddToCart}
+            disabled={adding}
+          />
+        </View>
+      </ScrollView>
     </View>
   );
 }
@@ -206,13 +248,6 @@ export default function ProductDetailsScreen() {
 const styles = StyleSheet.create({
   page: {
     flex: 1,
-    alignItems: 'center',
-  },
-
-  container: {
-    flex: 1,
-    width: '100%',
-    maxWidth: 520,
   },
 
   scrollContent: {
@@ -222,7 +257,14 @@ const styles = StyleSheet.create({
   imageWrapper: {
     alignItems: 'center',
     paddingVertical: 24,
-    paddingHorizontal: 16,
+  },
+
+  imagePlaceholder: {
+    position: 'absolute',
+    width: 240,
+    height: 240,
+    borderRadius: 120,
+    opacity: 0.15,
   },
 
   image: {
@@ -230,6 +272,8 @@ const styles = StyleSheet.create({
   },
 
   content: {
+    width: '100%',
+    maxWidth: 520,
     paddingHorizontal: 16,
   },
 
