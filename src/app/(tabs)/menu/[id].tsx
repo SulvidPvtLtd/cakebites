@@ -103,7 +103,7 @@ export default function ProductDetailsScreen() {
   const handleAddToCart = useCallback(() => {
     if (adding) return;
     if (!product) return;
-
+    // console.warn('Add to Cart: ', product, selectedSize );
     try {
       setAdding(true);
       addItem(product, selectedSize);

@@ -129,6 +129,8 @@ const CartProvider = ({ children }: PropsWithChildren) => {
     [removeItem]
   );
 
+  console.log(items);
+
   const clearCart = useCallback(() => {
     setItems([]);
   }, []);
