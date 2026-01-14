@@ -2,17 +2,20 @@
 
 import React from 'react';
 import {
-  FlatList,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-  useColorScheme,
+    FlatList,
+    Image,
+    Pressable,
+    StyleSheet,
+    Text,
+    useColorScheme,
+    View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import Colors from '@constants/Colors';
 import { useCart } from '@providers/CartProvider';
+
+const IMAGE_SIZE = 44;
 
 export default function CartList() {
   const { items, updateQuantity, removeItem } = useCart();
@@ -21,9 +24,7 @@ export default function CartList() {
   const scheme = useColorScheme() ?? 'light';
   const theme = Colors[scheme];
 
-  if (!Array.isArray(items)) {
-    return null;
-  }
+  if (!Array.isArray(items)) return null;
 
   return (
     <FlatList
@@ -35,17 +36,12 @@ export default function CartList() {
         paddingBottom: 160 + insets.bottom,
       }}
       renderItem={({ item }) => {
-        if (
-          !item ||
-          !item.product ||
-          !Number.isFinite(item.quantity)
-        ) {
+        if (!item?.product || !Number.isFinite(item.quantity)) {
           return null;
         }
 
-        const price = Number(item.product.price) || 0;
         const quantity = Math.max(1, item.quantity);
-        const lineTotal = price * quantity;
+        const price = Number(item.product.price) || 0;
 
         return (
           <View
@@ -57,15 +53,32 @@ export default function CartList() {
               },
             ]}
           >
-            {/* Header */}
-            <View style={styles.headerRow}>
-              <View style={{ flex: 1 }}>
+            {/* ---------- Single Row ---------- */}
+            <View style={styles.row}>
+              {/* Image */}
+              <View
+                style={[
+                  styles.imageWrapper,
+                  { backgroundColor: theme.placeholder },
+                ]}
+              >
+                {item.product.image ? (
+                  <Image
+                    source={{ uri: item.product.image }}
+                    style={styles.image}
+                    resizeMode="cover"
+                  />
+                ) : null}
+              </View>
+
+              {/* Info */}
+              <View style={styles.info}>
                 <Text
                   style={[
-                    styles.productName,
+                    styles.name,
                     { color: theme.textPrimary },
                   ]}
-                  numberOfLines={2}
+                  numberOfLines={1}
                 >
                   {item.product.name}
                 </Text>
@@ -75,30 +88,13 @@ export default function CartList() {
                     styles.meta,
                     { color: theme.textSecondary },
                   ]}
+                  numberOfLines={1}
                 >
-                  Size {item.size}
+                  ${price.toFixed(2)} · Size {item.size}
                 </Text>
               </View>
 
-              <Text
-                style={[
-                  styles.lineTotal,
-                  { color: theme.textPrimary },
-                ]}
-              >
-                ${lineTotal.toFixed(2)}
-              </Text>
-            </View>
-
-            <View
-              style={[
-                styles.divider,
-                { backgroundColor: theme.border },
-              ]}
-            />
-
-            {/* Controls */}
-            <View style={styles.controlsRow}>
+              {/* Stepper */}
               <View style={styles.stepper}>
                 <Pressable
                   disabled={quantity <= 1}
@@ -142,19 +138,24 @@ export default function CartList() {
                   <Text style={styles.stepText}>+</Text>
                 </Pressable>
               </View>
-
-              <Pressable
-                onPress={() =>
-                  removeItem(item.product_id, item.size)
-                }
-              >
-                <Text
-                  style={[styles.remove, { color: theme.error }]}
-                >
-                  Remove
-                </Text>
-              </Pressable>
             </View>
+
+            {/* Optional remove */}
+            <Pressable
+              onPress={() =>
+                removeItem(item.product_id, item.size)
+              }
+              hitSlop={8}
+            >
+              <Text
+                style={[
+                  styles.remove,
+                  { color: theme.error },
+                ]}
+              >
+                Remove
+              </Text>
+            </Pressable>
           </View>
         );
       }}
@@ -166,72 +167,75 @@ export default function CartList() {
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: 18,
-    padding: 16,
-    marginBottom: 14,
+    borderRadius: 14,
+    padding: 12,
+    marginBottom: 12,
     borderWidth: 1,
   },
 
-  headerRow: {
+  row: {
     flexDirection: 'row',
-    gap: 12,
+    alignItems: 'center',
   },
 
-  productName: {
-    fontSize: 16,
+  imageWrapper: {
+    width: IMAGE_SIZE,
+    height: IMAGE_SIZE,
+    borderRadius: 8,
+    overflow: 'hidden',
+    marginRight: 12,
+  },
+
+  image: {
+    width: '100%',
+    height: '100%',
+  },
+
+  info: {
+    flex: 1,
+    marginRight: 8,
+  },
+
+  name: {
+    fontSize: 14,
     fontWeight: '600',
   },
 
   meta: {
-    fontSize: 13,
+    fontSize: 12,
     marginTop: 2,
-  },
-
-  lineTotal: {
-    fontSize: 15,
-    fontWeight: '600',
-  },
-
-  divider: {
-    height: 1,
-    marginVertical: 12,
-  },
-
-  controlsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
   },
 
   stepper: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 8,
   },
 
   stepButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
   },
 
   stepText: {
     color: '#FFFFFF',
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '700',
   },
 
   quantity: {
-    minWidth: 28,
+    minWidth: 20,
     textAlign: 'center',
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: 14,
+    fontWeight: '600',
   },
 
   remove: {
-    fontSize: 13,
+    fontSize: 12,
+    marginTop: 8,
     fontWeight: '500',
   },
 });
