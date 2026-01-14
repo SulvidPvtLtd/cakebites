@@ -1,161 +1,151 @@
 // src/providers/CartProvider.tsx
 
-import { CartItem, Product, ProductSize } from '@/src/types';
 import {
-  createContext,
   PropsWithChildren,
+  createContext,
   useCallback,
   useContext,
   useMemo,
   useState,
 } from 'react';
+import { CartItem, Product, ProductSize } from '@/src/types';
 
 /* ---------------- Types ---------------- */
 
 type CartContextType = {
   items: CartItem[];
   addItem: (product: Product, size: ProductSize) => void;
+  updateQuantity: (
+    productId: number,
+    size: ProductSize,
+    quantity: number
+  ) => void;
   removeItem: (productId: number, size: ProductSize) => void;
-  updateQuantity: (productId: number,size: ProductSize,quantity: number) => void;
   clearCart: () => void;
+  total: number;
 };
 
 /* ---------------- Context ---------------- */
 
-const CartContext = createContext<CartContextType | null>(null);
+const CartContext = createContext<CartContextType | undefined>(undefined);
 
 /* ---------------- Utils ---------------- */
 
-/**
- * Deterministic cart item ID.
- * Stable across sessions and API sync.
- */
-const createCartItemId = (
-  productId: number,
-  size: ProductSize
-): string => {
-  return `${productId}_${size}`;
-};
+const createCartItemId = (productId: number, size: ProductSize) =>
+  `${productId}_${size}`;
 
-const isValidProduct = (product: Product): boolean => {
+const isValidProduct = (product: unknown): product is Product => {
   return (
     typeof product === 'object' &&
-    typeof product.id === 'number' &&
-    product.id > 0 &&
-    typeof product.name === 'string' &&
-    typeof product.price === 'number' &&
-    product.price >= 0
+    product !== null &&
+    typeof (product as Product).id === 'number' &&
+    typeof (product as Product).name === 'string' &&
+    typeof (product as Product).price === 'number' &&
+    (product as Product).price >= 0
   );
 };
+
+const sanitizeQuantity = (qty: number) =>
+  Number.isFinite(qty) ? Math.max(1, Math.floor(qty)) : 1;
 
 /* ---------------- Provider ---------------- */
 
-const CartProvider = ({ children }: PropsWithChildren) => {
+export default function CartProvider({ children }: PropsWithChildren) {
   const [items, setItems] = useState<CartItem[]>([]);
+
+  /* ---------- Derived (defensive) ---------- */
+
+  const total = useMemo(() => {
+    return items.reduce((sum, item) => {
+      if (
+        !isValidProduct(item.product) ||
+        !Number.isFinite(item.quantity)
+      ) {
+        return sum;
+      }
+
+      return sum + item.product.price * item.quantity;
+    }, 0);
+  }, [items]);
 
   /* ---------- Actions ---------- */
 
-  const addItem = useCallback(
-    (product: Product, size: ProductSize) => {
-      if (!isValidProduct(product)) {
-        if (__DEV__) {
-          console.warn('Invalid product passed to addItem');
-        }
-        return;
+  const addItem = useCallback((product: Product, size: ProductSize) => {
+    if (!isValidProduct(product)) {
+      __DEV__ && console.warn('Invalid product passed to addItem');
+      return;
+    }
+
+    const cartItemId = createCartItemId(product.id, size);
+
+    setItems((current) => {
+      const existing = current.find((it) => it.id === cartItemId);
+
+      if (existing) {
+        return current.map((it) =>
+          it.id === cartItemId
+            ? { ...it, quantity: sanitizeQuantity(it.quantity + 1) }
+            : it
+        );
       }
 
-      const productId = product.id;
-      const cartItemId = createCartItemId(productId, size);
-
-      setItems((current) => {
-        const existing = current.find(
-          (item) => item.id === cartItemId
-        );
-
-        if (existing) {
-          return current.map((item) =>
-            item.id === cartItemId
-              ? { ...item, quantity: item.quantity + 1 }
-              : item
-          );
-        }
-
-        const newItem: CartItem = {
+      return [
+        ...current,
+        {
           id: cartItemId,
           product,
-          product_id: productId,
+          product_id: product.id,
           size,
           quantity: 1,
-        };
+        },
+      ];
+    });
+  }, []);
 
-        return [...current, newItem];
-      });
-    },
-    []
-  );
-
-  const removeItem = useCallback(
-    (productId: number, size: ProductSize) => {
-      const cartItemId = createCartItemId(productId, size);
-
-      setItems((current) =>
-        current.filter((item) => item.id !== cartItemId)
-      );
-    },
-    []
-  );
+  const removeItem = useCallback((productId: number, size: ProductSize) => {
+    const cartItemId = createCartItemId(productId, size);
+    setItems((current) => current.filter((it) => it.id !== cartItemId));
+  }, []);
 
   const updateQuantity = useCallback(
-    (
-      productId: number,
-      size: ProductSize,
-      quantity: number
-    ) => {
+    (productId: number, size: ProductSize, quantity: number) => {
+      if (!Number.isFinite(quantity)) return;
+
       if (quantity <= 0) {
         removeItem(productId, size);
         return;
       }
 
+      const safeQty = sanitizeQuantity(quantity);
       const cartItemId = createCartItemId(productId, size);
 
       setItems((current) =>
-        current.map((item) =>
-          item.id === cartItemId
-            ? { ...item, quantity }
-            : item
+        current.map((it) =>
+          it.id === cartItemId ? { ...it, quantity: safeQty } : it
         )
       );
     },
     [removeItem]
   );
 
-  console.log(items);
+  const clearCart = useCallback(() => setItems([]), []);
 
-  const clearCart = useCallback(() => {
-    setItems([]);
-  }, []);
+  /* ---------- Value ---------- */
 
-  /* ---------- Memoized value ---------- */
-
-  const value = useMemo<CartContextType>(
+  const value = useMemo(
     () => ({
       items,
       addItem,
-      removeItem,
       updateQuantity,
+      removeItem,
       clearCart,
+      total,
     }),
-    [items, addItem, removeItem, updateQuantity, clearCart]
+    [items, addItem, updateQuantity, removeItem, clearCart, total]
   );
 
-  return (
-    <CartContext.Provider value={value}>
-      {children}
-    </CartContext.Provider>
-  );
-};
-
-export default CartProvider;
+  return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
+}
 
 /* ---------------- Hook ---------------- */
 
@@ -163,9 +153,7 @@ export const useCart = (): CartContextType => {
   const context = useContext(CartContext);
 
   if (!context) {
-    throw new Error(
-      'useCart must be used within a CartProvider'
-    );
+    throw new Error('useCart must be used within a CartProvider');
   }
 
   return context;
