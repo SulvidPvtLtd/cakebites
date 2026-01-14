@@ -181,9 +181,9 @@ const styles = StyleSheet.create({
   imageWrapper: {
     width: IMAGE_SIZE,
     height: IMAGE_SIZE,
-    borderRadius: 8,
-    overflow: 'hidden',
+    borderRadius: IMAGE_SIZE / 2,
     marginRight: 12,
+    backgroundColor: '#EAEAEA',
   },
 
   image: {
