@@ -450,4 +450,23 @@ If a component is:
 </CartProvider>
 
 
-1:56:03
+# Admin side implementation
+
+1st change dynamic folder from (tabs) to (user) and correspondingly change its stack navigation name from tabs to user under the _layout.
+
+<CartProvider>    
+    <Stack>
+      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      <Stack.Screen name="cart" options={{ presentation: 'modal' }} />
+    </Stack>
+</CartProvider>
+
+to 
+
+<CartProvider>    
+  <Stack>
+    <Stack.Screen name="(user)" options={{ headerShown: false }} />
+    <Stack.Screen name="cart" options={{ presentation: 'modal' }} />
+  </Stack>
+</CartProvider>
+
