@@ -1,5 +1,5 @@
 import Colors from '@constants/Colors';
-import { Link } from 'expo-router';
+import { Link, useSegments } from 'expo-router';
 import React from 'react';
 import {
   Image,
@@ -44,9 +44,12 @@ export default function ProductListItem({
   product,
   numColumns,
 }: ProductListItemProps) {
+
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme ?? 'light'];
+  const segments = useSegments();
 
+  
   return (
     <View
       style={[

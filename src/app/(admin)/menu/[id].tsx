@@ -125,13 +125,7 @@ export default function ProductDetailsScreen() {
         }}
       />
 
-      <ScrollView
-        contentContainerStyle={[
-          styles.scrollContent,
-          { alignItems: 'center' },
-        ]}
-        showsVerticalScrollIndicator={false}
-      >
+      
         {/* IMAGE */}
         <View style={styles.imageWrapper}>
           {!imageLoaded && (
@@ -168,77 +162,8 @@ export default function ProductDetailsScreen() {
           <Text style={[styles.price, { color: theme.tint }]}>
             ${product.price.toFixed(2)}
           </Text>
-
-          <Text
-            style={[styles.sectionLabel, { color: theme.textSecondary }]}
-          >
-            Select size
-          </Text>
-
-          <View style={styles.sizesRow}>
-            {AVAILABLE_SIZES.map((size) => {
-              const active = selectedSize === size;
-
-              return (
-                <Pressable
-                  key={size}
-                  onPress={() => setSelectedSize(size)}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: active }}
-                  style={[
-                    styles.sizeButton,
-                    {
-                      backgroundColor: active
-                        ? theme.tint
-                        : theme.card,
-                      borderColor: theme.border,
-                    },
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.sizeText,
-                      {
-                        color: active
-                          ? '#FFFFFF'
-                          : theme.textPrimary,
-                      },
-                    ]}
-                  >
-                    {size}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
-
-          <Text
-            numberOfLines={expanded ? undefined : 2}
-            style={[
-              styles.description,
-              { color: theme.textSecondary },
-            ]}
-          >
-            {product.description?.trim() ||
-              'No description available.'}
-          </Text>
-
-          <Pressable
-            onPress={() => setExpanded((v) => !v)}
-            accessibilityRole="button"
-          >
-            <Text style={[styles.readMore, { color: theme.tint }]}>
-              {expanded ? 'Read Less' : 'Read More'}
-            </Text>
-          </Pressable>
-
-          <Button
-            text={adding ? 'Adding…' : 'Add to Cart'}
-            onPress={handleAddToCart}
-            disabled={adding}
-          />
         </View>
-      </ScrollView>
+      
     </View>
   );
 }
@@ -301,15 +226,6 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
 
-  sizeButton: {
-    flex: 1,
-    height: 44,
-    borderRadius: 22,
-    borderWidth: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-
   sizeText: {
     fontSize: 14,
     fontWeight: '600',
@@ -318,12 +234,6 @@ const styles = StyleSheet.create({
   description: {
     fontSize: 15,
     lineHeight: 21,
-  },
-
-  readMore: {
-    marginTop: 6,
-    marginBottom: 20,
-    fontWeight: '600',
   },
 
   center: {

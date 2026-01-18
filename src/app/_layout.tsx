@@ -18,10 +18,13 @@ export {
   ErrorBoundary
 } from "expo-router";
 
+/* This will confuse the initial route detection. since its defined in index.tsx
 export const unstable_settings = {
   // Ensure that reloading on `/modal` keeps a back button present.
   initialRouteName: "index",
 };
+
+*/
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
