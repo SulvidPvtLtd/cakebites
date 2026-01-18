@@ -53,7 +53,7 @@ export default function ProductDetailsScreen() {
   }, [id]);
 
   if (!productId) {
-    return <Redirect href="/(tabs)/menu" />;
+    return <Redirect href="/(admin)/menu" />;
   }
 
   /* ---------------- Data ---------------- */
