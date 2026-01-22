@@ -3,37 +3,45 @@ import { defaultPizzaImage } from "@/src/components/ProductListItem";
 import Colors from "@/src/constants/Colors";
 import * as ImagePicker from "expo-image-picker";
 import { Stack } from "expo-router";
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import { Alert, Image, StyleSheet, Text, TextInput, View } from "react-native";
 
 const MAX_NAME_LENGTH = 50;
 
 const CreateProductScreen = () => {
   const [name, setName] = useState("");
-  const [price, setPrice] = useState("");
-  const [error, setError] = useState("");
+  const [priceRaw, setPriceRaw] = useState(""); // User input
+  const [error, setError] = useState(""); // Single error for simplicity
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [image, setImage] = useState<string | null>(null);
+
   const resetFields = () => {
     setName("");
-    setPrice("");
+    setPriceRaw("");
     setError("");
+    setImage(null);
   };
 
-  const validateInputs = (): boolean => {
-    setError("");
+  /** Parse and validate price as positive float */
+  const parsePrice = useCallback((input: string): number | null => {
+    if (!input || !input.trim()) return null;
+
+    const normalized = input.trim().replace(",", "."); // support comma decimal
+    if (!/^\d+(\.\d+)?$/.test(normalized)) return null; // only valid digits + optional decimal
+
+    const value = Number(normalized);
+    return value > 0 ? value : null;
+  }, []);
+
+  const priceValue = useMemo(() => parsePrice(priceRaw), [priceRaw, parsePrice]);
+
+  /** Validate name and price */
+  const validateInputs = useCallback((): boolean => {
     const trimmedName = name.trim();
-    const trimmedPrice = price.trim();
-    const parsedPrice = Number(trimmedPrice);
+    const trimmedPrice = priceRaw.trim();
 
     if (!trimmedName) {
       setError("Product name is required.");
-      return false;
-    }
-
-    // Prevent unsafe characters (basic XSS defense)
-    if (!/^[a-zA-Z0-9\s\-']+$/.test(trimmedName)) {
-      setError("Name contains invalid characters.");
       return false;
     }
 
@@ -42,38 +50,42 @@ const CreateProductScreen = () => {
       return false;
     }
 
+    if (!/^[a-zA-Z0-9\s\-']+$/.test(trimmedName)) {
+      setError("Name contains invalid characters.");
+      return false;
+    }
+
     if (!trimmedPrice) {
       setError("Price is required.");
       return false;
     }
 
-    if (!Number.isFinite(parsedPrice)) {
-      setError("Price must be a valid number.");
+    if (priceValue === null) {
+      setError("Enter a valid positive price.");
       return false;
     }
 
-    if (parsedPrice <= 0) {
-      setError("Price must be greater than 0.");
-      return false;
-    }
-
+    setError(""); // All good
     return true;
-  };
+  }, [name, priceRaw, priceValue]);
 
+  /** Build API-safe payload */
+  const buildPayload = useCallback(() => ({
+    name: name.trim(),
+    price: priceValue!,
+    image,
+  }), [name, priceValue, image]);
+
+  /** Handle create action */
   const onCreate = useCallback(() => {
-    if (isSubmitting) return;
-
-    if (!validateInputs()) {
-      return;
-    }
+    if (isSubmitting) return; // prevent double submit
+    if (!validateInputs()) return;
 
     try {
       setIsSubmitting(true);
 
-      console.warn("Create product:", {
-        name: name.trim(),
-        price: Number(price),
-      });
+      const payload = buildPayload();
+      console.warn("Create product payload:", payload);
 
       // TODO: Save to database / API
 
@@ -84,48 +96,33 @@ const CreateProductScreen = () => {
     } finally {
       setIsSubmitting(false);
     }
-  }, [name, price, isSubmitting]);
+  }, [isSubmitting, validateInputs, buildPayload]);
 
-  //Image picker funnction.
-  const pickImage = async () => {
-    // No permissions request is necessary for launching the image library.
-    // Manually request permissions for videos on iOS when `allowsEditing` is set to `false`
-    // and `videoExportPreset` is `'Passthrough'` (the default), ideally before launching the picker
-    // so the app users aren't surprised by a system dialog after picking a video.
-    // See "Invoke permissions for videos" sub section for more details.
-    const permissionResult =
-      await ImagePicker.requestMediaLibraryPermissionsAsync();
-
-    if (!permissionResult.granted) {
-      Alert.alert(
-        "Permission required",
-        "Permission to access the media library is required.",
-      );
+  /** Pick image from library */
+  const pickImage = useCallback(async () => {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert("Permission required", "Permission to access media library is required.");
       return;
     }
 
-    let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["images", "videos"],
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.All,
       allowsEditing: true,
       aspect: [4, 3],
       quality: 1,
     });
 
-    // console.log(result);
-
     if (!result.canceled) {
       setImage(result.assets[0].uri);
     }
-  };
+  }, []);
 
   return (
     <View style={styles.container}>
       <Stack.Screen options={{ title: "Create Product" }} />
 
-      <Image
-        source={{ uri: image || defaultPizzaImage }}
-        style={styles.image}
-      />
+      <Image source={{ uri: image || defaultPizzaImage }} style={styles.image} />
 
       <Text onPress={pickImage} style={styles.textButton}>
         Select image
@@ -143,8 +140,8 @@ const CreateProductScreen = () => {
 
       <Text style={styles.label}>Price ($)</Text>
       <TextInput
-        value={price}
-        onChangeText={setPrice}
+        value={priceRaw}
+        onChangeText={setPriceRaw}
         placeholder="9.99"
         style={styles.input}
         keyboardType="decimal-pad"
