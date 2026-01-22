@@ -1,5 +1,5 @@
 import Colors from '@constants/Colors';
-import { Link, useSegments } from 'expo-router';
+import { Link } from 'expo-router';
 import React from 'react';
 import {
   Image,
@@ -14,24 +14,15 @@ import { Product } from '../types';
 export const defaultPizzaImage =
   'https://notjustdev-dummy.s3.us-east-2.amazonaws.com/food/peperoni.png';
 
-/**
- * Layout constants
- */
 const GAP = 16;
 const IMAGE_RATIO = 1;
 const CARD_TEXT_HEIGHT = 84;
 
-/**
- * Image sanitizer
- */
 const sanitizeImageUrl = (url?: string | null): string => {
   if (typeof url !== 'string') return defaultPizzaImage;
   return url.startsWith('https://') ? url : defaultPizzaImage;
 };
 
-/**
- * Truncate long titles
- */
 const truncateTitle = (title: string, maxLength = 16): string =>
   title.length <= maxLength ? title : title.slice(0, maxLength) + '...';
 
@@ -40,32 +31,22 @@ type ProductListItemProps = {
   numColumns: number;
 };
 
-export default function ProductListItem({
-  product,
-  numColumns,
-}: ProductListItemProps) {
-
+const ProductListItem = ({ product, numColumns }: ProductListItemProps) => {
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme ?? 'light'];
-  const segments = useSegments();
 
-  
   return (
-    <View
-      style={[
-        styles.itemWrapper,
-        { width: `${100 / numColumns}%` },
-      ]}
-    >
-      <Link href={`/menu/${product.id}`} asChild>
+    <View style={[styles.itemWrapper, { width: `${100 / numColumns}%` }]}>
+      {/* ✅ RELATIVE PATH — stays in (admin) or (user) */}
+      <Link
+        href={{
+          pathname: './menu/[id]',
+          params: { id: product.id },
+        }}
+        asChild
+      >
         <Pressable style={styles.shadowWrapper}>
-          <View
-            style={[
-              styles.card,
-              { backgroundColor: theme.card },
-            ]}
-          >
-            {/* Image */}
+          <View style={[styles.card, { backgroundColor: theme.card }]}>
             <View style={styles.imageContainer}>
               <Image
                 source={{ uri: sanitizeImageUrl(product.image) }}
@@ -74,31 +55,20 @@ export default function ProductListItem({
               />
             </View>
 
-            {/* Text */}
             <View style={styles.textContainer}>
               <Text
-                style={[
-                  styles.title,
-                  { color: theme.textPrimary },
-                ]}
+                style={[styles.title, { color: theme.textPrimary }]}
                 numberOfLines={1}
               >
                 {truncateTitle(product.name)}
               </Text>
 
               <View style={styles.bottomSection}>
-                <Text
-                  style={[
-                    styles.price,
-                    { color: theme.tint },
-                  ]}
-                >
+                <Text style={[styles.price, { color: theme.tint }]}>
                   ${product.price}
                 </Text>
 
-                <Text style={styles.linkText}>
-                  Go to details
-                </Text>
+                <Text style={styles.linkText}>Go to details</Text>
               </View>
             </View>
           </View>
@@ -106,7 +76,11 @@ export default function ProductListItem({
       </Link>
     </View>
   );
-}
+};
+
+export default ProductListItem;
+
+
 
 const styles = StyleSheet.create({
   itemWrapper: {
