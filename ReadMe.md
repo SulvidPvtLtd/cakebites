@@ -118,6 +118,7 @@ When you press the Product with a Pressable event from the `ProductListItem`,
 
 const ProductListItem = ({ product }: ProductListItemProps) => {
 return (
+
 <Link href={'/product'} asChild>
 <Pressable style={styles.container}>
 ....
@@ -336,6 +337,7 @@ return (
 />
 )}
 </Pressable>
+
 </Link>
 ),
 }}>
@@ -457,4 +459,60 @@ to
   </Stack>
 </CartProvider>
 
-2:31:06
+# Create Product
+
+We will make use of an expo library called expo image picker.
+
+run the following command to install it:
+
+`npx expo install expo-image-picker`
+
+Make use of the following state variables:
+
+`const [image, setImage] = useState<string | null>(null);`
+
+And make use of the following image picker functions:
+
+const pickImage = async () => {
+// No permissions request is necessary for launching the image library.
+// Manually request permissions for videos on iOS when `allowsEditing` is set to `false`
+// and `videoExportPreset` is `'Passthrough'` (the default), ideally before launching the picker
+// so the app users aren't surprised by a system dialog after picking a video.
+// See "Invoke permissions for videos" sub section for more details.
+const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+    if (!permissionResult.granted) {
+      Alert.alert('Permission required', 'Permission to access the media library is required.');
+      return;
+    }
+
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images', 'videos'],
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 1,
+    });
+
+    console.log(result);
+
+    if (!result.canceled) {
+      setImage(result.assets[0].uri);
+    }
+
+};
+
+NB: Make sure to make call the function pickImage when you press on the 'Select Image' button on `create.tsx`.
+
+`<Text onPress={pickImage} style={styles.textButton}>Select image</Text>`
+
+make sure to change from default to the selected image:
+
+`<Image source={{ uri: defaultPizzaImage }} style={styles.image} />`
+
+to
+
+`<Image source={{ uri: image ||defaultPizzaImage }} style={styles.image} />`
+
+On the ImagePicker function, you can set mediaTypes to either both video and images or just images..
+
+`mediaTypes: ['images', 'videos'],`

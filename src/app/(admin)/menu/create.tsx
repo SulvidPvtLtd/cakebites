@@ -1,6 +1,10 @@
 import Button from "@/src/components/Button";
+import { defaultPizzaImage } from "@/src/components/ProductListItem";
+import Colors from "@/src/constants/Colors";
+import * as ImagePicker from "expo-image-picker";
+import { Stack } from "expo-router";
 import React, { useCallback, useState } from "react";
-import { Alert, StyleSheet, Text, TextInput, View } from "react-native";
+import { Alert, Image, StyleSheet, Text, TextInput, View } from "react-native";
 
 const MAX_NAME_LENGTH = 50;
 
@@ -9,7 +13,7 @@ const CreateProductScreen = () => {
   const [price, setPrice] = useState("");
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-
+  const [image, setImage] = useState<string | null>(null);
   const resetFields = () => {
     setName("");
     setPrice("");
@@ -61,7 +65,7 @@ const CreateProductScreen = () => {
 
     if (!validateInputs()) {
       return;
-    };
+    }
 
     try {
       setIsSubmitting(true);
@@ -82,8 +86,51 @@ const CreateProductScreen = () => {
     }
   }, [name, price, isSubmitting]);
 
+  //Image picker funnction.
+  const pickImage = async () => {
+    // No permissions request is necessary for launching the image library.
+    // Manually request permissions for videos on iOS when `allowsEditing` is set to `false`
+    // and `videoExportPreset` is `'Passthrough'` (the default), ideally before launching the picker
+    // so the app users aren't surprised by a system dialog after picking a video.
+    // See "Invoke permissions for videos" sub section for more details.
+    const permissionResult =
+      await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+    if (!permissionResult.granted) {
+      Alert.alert(
+        "Permission required",
+        "Permission to access the media library is required.",
+      );
+      return;
+    }
+
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images", "videos"],
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 1,
+    });
+
+    // console.log(result);
+
+    if (!result.canceled) {
+      setImage(result.assets[0].uri);
+    }
+  };
+
   return (
     <View style={styles.container}>
+      <Stack.Screen options={{ title: "Create Product" }} />
+
+      <Image
+        source={{ uri: image || defaultPizzaImage }}
+        style={styles.image}
+      />
+
+      <Text onPress={pickImage} style={styles.textButton}>
+        Select image
+      </Text>
+
       <Text style={styles.label}>Name</Text>
       <TextInput
         value={name}
@@ -119,6 +166,18 @@ export default CreateProductScreen;
 const styles = StyleSheet.create({
   container: {
     padding: 10,
+  },
+  image: {
+    width: "50%",
+    aspectRatio: 1,
+    alignSelf: "center",
+    marginBottom: 20,
+  },
+  textButton: {
+    alignSelf: "center",
+    fontWeight: "bold",
+    color: Colors.light.tint,
+    marginVertical: 10,
   },
   label: {
     color: "gray",
