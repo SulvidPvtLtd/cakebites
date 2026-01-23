@@ -1,44 +1,56 @@
+// src/app/(admin)/menu/create.tsx
 import Button from "@/src/components/Button";
 import { defaultPizzaImage } from "@/src/components/ProductListItem";
 import Colors from "@/src/constants/Colors";
 import * as ImagePicker from "expo-image-picker";
-import { Stack } from "expo-router";
+import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import React, { useCallback, useMemo, useState } from "react";
-import { Alert, Image, StyleSheet, Text, TextInput, View } from "react-native";
+import {
+  Alert,
+  Image,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 
 const MAX_NAME_LENGTH = 50;
 
 const CreateProductScreen = () => {
   const [name, setName] = useState("");
-  const [priceRaw, setPriceRaw] = useState(""); // User input
-  const [error, setError] = useState(""); // Single error for simplicity
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [priceRaw, setPriceRaw] = useState("");
   const [image, setImage] = useState<string | null>(null);
+  const [error, setError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
-  const resetFields = () => {
+  const router = useRouter();
+  const { id } = useLocalSearchParams<{ id?: string }>();
+  const isUpdating = !!id;
+
+  const resetForm = () => {
     setName("");
     setPriceRaw("");
-    setError("");
     setImage(null);
+    setError("");
   };
 
-  /** Parse and validate price as positive float */
   const parsePrice = useCallback((input: string): number | null => {
-    if (!input || !input.trim()) return null;
-
-    const normalized = input.trim().replace(",", "."); // support comma decimal
-    if (!/^\d+(\.\d+)?$/.test(normalized)) return null; // only valid digits + optional decimal
-
+    const normalized = input.trim().replace(",", ".");
+    if (!/^\d+(\.\d{1,2})?$/.test(normalized)) return null;
     const value = Number(normalized);
     return value > 0 ? value : null;
   }, []);
 
-  const priceValue = useMemo(() => parsePrice(priceRaw), [priceRaw, parsePrice]);
+  const priceValue = useMemo(
+    () => parsePrice(priceRaw),
+    [priceRaw, parsePrice],
+  );
 
-  /** Validate name and price */
-  const validateInputs = useCallback((): boolean => {
+  const validate = useCallback(() => {
     const trimmedName = name.trim();
-    const trimmedPrice = priceRaw.trim();
 
     if (!trimmedName) {
       setError("Product name is required.");
@@ -55,7 +67,7 @@ const CreateProductScreen = () => {
       return false;
     }
 
-    if (!trimmedPrice) {
+    if (!priceRaw.trim()) {
       setError("Price is required.");
       return false;
     }
@@ -65,96 +77,192 @@ const CreateProductScreen = () => {
       return false;
     }
 
-    setError(""); // All good
+    setError("");
     return true;
   }, [name, priceRaw, priceValue]);
 
-  /** Build API-safe payload */
-  const buildPayload = useCallback(() => ({
-    name: name.trim(),
-    price: priceValue!,
-    image,
-  }), [name, priceValue, image]);
+  const pickImage = useCallback(async () => {
+    try {
+      const permission =
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permission.granted) {
+        Alert.alert("Permission required", "Media access is required.");
+        return;
+      }
 
-  /** Handle create action */
-  const onCreate = useCallback(() => {
-    if (isSubmitting) return; // prevent double submit
-    if (!validateInputs()) return;
+      const result = await ImagePicker.launchImageLibraryAsync({
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.9,
+      });
+
+      if (!result.canceled) {
+        setImage(result.assets[0].uri);
+      }
+    } catch (err) {
+      console.error("Image picker error:", err);
+      Alert.alert("Error", "Failed to pick image.");
+    }
+  }, []);
+
+  // CREATE
+  const onCreate = useCallback(async () => {
+    if (isSubmitting || isDeleting) return;
+    if (!validate()) return;
 
     try {
       setIsSubmitting(true);
 
-      const payload = buildPayload();
-      console.warn("Create product payload:", payload);
+      const payload = {
+        name: name.trim(),
+        price: priceValue!,
+        image,
+      };
 
-      // TODO: Save to database / API
+      console.log("Creating product:", payload);
+      // TODO: API call to create product
 
-      resetFields();
+      resetForm();
+      Alert.alert("Success", "Product created successfully.");
     } catch (err) {
-      console.error(err);
+      console.error("Create error:", err);
       Alert.alert("Error", "Failed to create product.");
     } finally {
       setIsSubmitting(false);
     }
-  }, [isSubmitting, validateInputs, buildPayload]);
+  }, [validate, name, priceValue, image, isSubmitting, isDeleting]);
 
-  /** Pick image from library */
-  const pickImage = useCallback(async () => {
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permission.granted) {
-      Alert.alert("Permission required", "Permission to access media library is required.");
-      return;
+  // UPDATE
+  const onUpdate = useCallback(async () => {
+    if (!id) return;
+    if (isSubmitting || isDeleting) return;
+    if (!validate()) return;
+
+    try {
+      setIsSubmitting(true);
+
+      const payload = {
+        id,
+        name: name.trim(),
+        price: priceValue!,
+        image,
+      };
+
+      console.log("Updating product:", payload);
+      // TODO: API call to update product
+
+      resetForm();
+      Alert.alert("Success", "Product updated successfully.");
+    } catch (err) {
+      console.error("Update error:", err);
+      Alert.alert("Error", "Failed to update product.");
+    } finally {
+      setIsSubmitting(false);
     }
+  }, [validate, name, priceValue, image, isSubmitting, isDeleting, id]);
 
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.All,
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 1,
-    });
+  // DELETE
+  const onDelete = useCallback(async () => {
+    if (!id) return;
+    if (isSubmitting || isDeleting) return;
 
-    if (!result.canceled) {
-      setImage(result.assets[0].uri);
+    Alert.alert(
+      "Confirm Delete",
+      "Are you sure you want to delete this product? This action cannot be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              setIsDeleting(true);
+              console.log("Deleting product with id:", id);
+              // TODO: API call to delete product
+
+              resetForm();
+              router.back(); // navigate back after deletion
+              Alert.alert("Deleted", "Product deleted successfully.");
+            } catch (err) {
+              console.error("Delete error:", err);
+              Alert.alert("Error", "Failed to delete product.");
+            } finally {
+              setIsDeleting(false);
+            }
+          },
+        },
+      ],
+    );
+  }, [id, isSubmitting, isDeleting, router]);
+
+  const buttonText = useMemo(() => {
+    if (isSubmitting) return isUpdating ? "Updating..." : "Creating...";
+    return isUpdating ? "Update" : "Create";
+  }, [isSubmitting, isUpdating]);
+
+  const handleButtonPress = () => {
+    if (isUpdating) {
+      onUpdate();
+    } else {
+      onCreate();
     }
-  }, []);
+  };
 
   return (
-    <View style={styles.container}>
-      <Stack.Screen options={{ title: "Create Product" }} />
-
-      <Image source={{ uri: image || defaultPizzaImage }} style={styles.image} />
-
-      <Text onPress={pickImage} style={styles.textButton}>
-        Select image
-      </Text>
-
-      <Text style={styles.label}>Name</Text>
-      <TextInput
-        value={name}
-        onChangeText={setName}
-        placeholder="Product name"
-        style={styles.input}
-        maxLength={MAX_NAME_LENGTH}
-        autoCapitalize="words"
+    <ScrollView
+      contentContainerStyle={styles.container}
+      keyboardShouldPersistTaps="handled"
+    >
+      <Stack.Screen
+        options={{ title: isUpdating ? "Update Product" : "Create Product" }}
       />
 
-      <Text style={styles.label}>Price ($)</Text>
-      <TextInput
-        value={priceRaw}
-        onChangeText={setPriceRaw}
-        placeholder="9.99"
-        style={styles.input}
-        keyboardType="decimal-pad"
-      />
+      <Pressable style={styles.imageWrapper} onPress={pickImage}>
+        <Image
+          source={{ uri: image || defaultPizzaImage }}
+          style={styles.image}
+        />
+        <Text style={styles.imageHint}>Tap to select image</Text>
+      </Pressable>
 
-      {!!error && <Text style={styles.error}>{error}</Text>}
+      <View style={styles.formCard}>
+        <Text style={styles.label}>Name</Text>
+        <TextInput
+          value={name}
+          onChangeText={setName}
+          placeholder="Product name"
+          style={styles.input}
+          maxLength={MAX_NAME_LENGTH}
+          autoCapitalize="words"
+          keyboardType="default"
+        />
 
-      <Button
-        onPress={onCreate}
-        text={isSubmitting ? "Creating..." : "Create"}
-        disabled={isSubmitting}
-      />
-    </View>
+        <Text style={styles.label}>Price ($)</Text>
+        <TextInput
+          value={priceRaw}
+          onChangeText={setPriceRaw}
+          placeholder="9.99"
+          keyboardType="decimal-pad"
+          style={styles.input}
+        />
+
+        {!!error && <Text style={styles.error}>{error}</Text>}
+
+        <Button
+          onPress={handleButtonPress}
+          text={buttonText}
+          disabled={isSubmitting || isDeleting}
+        />
+
+        {isUpdating && (
+          <Pressable onPress={onDelete} style={styles.deleteWrapper}>
+            <Text style={styles.deleteText}>
+              {isDeleting ? "Deleting..." : "Delete Product"}
+            </Text>
+          </Pressable>
+        )}
+      </View>
+    </ScrollView>
   );
 };
 
@@ -162,36 +270,61 @@ export default CreateProductScreen;
 
 const styles = StyleSheet.create({
   container: {
-    padding: 10,
+    padding: 16,
+    backgroundColor: "#F7F7F7",
+  },
+  imageWrapper: {
+    alignItems: "center",
+    marginBottom: 24,
   },
   image: {
-    width: "50%",
-    aspectRatio: 1,
-    alignSelf: "center",
-    marginBottom: 20,
+    width: 180,
+    height: 180,
+    borderRadius: 16,
+    backgroundColor: "transparent",
   },
-  textButton: {
-    alignSelf: "center",
-    fontWeight: "bold",
+  imageHint: {
+    marginTop: 8,
     color: Colors.light.tint,
-    marginVertical: 10,
+    fontWeight: "600",
+  },
+  formCard: {
+    backgroundColor: "#FFF",
+    borderRadius: 16,
+    padding: 16,
+    shadowColor: "#000",
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 3,
   },
   label: {
-    color: "gray",
-    fontSize: 16,
+    color: "#666",
+    marginBottom: 6,
+    fontSize: 14,
+    fontWeight: "500",
   },
   input: {
-    borderWidth: 0.5,
-    borderColor: "gray",
-    padding: 10,
-    marginTop: 5,
-    marginBottom: 20,
-    backgroundColor: "white",
-    borderRadius: 5,
+    backgroundColor: "#FAFAFA",
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: "#DDD",
+    marginBottom: 16,
+    fontSize: 16,
   },
   error: {
-    color: "red",
+    color: "#D32F2F",
     textAlign: "center",
-    marginBottom: 10,
+    marginBottom: 12,
+  },
+  deleteWrapper: {
+    marginTop: 16,
+    alignItems: "center",
+  },
+  deleteText: {
+    color: "#D32F2F",
+    fontWeight: "600",
+    textDecorationLine: "underline",
   },
 });

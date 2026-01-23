@@ -516,3 +516,5 @@ to
 On the ImagePicker function, you can set mediaTypes to either both video and images or just images..
 
 `mediaTypes: ['images', 'videos'],`
+
+2:45:56

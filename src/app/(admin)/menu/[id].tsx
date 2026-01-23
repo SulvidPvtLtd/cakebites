@@ -1,5 +1,5 @@
 // src/app/(tabs)/menu/[id].tsx
-import { Redirect, Stack, useLocalSearchParams } from 'expo-router';
+import { Link, Redirect, Stack, useLocalSearchParams } from 'expo-router';
 import {
   useCallback,
   useEffect,
@@ -25,6 +25,7 @@ import { useCart } from '@/src/providers/CartProvider';
 import { ProductSize } from '@/src/types';
 import { defaultPizzaImage } from '@components/ProductListItem';
 import Colors from '@constants/Colors';
+import FontAwesome from '@expo/vector-icons/FontAwesome';
 
 type ProductDetailsParams = {
   id?: string;
@@ -117,6 +118,27 @@ export default function ProductDetailsScreen() {
 
   return (
     <View style={[styles.page, { backgroundColor: theme.background }]}>
+
+      <Stack.Screen        
+        options={{
+          title: "Menu",
+          headerRight: () => (
+            <Link href={`/(admin)/menu/create?id=${id}`} asChild>
+              <Pressable>
+                {({ pressed }) => (
+                  <FontAwesome
+                    name="pencil"
+                    size={25}
+                    color={Colors.light.tint}
+                    style={{ marginRight: 15, opacity: pressed ? 0.5 : 1 }}
+                  />
+                )}
+              </Pressable>
+            </Link>
+          ),
+        }}
+      />
+
       <Stack.Screen
         options={{
           title: product.name ?? 'Product',
