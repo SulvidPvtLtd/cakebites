@@ -517,4 +517,4 @@ On the ImagePicker function, you can set mediaTypes to either both video and ima
 
 `mediaTypes: ['images', 'videos'],`
 
-2:55:19
+3:09:00
