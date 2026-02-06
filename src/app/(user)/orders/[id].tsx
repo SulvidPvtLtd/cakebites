@@ -1,22 +1,25 @@
-import { useCallback, useMemo } from "react";
-import { FlatList, Text, View } from "react-native";
 import { Stack, useLocalSearchParams } from "expo-router";
+import { useCallback, useMemo } from "react";
+import {
+  FlatList,
+  Text,
+  View,
+  Pressable,
+  StyleSheet,
+} from "react-native";
 
 import orders from "@/assets/data/orders";
 import OrderListItem from "@/src/components/OrderListItem";
 import PlacedOrderListItems from "@/src/components/PlacedOrderListItems";
+import Colors from "@/src/constants/Colors";
+import { OrderStatusList } from "@/src/types";
 
-/* -------------------------------------------------- */
-/* Strong domain typing derived from source data       */
-/* -------------------------------------------------- */
 
 type Order = (typeof orders)[number];
 type OrderItems = NonNullable<Order["order_items"]>;
 type OrderItem = OrderItems[number];
+type OrderStatus = (typeof OrderStatusList)[number];
 
-/* -------------------------------------------------- */
-/* Screen                                             */
-/* -------------------------------------------------- */
 
 export default function OrderDetailScreen() {
   /**
@@ -29,7 +32,6 @@ export default function OrderDetailScreen() {
    */
   const orderFetched: Order | undefined = useMemo(() => {
     if (!id) return undefined;
-
     return orders.find((order) => order.id.toString() === id);
   }, [id]);
 
@@ -39,7 +41,7 @@ export default function OrderDetailScreen() {
 
   if (!id) {
     return (
-      <View style={{ padding: 10 }}>
+      <View style={styles.centeredContainer}>
         <Stack.Screen options={{ title: "Invalid order" }} />
         <Text>Invalid order reference.</Text>
       </View>
@@ -48,7 +50,7 @@ export default function OrderDetailScreen() {
 
   if (!orderFetched) {
     return (
-      <View style={{ padding: 10 }}>
+      <View style={styles.centeredContainer}>
         <Stack.Screen options={{ title: "Order not found" }} />
         <Text>Order not found.</Text>
       </View>
@@ -60,25 +62,16 @@ export default function OrderDetailScreen() {
    */
   const orderItems: OrderItems = orderFetched.order_items ?? [];
 
-  /* -------------------------------------------------- */
-  /* Optimised FlatList render function                 */
-  /* -------------------------------------------------- */
-
+ 
   const renderPlacedItem = useCallback(
-    ({ item }: { item: OrderItem }) => (
-      <PlacedOrderListItems item={item} />
-    ),
-    []
+    ({ item }: { item: OrderItem }) => <PlacedOrderListItems item={item} />,
+    [],
   );
 
  
-    /* -------------------------------------------------- */ 
-    // UI
-    /* -------------------------------------------------- */
- 
 
   return (
-    <View style={{ padding: 10, gap: 10 }}>
+    <View style={styles.container}>
       <Stack.Screen options={{ title: `Order #${id}` }} />
 
       {/* Order summary */}
@@ -89,9 +82,100 @@ export default function OrderDetailScreen() {
         data={orderItems}
         keyExtractor={(item) => item.id.toString()}
         renderItem={renderPlacedItem}
-        contentContainerStyle={{ gap: 10 }}
+        contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
+        ListFooterComponent={
+          <View style={styles.statusSection}>
+            <Text style={styles.statusTitle}>Status</Text>
+
+            <View style={styles.statusContainer}>
+              {OrderStatusList.map((status: OrderStatus) => {
+                const isActive = orderFetched.status === status;
+
+                return (
+                  <Pressable
+                    key={status}
+                    onPress={() => console.warn("Update status")}
+                    style={[
+                      styles.statusChip,
+                      isActive && styles.statusChipActive,
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.statusText,
+                        isActive && styles.statusTextActive,
+                      ]}
+                    >
+                      {status}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
+        }
       />
     </View>
   );
 }
+
+
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    padding: 10,
+    gap: 10,
+  },
+
+  centeredContainer: {
+    flex: 1,
+    padding: 10,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  listContent: {
+    gap: 10,
+  },
+
+  statusSection: {
+    marginTop: 20,
+  },
+
+  statusTitle: {
+    fontWeight: "bold",
+    fontSize: 16,
+  },
+
+  statusContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginTop: 8,
+  },
+
+  statusChip: {
+    borderWidth: 1,
+    borderColor: Colors.light.tint,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 20,
+    backgroundColor: "transparent",
+  },
+
+  statusChipActive: {
+    backgroundColor: Colors.light.tint,
+  },
+
+  statusText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: Colors.light.tint,
+  },
+
+  statusTextActive: {
+    color: "#fff",
+  },
+});
