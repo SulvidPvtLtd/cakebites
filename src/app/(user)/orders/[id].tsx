@@ -14,12 +14,20 @@ import PlacedOrderListItems from "@/src/components/PlacedOrderListItems";
 import Colors from "@/src/constants/Colors";
 import { OrderStatusList } from "@/src/types";
 
+/* -------------------------------------------------- */
+/* Strong domain typing derived from source data       */
+/* -------------------------------------------------- */
 
 type Order = (typeof orders)[number];
 type OrderItems = NonNullable<Order["order_items"]>;
 type OrderItem = OrderItems[number];
+
+/** Status typing (no implicit any) */
 type OrderStatus = (typeof OrderStatusList)[number];
 
+/* -------------------------------------------------- */
+/* Screen                                             */
+/* -------------------------------------------------- */
 
 export default function OrderDetailScreen() {
   /**
@@ -62,13 +70,25 @@ export default function OrderDetailScreen() {
    */
   const orderItems: OrderItems = orderFetched.order_items ?? [];
 
- 
+  /* -------------------------------------------------- */
+  /* Optimised FlatList render function                 */
+  /* -------------------------------------------------- */
+
   const renderPlacedItem = useCallback(
     ({ item }: { item: OrderItem }) => <PlacedOrderListItems item={item} />,
     [],
   );
 
- 
+  
+  // Status width calculation
+
+  const maxStatusLength = Math.max(
+    ...OrderStatusList.map((s: OrderStatus) => s.length),
+  );
+
+  // Adaptive uniform width (auto fits longest text)
+  const STATUS_BUTTON_WIDTH = maxStatusLength * 9; // 5 = average char width, 28 = horizontal padding
+  
 
   return (
     <View style={styles.container}>
@@ -99,6 +119,10 @@ export default function OrderDetailScreen() {
                     style={[
                       styles.statusChip,
                       isActive && styles.statusChipActive,
+                      {
+                        minWidth: STATUS_BUTTON_WIDTH,
+                        alignItems: "center",
+                      },
                     ]}
                   >
                     <Text
@@ -161,7 +185,7 @@ const styles = StyleSheet.create({
     borderColor: Colors.light.tint,
     paddingVertical: 8,
     paddingHorizontal: 14,
-    borderRadius: 20,
+    borderRadius: 8,
     backgroundColor: "transparent",
   },
 

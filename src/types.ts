@@ -5,7 +5,7 @@ export type Product = {
   price: number;
 };
 
-export type ProductSize = 'S' | 'M' | 'L' | 'XL';
+export type ProductSize = "S" | "M" | "L" | "XL";
 
 export type CartItem = {
   id: string;
@@ -15,13 +15,19 @@ export type CartItem = {
   quantity: number;
 };
 
-export type OrderStatus = 'New' | 'Cooking' | 'Delivering' | 'Delivered';
+export type OrderStatus =
+  | "New"
+  | "Cooking"
+  | "Delivering"
+  | "Delivered"
+  | "Cancelled";
 
 export const OrderStatusList: OrderStatus[] = [
-  'New',
-  'Cooking',
-  'Delivering',
-  'Delivered',
+  "New",
+  "Cooking",
+  "Delivering",
+  "Delivered",
+  "Cancelled",
 ];
 
 export type Order = {
@@ -46,4 +52,3 @@ export type Profile = {
   id: string;
   group: string;
 };
-
