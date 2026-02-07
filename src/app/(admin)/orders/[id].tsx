@@ -1,6 +1,6 @@
 import { Stack, useLocalSearchParams } from "expo-router";
 import { useCallback, useMemo } from "react";
-import { FlatList, Pressable, Text, View } from "react-native";
+import { FlatList, Pressable, ScrollView, Text, View } from "react-native";
 
 import orders from "@/assets/data/orders";
 import OrderListItem from "@/src/components/OrderListItem";
@@ -90,7 +90,11 @@ export default function OrderDetailScreen() {
         ListFooterComponent={() => (
           <>
             <Text style={{ fontWeight: "bold" }}>Status</Text>
-            <View style={{ flexDirection: "row", gap: 5 }}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ gap: 5, paddingVertical: 10 }}
+            >
               {OrderStatusList.map((status) => (
                 <Pressable
                   key={status}
@@ -100,7 +104,6 @@ export default function OrderDetailScreen() {
                     borderWidth: 1,
                     padding: 10,
                     borderRadius: 5,
-                    marginVertical: 10,
                     backgroundColor:
                       orderFetched.status === status
                         ? Colors.light.tint
@@ -119,7 +122,7 @@ export default function OrderDetailScreen() {
                   </Text>
                 </Pressable>
               ))}
-            </View>
+            </ScrollView>
           </>
         )}
       />
