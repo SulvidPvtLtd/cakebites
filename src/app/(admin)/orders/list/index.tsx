@@ -6,7 +6,7 @@ import { FlatList } from "react-native";
 export default function OrdersScreen() {
   return (
     <>
-      <Stack.Screen options={{ title: "Admin Orders" }} />
+      <Stack.Screen options={{ title: "Index" }} />
       <FlatList
         data={orders}
         contentContainerStyle={{ gap: 10, padding: 10 }}
