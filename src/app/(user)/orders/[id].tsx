@@ -1,12 +1,6 @@
 import { Stack, useLocalSearchParams } from "expo-router";
 import { useCallback, useMemo } from "react";
-import {
-  FlatList,
-  Text,
-  View,
-  Pressable,
-  StyleSheet,
-} from "react-native";
+import { FlatList, StyleSheet, Text, View } from "react-native";
 
 import orders from "@/assets/data/orders";
 import OrderListItem from "@/src/components/OrderListItem";
@@ -14,20 +8,10 @@ import PlacedOrderListItems from "@/src/components/PlacedOrderListItems";
 import Colors from "@/src/constants/Colors";
 import { OrderStatusList } from "@/src/types";
 
-/* -------------------------------------------------- */
-/* Strong domain typing derived from source data       */
-/* -------------------------------------------------- */
-
 type Order = (typeof orders)[number];
 type OrderItems = NonNullable<Order["order_items"]>;
 type OrderItem = OrderItems[number];
-
-/** Status typing (no implicit any) */
 type OrderStatus = (typeof OrderStatusList)[number];
-
-/* -------------------------------------------------- */
-/* Screen                                             */
-/* -------------------------------------------------- */
 
 export default function OrderDetailScreen() {
   /**
@@ -70,29 +54,14 @@ export default function OrderDetailScreen() {
    */
   const orderItems: OrderItems = orderFetched.order_items ?? [];
 
-  /* -------------------------------------------------- */
-  /* Optimised FlatList render function                 */
-  /* -------------------------------------------------- */
-
   const renderPlacedItem = useCallback(
     ({ item }: { item: OrderItem }) => <PlacedOrderListItems item={item} />,
     [],
   );
 
-  
-  // Status width calculation
-
-  const maxStatusLength = Math.max(
-    ...OrderStatusList.map((s: OrderStatus) => s.length),
-  );
-
-  // Adaptive uniform width (auto fits longest text)
-  const STATUS_BUTTON_WIDTH = maxStatusLength * 9; // 5 = average char width, 28 = horizontal padding
-  
-
   return (
     <View style={styles.container}>
-      <Stack.Screen options={{ title: `Order #${id}` }} />
+      <Stack.Screen options={{ title: `User Order #${id}` }} />
 
       {/* Order summary */}
       <OrderListItem order={orderFetched} />
@@ -104,47 +73,10 @@ export default function OrderDetailScreen() {
         renderItem={renderPlacedItem}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
-        ListFooterComponent={
-          <View style={styles.statusSection}>
-            <Text style={styles.statusTitle}>Status</Text>
-
-            <View style={styles.statusContainer}>
-              {OrderStatusList.map((status: OrderStatus) => {
-                const isActive = orderFetched.status === status;
-
-                return (
-                  <Pressable
-                    key={status}
-                    onPress={() => console.warn("Update status")}
-                    style={[
-                      styles.statusChip,
-                      isActive && styles.statusChipActive,
-                      {
-                        minWidth: STATUS_BUTTON_WIDTH,
-                        alignItems: "center",
-                      },
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.statusText,
-                        isActive && styles.statusTextActive,
-                      ]}
-                    >
-                      {status}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-          </View>
-        }
       />
     </View>
   );
 }
-
-
 
 const styles = StyleSheet.create({
   container: {
@@ -185,7 +117,7 @@ const styles = StyleSheet.create({
     borderColor: Colors.light.tint,
     paddingVertical: 8,
     paddingHorizontal: 14,
-    borderRadius: 8,
+    borderRadius: 20,
     backgroundColor: "transparent",
   },
 

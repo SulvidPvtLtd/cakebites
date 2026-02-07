@@ -1,6 +1,6 @@
+import { Stack, useLocalSearchParams } from "expo-router";
 import { useCallback, useMemo } from "react";
 import { FlatList, Pressable, Text, View } from "react-native";
-import { Stack, useLocalSearchParams } from "expo-router";
 
 import orders from "@/assets/data/orders";
 import OrderListItem from "@/src/components/OrderListItem";
@@ -67,24 +67,18 @@ export default function OrderDetailScreen() {
   /* -------------------------------------------------- */
 
   const renderPlacedItem = useCallback(
-    ({ item }: { item: OrderItem }) => (
-      <PlacedOrderListItems item={item} />
-    ),
-    []
+    ({ item }: { item: OrderItem }) => <PlacedOrderListItems item={item} />,
+    [],
   );
 
- 
-    /* -------------------------------------------------- */ 
-    // UI
-    /* -------------------------------------------------- */
- 
+
 
   return (
     <View style={{ padding: 10, gap: 10 }}>
       <Stack.Screen options={{ title: `Admin Order #${id}` }} />
 
       {/* Order summary */}
-      <OrderListItem order={orderFetched} />
+      <OrderListItem order={orderFetched} routeGroup="admin" />
 
       {/* Items in the order */}
       <FlatList<OrderItem>
@@ -95,43 +89,41 @@ export default function OrderDetailScreen() {
         showsVerticalScrollIndicator={false}
         ListFooterComponent={() => (
           <>
-          <Text style={{ fontWeight: 'bold' }}>Status</Text>
-          <View style={{ flexDirection: 'row', gap: 5 }}>
-            {OrderStatusList.map((status) => (
-              <Pressable
-                key={status}
-                onPress={() => console.warn('Update status')}
-                style={{
-                  borderColor: Colors.light.tint,
-                  borderWidth: 1,
-                  padding: 10,
-                  borderRadius: 5,
-                  marginVertical: 10,
-                  backgroundColor:
-                    orderFetched.status === status
-                      ? Colors.light.tint
-                      : 'transparent',
-                }}
-              >
-                
-
-                <Text
-                
+            <Text style={{ fontWeight: "bold" }}>Status</Text>
+            <View style={{ flexDirection: "row", gap: 5 }}>
+              {OrderStatusList.map((status) => (
+                <Pressable
+                  key={status}
+                  onPress={() => console.warn("Update status")}
                   style={{
-                    color:
-                      orderFetched.status === status ? 'white' : Colors.light.tint,
+                    borderColor: Colors.light.tint,
+                    borderWidth: 1,
+                    padding: 10,
+                    borderRadius: 5,
+                    marginVertical: 10,
+                    backgroundColor:
+                      orderFetched.status === status
+                        ? Colors.light.tint
+                        : "transparent",
                   }}
                 >
-                  
-                  {status}
-                </Text>
-              </Pressable>
-            ))}
-          </View>
-        </>
-
+                  <Text
+                    style={{
+                      color:
+                        orderFetched.status === status
+                          ? "white"
+                          : Colors.light.tint,
+                    }}
+                  >
+                    {status}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          </>
         )}
       />
     </View>
   );
 }
+

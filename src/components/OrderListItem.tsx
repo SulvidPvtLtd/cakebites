@@ -3,19 +3,29 @@ import React from 'react';
 import { Order } from '../types';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import dayjs from 'dayjs';
-import { Link, useSegments } from 'expo-router';
+import { Link } from 'expo-router';
 
 dayjs.extend(relativeTime);
 
 type OrderListItemProps = {
   order: Order;
+  /**
+   * Explicitly control which route group to use for details navigation.
+   * This is more defensive than inferring from segments because it won't
+   * silently break if screens are moved or nested differently.
+   */
+  routeGroup?: 'admin' | 'user';
 };
 
-const OrderListItem = ({ order }: OrderListItemProps) => {
-  const segments = useSegments();
+const OrderListItem = ({ order, routeGroup = 'user' }: OrderListItemProps) => {
+  // Use the caller's explicit intent rather than deriving from navigation state.
+  const href =
+    routeGroup === 'admin'
+      ? `/(admin)/orders/${order.id}`
+      : `/(user)/orders/${order.id}`;
 
   return (
-    <Link href={`/(user)/orders/${order.id}`} asChild>
+    <Link href={href} asChild>
       <Pressable style={styles.container}>
         <View>
           <Text style={styles.title}>Order #{order.id}</Text>
