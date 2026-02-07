@@ -7,6 +7,7 @@ import {
   StyleSheet,
   Pressable,
   useColorScheme,
+  Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -88,6 +89,10 @@ export default function CartScreen() {
 
         {/* Checkout */}
         <Pressable
+          onPress={() => {
+            // Only show the checkout confirmation when the user actually taps the button.
+            Alert.alert('Order checked out');
+          }}
           style={[
             styles.checkoutButton,
             { backgroundColor: theme.tint },

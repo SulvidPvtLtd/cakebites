@@ -1,6 +1,6 @@
 import { Stack, useLocalSearchParams } from "expo-router";
-import { useCallback, useMemo } from "react";
-import { FlatList, StyleSheet, Text, View } from "react-native";
+import { useCallback, useEffect, useMemo } from "react";
+import { Alert, FlatList, StyleSheet, Text, View } from "react-native";
 
 import orders from "@/assets/data/orders";
 import OrderListItem from "@/src/components/OrderListItem";
@@ -26,6 +26,12 @@ export default function OrderDetailScreen() {
     if (!id) return undefined;
     return orders.find((order) => order.id.toString() === id);
   }, [id]);
+
+  // Notify the user once they've landed on the order details screen.
+  useEffect(() => {
+    if (!id || !orderFetched) return;
+    Alert.alert("Order checked out");
+  }, [id, orderFetched]);
 
   /* -------------------------------------------------- */
   /* Defensive early exits                              */
