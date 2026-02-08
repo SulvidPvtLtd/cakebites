@@ -517,4 +517,119 @@ On the ImagePicker function, you can set mediaTypes to either both video and ima
 
 `mediaTypes: ['images', 'videos'],`
 
+# link to Top Tab Navigation:
+
+`https://reactnavigation.org/docs/material-top-tab-navigator?config=static`
+
+# Getting Started with SupaBase
+
+## Create an new project
+
+1. [Create a new project](https://supabase.com/dashboard) in the Supabase Dashboard
+2. Set up the database schema based on **The User Management Starter** Template from the SQL Editor
+3. Get the API Keys from the API Settings page
+
+# Configure Supabase in our project
+
+1. Install dependencies
+
+`npm install @supabase/supabase-js`
+`npm install react-native-elements @react-native-async-storage/async-storage react-native-url-polyfill`
+`npx expo install expo-secure-store`
+
+2. Configure Supbase inside a new `src/lib/supabase.ts` file
+
+import 'react-native-url-polyfill/auto';
+import \* as SecureStore from 'expo-secure-store';
+import { createClient } from '@supabase/supabase-js';
+
+const ExpoSecureStoreAdapter = {
+getItem: (key: string) => {
+return SecureStore.getItemAsync(key);
+},
+setItem: (key: string, value: string) => {
+SecureStore.setItemAsync(key, value);
+},
+removeItem: (key: string) => {
+SecureStore.deleteItemAsync(key);
+},
+};
+
+const supabaseUrl = 'YOUR_REACT_NATIVE_SUPABASE_URL';
+const supabaseAnonKey = 'YOUR_REACT_NATIVE_SUPABASE_ANON_KEY';
+
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+auth: {
+storage: ExpoSecureStoreAdapter as any,
+autoRefreshToken: true,
+persistSession: true,
+detectSessionInUrl: false,
+},
+});
+
+Get you anon key from Supabase
+
+https://supabase.com/dashboard/project/YOUR PROJECT ID/asettings/api-keys
+
+# Authentication
+
+## Sign up
+
+Let’s create a new account on the Sign up screen `app/(auth)/sign-up.tsx`
+
+```tsx
+const [loading, setLoading] = useState(false);
+
+async function signUpWithEmail() {
+  setLoading(true);
+  const { error } = await supabase.auth.signUp({
+    email: email,
+    password: password,
+  });
+
+  if (error) Alert.alert(error.message);
+  setLoading(false);
+}
+```
+
+You can disable the required email verification step from:
+supabase Dashboard → Authentication → Sign In / ProvidersProviders → Email → Confirm email
+
+This can be a temporal measure when you want to test app without eamil authentication workflow.
+
+- You can prevent multiple execution of the same request by using `loading` state variable and `setLoading` function. For example in our signup :
+
+```tsx
+async function signUpWithEmail() {
+  setLoading(true); // sign up starts
+  //console.warn('sign up with email');
+
+  const signupResponse = await supabase.auth.signUp({ email, password });
+
+  if (signupResponse.error) {
+    Alert.alert("Error signing up", signupResponse.error.message);
+  } else {
+    Alert.alert(
+      "Success",
+      "Account created successfully! Please check your email to confirm your account.",
+    );
+  }
+
+  setLoading(false); // sign up ends
+}
+
+// the Button component state is disbaled when loading starts and then reset when loading ends.
+
+<Button
+  onPress={signUpWithEmail}
+  disabled={loading}
+  text={loading ? "Creating account..." : "Create account"}
+/>;
+```
+
+Once you manage to sign in. 
+The user will automatically have a session.
+We will need to fetch this session to use it in the app.
+
+`const { data: session } = useSession();`
 
