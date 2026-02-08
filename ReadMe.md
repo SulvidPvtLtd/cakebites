@@ -627,9 +627,94 @@ async function signUpWithEmail() {
 />;
 ```
 
-Once you manage to sign in. 
+Once you manage to sign in.
 The user will automatically have a session.
 We will need to fetch this session to use it in the app.
 
 `const { data: session } = useSession();`
+
+# Authentication Provider
+
+We have to store the information about the user session somewhere globally, because we will need it in different places in our app. We can use the `useSession` hook to get the session information.
+
+1. Let’s Create the providers/AuthProvider.tsx
+
+The Auth Provider takes care of session management globbally. It should export the user session, that we can get by calling the `useSession` hook.
+
+`const { data: { session } } = await supabase.auth.getSession();`
+
+2. We can also subscribe to session changes using
+
+supabase.auth.onAuthStateChange((\_event, session) => {
+setSession(session);
+});
+
+The Application layout should be wrapped with the AuthProvider component. This makes authentication state globally available to your entire app.
+
+Global access to auth state
+
+So any component can know:
+
+Is the user logged in?
+
+Who is the user?
+
+What is their role?
+
+Is auth still loading?
+
+```tsx: src/app/_layout.tsx
+
+<AuthProvider>
+  <CartProvider>
+          {/*Everthing in here is the Chidren of the CartProvider*/}
+          <Stack>
+            <Stack.Screen name="index" options={{ headerShown: false }} />
+
+            <Stack.Screen name="(admin)" options={{ headerShown: false }} />
+            <Stack.Screen name="(user)" options={{ headerShown: false }} />
+            <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+            <Stack.Screen name="cart" options={{ presentation: "modal" }} />
+          </Stack>
+        </CartProvider>
+</AuthProvider>
+
+```
+
+# Group based navigation
+
+How can we navigate to different groups, based on the user group?
+
+This can be achived by keeping track of Profile state
+
+Besides keeping track of user sessions in the AuthProvider. We also need to keep track of the user profile.
+
+First, let’s add a new column `group` in our `profiles` table on Supabase.
+
+Now, inside the `AuthProvider` we can also keep track of the user profile
+
+```tsx
+if (session) {
+  // fetch profile
+  const { data } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("id", session.user.id)
+    .single();
+  setProfile(data || null);
+}
+```
+
+I will make the code follow best enterprise practice version with:
+
+cleanup subscription
+✅ proper unsubscribe
+✅ error handling
+✅ loading race condition protection
+✅ profile caching
+✅ role guard helpers
+✅ memoized context
+✅ strict typing
+✅ SSR-safe pattern
+✅ auth refresh handling
 

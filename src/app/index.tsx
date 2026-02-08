@@ -1,22 +1,25 @@
-import { View, Text } from 'react-native';
-import React from 'react';
-import Button from '../components/Button';
-import { Link } from 'expo-router';
+import { useAuth } from "@providers/AuthProvider";
+import { Redirect } from "expo-router";
+import React from "react";
+import { ActivityIndicator } from "react-native";
 
 const index = () => {
-  return (
-    <View style={{ flex: 1, justifyContent: 'center', padding: 10 }}>
-      <Link href={'/(user)'} asChild>
-        <Button text="User" />
-      </Link>
-      <Link href={'/(admin)'} asChild>
-        <Button text="Admin" />
-      </Link>
-      <Link href={'/(auth)/sign-in'} asChild>
-        <Button text="sign in" />
-      </Link>
-    </View>
-  );
+  const { session, loading, isAdmin } = useAuth();
+  // console.log(session); // check if we have access to the session.
+  if (loading) {
+    return <ActivityIndicator />;
+  }
+  if (!session) {
+    return <Redirect href={"/(auth)/sign-in"} />;
+  }
+
+  if (isAdmin) {
+    return <Redirect href={"/(admin)"} />;
+  }
+
+  return <Redirect href={"/(user)"} />;
+
+  return null;
 };
 
 export default index;
