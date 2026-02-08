@@ -1,10 +1,13 @@
 import FontAwesome from "@expo/vector-icons/FontAwesome";
-import { Tabs } from "expo-router";
+import { Redirect, Tabs } from "expo-router";
 import React from "react";
+import { ActivityIndicator, Alert, View } from "react-native";
 
 import { useClientOnlyValue } from "../../components/useClientOnlyValue";
 import { useColorScheme } from "../../components/useColorScheme";
 import Colors from "../../constants/Colors";
+import { useAuth } from "@/src/providers/AuthProvider";
+import { supabase } from "@/src/lib/supabase";
 
 // You can explore the built-in icon families and icons on the web at https://icons.expo.fyi/
 function TabBarIcon(props: {
@@ -16,6 +19,23 @@ function TabBarIcon(props: {
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
+  const { session, loading, isAdmin } = useAuth();
+
+  if (loading) {
+    return (
+      <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+        <ActivityIndicator />
+      </View>
+    );
+  }
+
+  if (!session) {
+    return <Redirect href="/(auth)/sign-in" />; // Redirect to the login page if the user is not authenticated
+  }
+
+  if (isAdmin) {
+    return <Redirect href="/(admin)" />; // Admins should not access user tabs
+  }
 
   return (
     <Tabs
@@ -51,6 +71,34 @@ export default function TabLayout() {
           title: "User Orders",
           headerShown: false,
           tabBarIcon: ({ color }) => <TabBarIcon name="list" color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="log-out"
+        options={{
+          title: "Log out",
+          tabBarIcon: ({ color }) => (
+            <TabBarIcon name="sign-out" color={color} />
+          ),
+        }}
+        listeners={{
+          tabPress: (e) => {
+            e.preventDefault();
+            Alert.alert(
+              "Log out",
+              "Are you sure you want to log out?",
+              [
+                { text: "Cancel", style: "cancel" },
+                {
+                  text: "Log out",
+                  style: "destructive",
+                  onPress: () => {
+                    supabase.auth.signOut();
+                  },
+                },
+              ]
+            );
+          },
         }}
       />
     </Tabs>
