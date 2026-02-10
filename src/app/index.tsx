@@ -4,16 +4,16 @@ import React from "react";
 import { ActivityIndicator } from "react-native";
 
 const index = () => {
-  const { session, loading, isAdmin } = useAuth();
+  const { session, loading, profile, isAdmin } = useAuth();
   // console.log(session); // check if we have access to the session.
   if (loading) {
     return <ActivityIndicator />;
   }
   if (!session) {
-    return <Redirect href={"/(auth)/sign-in"} />;
+    return <Redirect href={"/sign-in"} />;
   }
 
-  if (isAdmin) {
+  if (isAdmin || profile?.group === "ADMIN") {
     return <Redirect href={"/(admin)"} />;
   }
 

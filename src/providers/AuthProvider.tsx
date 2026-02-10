@@ -36,12 +36,12 @@ export default function AuthProvider({ children }: PropsWithChildren) {
         .from("profiles")
         .select("*")
         .eq("id", userId)
-        .maybeSingle();
+        .single();
       if (error) {
         console.log("Profile fetch error:", error.message);
         return null;
       }
-      return data ?? null;
+      return data || null;
     };
 
     // UseEffect expects nothing or a cleanup function and can not be async, so we define an async function inside it and call it immediately.
@@ -84,7 +84,7 @@ export default function AuthProvider({ children }: PropsWithChildren) {
 
 
   // console.log("AuthProvider session:", session); console.log(profile);
-  console.log(profile);
+  // console.log(profile);
 
   return (
     <AuthContext.Provider
