@@ -27,11 +27,7 @@ export default function OrderDetailScreen() {
     return orders.find((order) => order.id.toString() === id);
   }, [id]);
 
-  // Notify the user once they've landed on the order details screen.
-  useEffect(() => {
-    if (!id || !orderFetched) return;
-    Alert.alert("Order checked out");
-  }, [id, orderFetched]);
+  // No checkout alert here: these are historical/paid orders.
 
   /* -------------------------------------------------- */
   /* Defensive early exits                              */

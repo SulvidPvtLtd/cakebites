@@ -65,6 +65,7 @@ function RootLayoutNav() {
           {/*Everthing in here is the Chidren of the CartProvider*/}
           <Stack>
             <Stack.Screen name="index" options={{ headerShown: false }} />
+            <Stack.Screen name="role-select" options={{ headerShown: false }} />
 
             <Stack.Screen name="(admin)" options={{ headerShown: false }} />
             <Stack.Screen name="(user)" options={{ headerShown: false }} />
