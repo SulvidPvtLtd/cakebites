@@ -22,10 +22,9 @@ const SignInScreen = () => {
 
     if (signupResponse.error) {
       Alert.alert("Error signing in", signupResponse.error.message);
-    } 
-    // else {
-    //   Alert.alert("You are signed in!", "Hold on whilst we redirect you to the home page.");
-    // }
+    } else {
+      Alert.alert("You are signed in!", "Hold on whilst we redirect you to the home page.");
+    }
 
     setLoading(false); // sign up ends
   }
