@@ -772,6 +772,20 @@ The next step is to fetch the data from the table and display it in the app.
 We are going to query the products table and fetch all the data from it in the menu screen.
 We will start with the user side.
 
+`User/menu/index.tsx`
+
+When the component mounts, we will query the products table and fetch all the data from it.
+Will achvie this by calling the useEffect hook.
+
+useEffect(() => {
+    const fetchProducts = async () => {
+      // Simulate fetching products from an API
+      const {} = await supabase.from("products").select("*");
+    };
+
+    fetchProducts();
+    
+  }, []); // useEffect run once on mount
 
 
 
