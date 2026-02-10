@@ -1,24 +1,21 @@
 import { useAuth } from "@providers/AuthProvider";
 import { Redirect, router } from "expo-router";
 import React from "react";
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import Colors from "@/src/constants/Colors";
 import { useColorScheme } from "@/src/components/useColorScheme";
 import { supabase } from "@/src/lib/supabase";
+import AuthLoadingFallback from "@/src/components/AuthLoadingFallback";
 
 export default function RoleSelect() {
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme ?? "light"];
-  const { session, loading, isAdmin } = useAuth();
+  const { session, loading, isAdmin, loadingTimedOut, refresh } = useAuth();
 
   if (loading) {
-    return (
-      <View style={styles.loading}>
-        <ActivityIndicator />
-      </View>
-    );
+    return <AuthLoadingFallback timedOut={loadingTimedOut} onRetry={refresh} />;
   }
 
   if (!session) {
@@ -80,11 +77,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     justifyContent: "center",
     gap: 16,
-  },
-  loading: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
   },
   title: {
     fontSize: 20,
