@@ -9,6 +9,7 @@ import {
 
 import Colors from "@constants/Colors";
 import Button from "@/src/components/Button";
+import useNetworkStatus from "@/src/hooks/useNetworkStatus";
 
 type AuthLoadingFallbackProps = {
   timedOut: boolean;
@@ -21,6 +22,7 @@ export default function AuthLoadingFallback({
 }: AuthLoadingFallbackProps) {
   const colorScheme = useColorScheme() ?? "light";
   const theme = Colors[colorScheme];
+  const { online } = useNetworkStatus();
 
   return (
     <View style={styles.container}>
@@ -30,6 +32,11 @@ export default function AuthLoadingFallback({
           <Text style={[styles.title, { color: theme.textPrimary }]}>
             Still loading...
           </Text>
+          {online === false && (
+            <Text style={[styles.subtitle, { color: theme.error }]}>
+              You appear to be offline.
+            </Text>
+          )}
           <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
             This is taking longer than expected. Check your connection and try
             again.
@@ -39,9 +46,16 @@ export default function AuthLoadingFallback({
           </View>
         </>
       ) : (
-        <Text style={[styles.title, { color: theme.textPrimary }]}>
-          Loading...
-        </Text>
+        <>
+          <Text style={[styles.title, { color: theme.textPrimary }]}>
+            Loading...
+          </Text>
+          {online === false && (
+            <Text style={[styles.subtitle, { color: theme.error }]}>
+              You appear to be offline.
+            </Text>
+          )}
+        </>
       )}
     </View>
   );
