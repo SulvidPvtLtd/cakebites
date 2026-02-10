@@ -718,4 +718,53 @@ cleanup subscription
 ✅ SSR-safe pattern
 ✅ auth refresh handling
 
-4:10:00
+# Mental Model of the AuthProvider:
+
+App starts
+↓
+Check session
+↓
+If logged in → load profile
+↓
+Store everything globally
+↓
+Listen for login/logout changes
+↓
+Update everything automatically
+
+# Product CRUD
+
+Will need to setup the Products database table, and will query and mutate the data from our React Native app.
+
+1. Create the Products table : Let’s start by creating the products table in the Supabse Dashboard.
+
+- The product table will be based on the data we have in the `assets/data/products.ts` file or based on the data from the types.
+
+Types:
+
+export type Product = {
+id: number;
+image: string | null;
+name: string;
+price: number;
+};
+
+On supabase: Database -> Tables -> New Table -> products.
+NB: Leave the Enable Row Level Security (RLS) option checked.
+
+- Create a table called `products` with the following columns:
+
+- id: int8
+- created_at: timestamp
+- image: text | null # This is nullable because some product may not have an image.
+- name: text
+- price: float4
+- description: text | null
+
+Now we have the table to query in table editor.
+
+products-> insert -> insert row -> 
+- leave the id blank. this will be auto created.
+- 
+
+The next step is to fetch the data from the table and display it in the app.
