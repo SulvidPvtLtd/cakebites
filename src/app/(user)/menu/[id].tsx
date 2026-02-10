@@ -9,6 +9,7 @@ import {
 } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   Animated,
   Pressable,
   ScrollView,
@@ -53,7 +54,7 @@ export default function ProductDetailsScreen() {
   }, [id]);
 
   if (!productId) {
-    return <Redirect href="/(tabs)/menu" />;
+    return <Redirect href="/(user)/menu" />;
   }
 
   /* ---------------- Data ---------------- */
@@ -107,6 +108,7 @@ export default function ProductDetailsScreen() {
     try {
       setAdding(true);
       addItem(product, selectedSize);
+      Alert.alert('Added to Cart');
     } finally {
       // UX delay prevents accidental multi-taps
       setTimeout(() => setAdding(false), 300);

@@ -21,8 +21,14 @@ const OrderListItem = ({ order, routeGroup = 'user' }: OrderListItemProps) => {
   // Use the caller's explicit intent rather than deriving from navigation state.
   const href =
     routeGroup === 'admin'
-      ? `/(admin)/orders/${order.id}`
-      : `/(user)/orders/${order.id}`;
+      ? ({
+          pathname: '/(admin)/orders/[id]',
+          params: { id: String(order.id) },
+        } as const)
+      : ({
+          pathname: '/(user)/orders/[id]',
+          params: { id: String(order.id) },
+        } as const);
 
   return (
     <Link href={href} asChild>

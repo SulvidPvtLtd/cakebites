@@ -22,9 +22,9 @@ export default {
     textSecondary: '#666666',
 
     // States
-    error: '#D32F2F',
+    error: '#C62828',
     success: '#2E7D32',
-    warning: '#ED6C02',
+    warning: '#F57C00',
   },
 
   dark: {
