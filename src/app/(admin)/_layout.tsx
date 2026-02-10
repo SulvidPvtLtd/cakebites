@@ -19,7 +19,7 @@ function TabBarIcon(props: {
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
-  const { session, loading, isAdmin } = useAuth();
+  const { session, loading, isAdmin, activeGroup } = useAuth();
 
   if (loading) {
     return (
@@ -35,6 +35,14 @@ export default function TabLayout() {
 
   if (!isAdmin) {
     return <Redirect href="/(user)" />; // Non-admins go to user area
+  }
+
+  if (!activeGroup) {
+    return <Redirect href="/admin-choice" />;
+  }
+
+  if (activeGroup !== "ADMIN") {
+    return <Redirect href="/(user)" />;
   }
 
   return (
@@ -73,6 +81,14 @@ export default function TabLayout() {
           title: 'Admin Orders',
           headerShown: false,
           tabBarIcon: ({ color }) => <TabBarIcon name="list" color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="switch-mode"
+        options={{
+          title: 'Switch',
+          headerShown: false,
+          tabBarIcon: ({ color }) => <TabBarIcon name="exchange" color={color} />,
         }}
       />
       <Tabs.Screen

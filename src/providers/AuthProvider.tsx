@@ -6,6 +6,7 @@ import {
     PropsWithChildren,
     useContext,
     useEffect,
+    useRef,
     useState,
 } from "react";
 
@@ -15,6 +16,8 @@ type AuthData = {
   loading: boolean;
   profile: Profile | null;
   isAdmin: boolean;
+  activeGroup: "ADMIN" | "USER" | null;
+  setActiveGroup: (group: "ADMIN" | "USER" | null) => void;
 };
 
 const AuthContext = createContext<AuthData>({
@@ -22,12 +25,16 @@ const AuthContext = createContext<AuthData>({
   loading: true,
   profile: null,
   isAdmin: false,
+  activeGroup: null,
+  setActiveGroup: () => {},
 });
 
 export default function AuthProvider({ children }: PropsWithChildren) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true); // Track loading state
   const [profile, setProfile] = useState<Profile | null>(null); // Track user profile data
+  const [activeGroup, setActiveGroup] = useState<"ADMIN" | "USER" | null>(null);
+  const lastUserIdRef = useRef<string | null>(null);
 
   // Query the session to check if the user is logged in and set the user state accordingly
   useEffect(() => {
@@ -50,6 +57,13 @@ export default function AuthProvider({ children }: PropsWithChildren) {
         data: { session },
       } = await supabase.auth.getSession();
       setSession(session);
+      if (!session) {
+        lastUserIdRef.current = null;
+        setActiveGroup(null);
+      } else if (lastUserIdRef.current !== session.user.id) {
+        lastUserIdRef.current = session.user.id;
+        setActiveGroup(null);
+      }
 
       if (session) {
         const data = await fetchProfile(session.user.id);
@@ -68,6 +82,13 @@ export default function AuthProvider({ children }: PropsWithChildren) {
     } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setLoading(true);
       setSession(session);
+      if (!session) {
+        lastUserIdRef.current = null;
+        setActiveGroup(null);
+      } else if (lastUserIdRef.current !== session.user.id) {
+        lastUserIdRef.current = session.user.id;
+        setActiveGroup(null);
+      }
       if (session) {
         const data = await fetchProfile(session.user.id);
         setProfile(data);
@@ -82,13 +103,34 @@ export default function AuthProvider({ children }: PropsWithChildren) {
     };
   }, []); // The empty [] means: "Run this effect only once - on first render (mount), and never again."
 
+  useEffect(() => {
+    if (!session) {
+      if (activeGroup !== null) {
+        setActiveGroup(null);
+      }
+      return;
+    }
+
+    if (profile?.group && profile.group !== "ADMIN") {
+      if (activeGroup !== "USER") {
+        setActiveGroup("USER");
+      }
+    }
+  }, [session, profile?.group, activeGroup]);
 
   // console.log("AuthProvider session:", session); console.log(profile);
   // console.log(profile);
 
   return (
     <AuthContext.Provider
-      value={{ session, loading, profile, isAdmin: profile?.group === "ADMIN" }}
+      value={{
+        session,
+        loading,
+        profile,
+        isAdmin: profile?.group === "ADMIN",
+        activeGroup,
+        setActiveGroup,
+      }}
     >
       {children}
     </AuthContext.Provider>
