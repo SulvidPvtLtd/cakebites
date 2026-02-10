@@ -1,14 +1,13 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { Redirect, Tabs, router } from 'expo-router';
 import React from 'react';
-import { Alert } from 'react-native';
+import { ActivityIndicator, Alert, View } from 'react-native';
 
 import { useClientOnlyValue } from '../../components/useClientOnlyValue';
 import { useColorScheme } from '../../components/useColorScheme';
 import Colors from '../../constants/Colors';
 import { useAuth } from '@/src/providers/AuthProvider';
 import { supabase } from '@/src/lib/supabase';
-import AuthLoadingFallback from '@/src/components/AuthLoadingFallback';
 
 // You can explore the built-in icon families and icons on the web at https://icons.expo.fyi/
 function TabBarIcon(props: {
@@ -20,10 +19,14 @@ function TabBarIcon(props: {
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
-  const { session, loading, isAdmin, loadingTimedOut, refresh } = useAuth();
+  const { session, loading, isAdmin } = useAuth();
 
   if (loading) {
-    return <AuthLoadingFallback timedOut={loadingTimedOut} onRetry={refresh} />;
+    return (
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+        <ActivityIndicator />
+      </View>
+    );
   }
 
   if (!session) {
