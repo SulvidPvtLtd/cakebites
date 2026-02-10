@@ -763,8 +763,51 @@ NB: Leave the Enable Row Level Security (RLS) option checked.
 
 Now we have the table to query in table editor.
 
-products-> insert -> insert row -> 
+products-> insert -> insert row ->
+
 - leave the id blank. this will be auto created.
-- 
+-
 
 The next step is to fetch the data from the table and display it in the app.
+
+In Postgress, by default, no user is allowed to query anything unless the policy has been set to allow it.
+
+To enable someone to do something, go to the table editor in supabase and add the policy.
+These rules will depend on the level experience that you want for your users.
+
+`Add policy for ALL operations under the policy "Allow authenticated users ALL operations"`
+CREATE POLICY "Allow authenticated users ALL operations" ON "public.products" TO authenticated
+AS PERMISSIVE FOR ALL
+To authenticated
+USING (true)
+WITH CHECK (true);
+
+Instead of manually fetching data our self,
+
+useEffect(() => {
+const fetchProducts = async () => {
+// Simulate an API call to fetch products
+const { data, error } = await supabase.from('products').select('\*');
+console.log('Fetched products:', data);
+};
+fetchProducts();
+}, []);
+
+With this code above - The query should have failed initially, because the data is protected by Row Level Security policies on the PostgreSQL Database layer. By default, nobody has access to the table.
+
+We have to specify rules to give specific users granular access to the data.
+
+- [ ]  Create a new policy to allow authenticated users READ operations on the products table
+
+As you can see, we can easily query items in our components using supabase. But, there are still a lot of things that we have to manage ourself, such as loading states, error mesages, etc.
+
+We can use the a react query known as TanStack Query. It is a powerful tool for fetching and mutating data in React asynchronously.
+
+We will leverage the power of catching mechanism to keep the data in synch.
+For example when creating a new product, you can refresh the product list.
+
+[React Query](https://tanstack.com/query/latest) is a powerful state management and data fetching library that helps us query remote data. Besides helping us query data, manage the loading and error states, it also provides a caching mechanism for our local data. That will help us keep all the data in sync when things change in the application.
+
+`npm i @tanstack/react-query`
+
+
