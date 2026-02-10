@@ -769,6 +769,9 @@ products-> insert -> insert row ->
 
 The next step is to fetch the data from the table and display it in the app.
 
+We are going to query the products table and fetch all the data from it in the menu screen.
+We will start with the user side.
+
 
 
 
