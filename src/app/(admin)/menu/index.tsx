@@ -1,13 +1,24 @@
-import products from '@assets/data/products';
+import { useProductList } from '@/src/api/products';
 import ProductListItem from '@components/ProductListItem';
-import React from 'react';
-import { FlatList } from 'react-native';
+import { ActivityIndicator, FlatList, Text } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const GAP = 16;
 const NUM_COLUMNS = 2;
 
 export default function MenuScreen() {
+
+  const { data: products, error, isLoading } = useProductList();
+  
+    if(isLoading) {
+      return <ActivityIndicator size="large" color="midnightblue" />;  
+    }
+  
+    if(error) {
+      return <Text>Failed to return the product</Text>;
+    };
+  
+
   return (
     <SafeAreaView
       style={{ flex: 1 }}
