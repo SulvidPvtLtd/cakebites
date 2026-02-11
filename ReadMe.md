@@ -797,7 +797,7 @@ With this code above - The query should have failed initially, because the data 
 
 We have to specify rules to give specific users granular access to the data.
 
-- [ ]  Create a new policy to allow authenticated users READ operations on the products table
+- [ ] Create a new policy to allow authenticated users READ operations on the products table
 
 As you can see, we can easily query items in our components using supabase. But, there are still a lot of things that we have to manage ourself, such as loading states, error mesages, etc.
 
@@ -810,4 +810,58 @@ For example when creating a new product, you can refresh the product list.
 
 `npm i @tanstack/react-query`
 
+Create the client provider src/providers/QueryProvider.tsx
 
+```tsx
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { PropsWithChildren } from "react";
+
+const client = new QueryClient();
+
+export default function QueryProvider({ children }: PropsWithChildren) {
+  return <QueryClientProvider client={client}>{children}</QueryClientProvider>;
+}
+```
+
+Wrap it around our app in app/\_layout.tsx
+
+useQuery
+
+const {data, isLoading, error } = useQuery<Product[]>({
+queryKey: ['products'],
+queryFn: async () => {
+const { data, error } = await supabase.from('products').select('\*');
+if (error) {
+throw new Error(error.message);
+}
+return data;
+},
+});
+
+Create a separate folder for all our React Query requests
+
+The folder `api` will contain all helper functions for our React Query requests.
+
+In api folder in fthe index.ts file, instead of destructuring the useQuery above, we can return the data directly.
+
+```
+return useQuery<Product[]>({
+  queryKey: ['products'],
+  queryFn: async () => {
+    const { data, error } = await supabase.from('products').select('*');
+    if (error) {
+      throw new Error(error.message);
+    }
+    return data;
+  },
+});
+
+```
+
+and then import the useProductList hook in the MenuScreen component in the app/(user)/menu/index.tsx file.
+
+```tsx
+`const { data: products, error, isLoading } = useProductList();`;
+```
+
+Now we can use the data in our component.

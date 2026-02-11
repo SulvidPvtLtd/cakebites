@@ -1,23 +1,26 @@
-import { supabase } from '@/src/lib/supabase';
-import products from '@assets/data/products';
 import ProductListItem from '@components/ProductListItem';
 import React, { useEffect } from 'react';
-import { FlatList } from 'react-native';
+import { ActivityIndicator, FlatList , Text} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useProductList } from '@/src/api/products';
+
 
 const GAP = 16;
 const NUM_COLUMNS = 2;
 
 export default function MenuScreen() {
 
-  useEffect(() => {
-    const fetchProducts = async () => {
-      // Simulate an API call to fetch products
-      const { data, error } = await supabase.from('products').select('*');
-      console.log('Fetched products:', data);
-    };
-    fetchProducts();
-  }, []);
+  const { data: products, error, isLoading } = useProductList();
+
+  if(isLoading) {
+    return <ActivityIndicator size="large" color="midnightblue" />;  
+  }
+
+  if(error) {
+    return <Text>Failed to return the product</Text>;
+  };
+
+
 
   return (
     <SafeAreaView
@@ -26,7 +29,8 @@ export default function MenuScreen() {
     >
       <FlatList
         key={`columns-${NUM_COLUMNS}`}
-        data={products}
+        // data={products} // This is data from the device dummy data.
+        data={products} // This is data from the supabase database.
         renderItem={({ item }) => (
           <ProductListItem
             product={item}
