@@ -38,6 +38,7 @@ const AVAILABLE_SIZES: readonly ProductSize[] = ['S', 'M', 'L', 'XL'];
 
 export default function ProductDetailsScreen() {
   const { id } = useLocalSearchParams<ProductDetailsParams>();
+  
   const { width } = useWindowDimensions();
   const colorScheme = useColorScheme() ?? 'light';
   const theme = Colors[colorScheme];

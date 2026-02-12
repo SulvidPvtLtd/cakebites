@@ -54,7 +54,7 @@ export default function ProductDetailsScreen() {
   }, [idString]);
 
   /* ---------------- Data ---------------- */
-  const { data: product } = useProduct(productId ?? -1);
+  const { data: product, error, isLoading } = useProduct(productId ?? -1);
 
   /* ---------------- State ---------------- */
 
