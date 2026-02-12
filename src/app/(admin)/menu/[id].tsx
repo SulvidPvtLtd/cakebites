@@ -1,7 +1,6 @@
 // src/app/(tabs)/menu/[id].tsx
 import { Link, Redirect, Stack, useLocalSearchParams } from 'expo-router';
 import {
-  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -53,13 +52,10 @@ export default function ProductDetailsScreen() {
     return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
   }, [id]);
 
-  if (!productId) {
-    return <Redirect href="/(admin)/menu" />;
-  }
-
   /* ---------------- Data ---------------- */
 
   const product = useMemo(() => {
+    if (!productId) return null;
     return products.find((p) => p.id === productId) ?? null;
   }, [productId]);
 
@@ -86,6 +82,10 @@ export default function ProductDetailsScreen() {
 
   /* ---------------- Guards ---------------- */
 
+  if (!productId) {
+    return <Redirect href="/(admin)/menu" />;
+  }
+
   if (!product) {
     return (
       <View style={[styles.center, { backgroundColor: theme.background }]}>
@@ -101,7 +101,7 @@ export default function ProductDetailsScreen() {
 
   /* ---------------- Actions ---------------- */
 
-  const handleAddToCart = useCallback(() => {
+  const handleAddToCart = () => {
     if (adding) return;
     if (!product) return;
     // console.warn('Add to Cart: ', product, selectedSize );
@@ -112,7 +112,7 @@ export default function ProductDetailsScreen() {
       // UX delay prevents accidental multi-taps
       setTimeout(() => setAdding(false), 300);
     }
-  }, [adding, addItem, product, selectedSize]);
+  };
 
   /* ---------------- UI ---------------- */
 
