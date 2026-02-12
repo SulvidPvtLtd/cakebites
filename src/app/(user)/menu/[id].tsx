@@ -1,7 +1,6 @@
 // src/app/(tabs)/menu/[id].tsx
 import { Redirect, Stack, useLocalSearchParams } from 'expo-router';
 import {
-  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -19,12 +18,12 @@ import {
   View,
 } from 'react-native';
 
-import products from '@/assets/data/products';
 import Button from '@/src/components/Button';
 import { useCart } from '@/src/providers/CartProvider';
 import { ProductSize } from '@/src/types';
 import { defaultPizzaImage } from '@components/ProductListItem';
 import Colors from '@constants/Colors';
+import { useProduct } from '@/src/api/products';
 
 type ProductDetailsParams = {
   id?: string;
@@ -37,7 +36,9 @@ type ProductDetailsParams = {
 const AVAILABLE_SIZES: readonly ProductSize[] = ['S', 'M', 'L', 'XL'];
 
 export default function ProductDetailsScreen() {
-  const { id } = useLocalSearchParams<ProductDetailsParams>();
+  const { id: idParam } = useLocalSearchParams<ProductDetailsParams>();
+  const idString = typeof idParam === 'string' ? idParam : idParam?.[0];
+
   const { width } = useWindowDimensions();
   const colorScheme = useColorScheme() ?? 'light';
   const theme = Colors[colorScheme];
@@ -47,20 +48,13 @@ export default function ProductDetailsScreen() {
   /* ---------------- Validation ---------------- */
 
   const productId = useMemo(() => {
-    if (!id) return null;
-    const parsed = Number(id);
+    if (!idString) return null;
+    const parsed = Number(idString);
     return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
-  }, [id]);
-
-  if (!productId) {
-    return <Redirect href="/(tabs)/menu" />;
-  }
+  }, [idString]);
 
   /* ---------------- Data ---------------- */
-
-  const product = useMemo(() => {
-    return products.find((p) => p.id === productId) ?? null;
-  }, [productId]);
+  const { data: product } = useProduct(productId ?? -1);
 
   /* ---------------- State ---------------- */
 
@@ -85,6 +79,10 @@ export default function ProductDetailsScreen() {
 
   /* ---------------- Guards ---------------- */
 
+  if (!productId) {
+    return <Redirect href="/(user)/menu" />;
+  }
+
   if (!product) {
     return (
       <View style={[styles.center, { backgroundColor: theme.background }]}>
@@ -100,7 +98,7 @@ export default function ProductDetailsScreen() {
 
   /* ---------------- Actions ---------------- */
 
-  const handleAddToCart = useCallback(() => {
+  const handleAddToCart = () => {
     if (adding) return;
     if (!product) return;
     // console.warn('Add to Cart: ', product, selectedSize );
@@ -111,7 +109,7 @@ export default function ProductDetailsScreen() {
       // UX delay prevents accidental multi-taps
       setTimeout(() => setAdding(false), 300);
     }
-  }, [adding, addItem, product, selectedSize]);
+  };
 
   /* ---------------- UI ---------------- */
 

@@ -32,12 +32,23 @@ export const useProductList = () => {
     });
 };
 
+export const useProduct = (id: number) => {
+     return useQuery({
+        // Define the object with some options.
+        queryKey: ['products', id], // The key to identify the query to the products with id = 1, =2,=3 etc.
+        enabled: Number.isFinite(id) && id > 0,
+        queryFn: async () => {
+        const { data, error } = await supabase
+            .from('products')
+            .select('*')  // select all columns from the products table
+            .eq('id', id) // filter by id
+            .single();   // return a single row instead of an array
+        if (error) {
+            //  console.error('Error fetching products:', error);
+            throw new Error(error.message);
+        }
+        return data;
+        }
 
-  // useEffect(() => {
-  //   const fetchProducts = async () => {
-  //     // Simulate an API call to fetch products
-  //     const { data, error } = await supabase.from('products').select('*');
-  //     console.log('Fetched products:', data);
-  //   };
-  //   fetchProducts();
-  // }, []);
+    });
+};
