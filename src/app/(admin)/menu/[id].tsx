@@ -18,7 +18,7 @@ import {
   View,
 } from 'react-native';
 
-import products from '@/assets/data/products';
+import { useProduct } from '@/src/api/products';
 import Button from '@/src/components/Button';
 import { useCart } from '@/src/providers/CartProvider';
 import { ProductSize } from '@/src/types';
@@ -37,7 +37,8 @@ type ProductDetailsParams = {
 const AVAILABLE_SIZES: readonly ProductSize[] = ['S', 'M', 'L', 'XL'];
 
 export default function ProductDetailsScreen() {
-  const { id } = useLocalSearchParams<ProductDetailsParams>();
+  const { id: idParam } = useLocalSearchParams<ProductDetailsParams>();
+  const idString = typeof idParam === 'string' ? idParam : idParam?.[0];
   
   const { width } = useWindowDimensions();
   const colorScheme = useColorScheme() ?? 'light';
@@ -48,17 +49,13 @@ export default function ProductDetailsScreen() {
   /* ---------------- Validation ---------------- */
 
   const productId = useMemo(() => {
-    if (!id) return null;
-    const parsed = Number(id);
+    if (!idString) return null;
+    const parsed = Number(idString);
     return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
-  }, [id]);
+  }, [idString]);
 
   /* ---------------- Data ---------------- */
-
-  const product = useMemo(() => {
-    if (!productId) return null;
-    return products.find((p) => p.id === productId) ?? null;
-  }, [productId]);
+  const { data: product } = useProduct(productId ?? -1);
 
   /* ---------------- State ---------------- */
 
@@ -124,7 +121,7 @@ export default function ProductDetailsScreen() {
         options={{
           title: "Menu",
           headerRight: () => (
-            <Link href={`/(admin)/menu/create?id=${id}`} asChild>
+            <Link href={`/(admin)/menu/create?id=${productId}`} asChild>
               <Pressable>
                 {({ pressed }) => (
                   <FontAwesome
@@ -185,6 +182,22 @@ export default function ProductDetailsScreen() {
           <Text style={[styles.price, { color: theme.tint }]}>
             ${product.price.toFixed(2)}
           </Text>
+
+          <Text
+            numberOfLines={expanded ? undefined : 2}
+            style={[styles.description, { color: theme.textSecondary }]}
+          >
+            {product.description?.trim() || 'No description available.'}
+          </Text>
+
+          <Pressable
+            onPress={() => setExpanded((prev) => !prev)}
+            accessibilityRole="button"
+          >
+            <Text style={[styles.readMore, { color: theme.tint }]}>
+              {expanded ? 'Show Less' : 'Show More'}
+            </Text>
+          </Pressable>
         </View>
       
     </View>
@@ -257,6 +270,11 @@ const styles = StyleSheet.create({
   description: {
     fontSize: 15,
     lineHeight: 21,
+  },
+  readMore: {
+    marginTop: 6,
+    marginBottom: 20,
+    fontWeight: '600',
   },
 
   center: {
