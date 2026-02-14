@@ -1,10 +1,16 @@
 // src/app/(admin)/menu/create.tsx
+import {
+  useDeleteProduct,
+  useInsertProduct,
+  useProduct,
+  useUpdateProduct,
+} from "@/src/api/products";
 import Button from "@/src/components/Button";
 import { defaultPizzaImage } from "@/src/components/ProductListItem";
 import Colors from "@/src/constants/Colors";
 import * as ImagePicker from "expo-image-picker";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
-import React, { useCallback, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Alert,
   Image,
@@ -21,20 +27,53 @@ const MAX_NAME_LENGTH = 50;
 const CreateProductScreen = () => {
   const [name, setName] = useState("");
   const [priceRaw, setPriceRaw] = useState("");
+  const [description, setDescription] = useState("");
   const [image, setImage] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
   const router = useRouter();
-  const { id } = useLocalSearchParams<{ id?: string }>();
-  const isUpdating = !!id;
+  const { id: idParam } = useLocalSearchParams<{ id?: string | string[] }>();
+  const idString = typeof idParam === "string" ? idParam : idParam?.[0];
+  const productId = useMemo(() => {
+    if (!idString) return null;
+    const parsed = Number(idString);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+  }, [idString]);
+  
+  const isUpdating = productId !== null;
+
+  const { mutateAsync: insertProduct } = useInsertProduct();
+  const { mutateAsync: updateProduct } = useUpdateProduct();
+  const { mutateAsync: deleteProduct } = useDeleteProduct();
+  const { data: productToEdit } = useProduct(productId ?? -1);
+  const [hydratedProductId, setHydratedProductId] = useState<number | null>(
+    null,
+  );
+
+  useEffect(() => {
+    if (!isUpdating || !productToEdit) return;
+    if (hydratedProductId === productToEdit.id) return;
+
+    setName(productToEdit.name ?? "");
+    setPriceRaw(
+      typeof productToEdit.price === "number"
+        ? String(productToEdit.price)
+        : "",
+    );
+    setDescription(productToEdit.description?.trim() ?? "");
+    setImage(productToEdit.image ?? null);
+    setHydratedProductId(productToEdit.id);
+  }, [hydratedProductId, isUpdating, productToEdit]);
 
   const resetForm = () => {
     setName("");
     setPriceRaw("");
+    setDescription("");
     setImage(null);
     setError("");
+    setHydratedProductId(null);
   };
 
   const parsePrice = useCallback((input: string): number | null => {
@@ -117,24 +156,35 @@ const CreateProductScreen = () => {
         name: name.trim(),
         price: priceValue!,
         image,
+        description: description.trim() || null,
       };
 
-      console.log("Creating product:", payload);
-      // TODO: API call to create product
+      await insertProduct(payload);
 
       resetForm();
       Alert.alert("Success", "Product created successfully.");
+      router.back();
     } catch (err) {
       console.error("Create error:", err);
       Alert.alert("Error", "Failed to create product.");
     } finally {
       setIsSubmitting(false);
     }
-  }, [validate, name, priceValue, image, isSubmitting, isDeleting]);
+  }, [
+    image,
+    insertProduct,
+    isDeleting,
+    isSubmitting,
+    name,
+    description,
+    priceValue,
+    router,
+    validate,
+  ]);
 
   // UPDATE
   const onUpdate = useCallback(async () => {
-    if (!id) return;
+    if (!productId) return;
     if (isSubmitting || isDeleting) return;
     if (!validate()) return;
 
@@ -142,30 +192,41 @@ const CreateProductScreen = () => {
       setIsSubmitting(true);
 
       const payload = {
-        id,
+        id: productId,
         name: name.trim(),
         price: priceValue!,
         image,
+        description: description.trim() || null,
       };
 
-      console.log("Updating product:", payload);
-      // TODO: API call to update product
+      await updateProduct(payload);
 
       resetForm();
       Alert.alert("Success", "Product updated successfully.");
+      router.back();
     } catch (err) {
       console.error("Update error:", err);
       Alert.alert("Error", "Failed to update product.");
     } finally {
       setIsSubmitting(false);
     }
-  }, [validate, name, priceValue, image, isSubmitting, isDeleting, id]);
+  }, [
+    description,
+    image,
+    isDeleting,
+    isSubmitting,
+    name,
+    priceValue,
+    productId,
+    router,
+    updateProduct,
+    validate,
+  ]);
 
   // DELETE
   const onDelete = useCallback(async () => {
-    if (!id) return;
+    if (!productId) return;
     if (isSubmitting || isDeleting) return;
-
     Alert.alert(
       "Confirm Delete",
       "Are you sure you want to delete this product? This action cannot be undone.",
@@ -177,14 +238,13 @@ const CreateProductScreen = () => {
           onPress: async () => {
             try {
               setIsDeleting(true);
-              console.log("Deleting product with id:", id);
-              // TODO: API call to delete product
-
+              // console.log("Deleting product with id:", productId);
+              await deleteProduct(productId);
               resetForm();
-              router.back(); // navigate back after deletion
+              router.replace("/(admin)/menu");
               Alert.alert("Deleted", "Product deleted successfully.");
             } catch (err) {
-              console.error("Delete error:", err);
+              // console.error("Delete error:", err);
               Alert.alert("Error", "Failed to delete product.");
             } finally {
               setIsDeleting(false);
@@ -193,7 +253,7 @@ const CreateProductScreen = () => {
         },
       ],
     );
-  }, [id, isSubmitting, isDeleting, router]);
+  }, [deleteProduct, isDeleting, isSubmitting, productId, router]);
 
   const buttonText = useMemo(() => {
     if (isSubmitting) return isUpdating ? "Updating..." : "Creating...";
@@ -246,12 +306,22 @@ const CreateProductScreen = () => {
           style={styles.input}
         />
 
+        <Text style={styles.label}>Description</Text>
+        <TextInput
+          value={description}
+          onChangeText={setDescription}
+          placeholder="Describe this product"
+          style={[styles.input, styles.descriptionInput]}
+          multiline
+          textAlignVertical="top"
+        />
+
         {!!error && <Text style={styles.error}>{error}</Text>}
 
         <Button
           onPress={handleButtonPress}
           text={buttonText}
-          disabled={isSubmitting || isDeleting}
+          disabled={isSubmitting}
         />
 
         {isUpdating && (
@@ -312,6 +382,9 @@ const styles = StyleSheet.create({
     borderColor: "#DDD",
     marginBottom: 16,
     fontSize: 16,
+  },
+  descriptionInput: {
+    minHeight: 96,
   },
   error: {
     color: "#D32F2F",

@@ -867,3 +867,29 @@ and then import the useProductList hook in the MenuScreen component in the app/(
 Now we can use the data in our component.
 
 4:31:39
+
+We Read Product by id,
+- To read a product by id, we will first create the `useProduct` hook inside `api/products/index.ts`
+- Then, use this hook in both `app/(user)/menu/[id].tsx` and `app/(admin)/menu/[id].tsx`
+
+# Create a product
+
+Admins can also create products. We have the form, what’s left is to connect it with our supabase app and save the data in the database.
+
+Let’s start by creating the useMutation inside `api/products/index.ts`
+
+In [id].tsx: that screen was loading from local mock data (assets/data/products) while your admin list is loaded from Supabase, so selected items could resolve to the wrong product (like MeatZZa).
+
+WhatWhat needs to be changed:
+
+1. Switch admin detail lookup to Supabase hook:
+[id].tsx (line 58)
+now uses useProduct(productId ?? -1) instead of products.find(...).
+2. Make route param parsing robust:
+[id].tsx (line 40)
+handles id as string or string[] before parsing.
+3. Update edit link to use parsed numeric id:
+[id].tsx (line 124)
+changed to /(admin)/menu/create?id=${productId}. 
+
+4:50.00
