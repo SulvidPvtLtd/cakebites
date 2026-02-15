@@ -1,5 +1,7 @@
 ﻿import { supabase } from "@/src/lib/supabase"; // supabase client
-import type { Profile } from "@/src/types";
+// project-defined profile type import (replaced by Supabase generated table type)
+// import type { Profile } from "@/src/types";
+import type { Tables } from "@/src/database.types";
 import { Session } from "@supabase/supabase-js";
 import {
     createContext,
@@ -14,7 +16,7 @@ import {
 type AuthData = {
   session: Session | null;
   loading: boolean;
-  profile: Profile | null;
+  profile: Tables<"profiles"> | null;
   isAdmin: boolean;
   activeGroup: "ADMIN" | "USER" | null;
   setActiveGroup: (group: "ADMIN" | "USER" | null) => void;
@@ -32,7 +34,7 @@ const AuthContext = createContext<AuthData>({
 export default function AuthProvider({ children }: PropsWithChildren) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true); // Track loading state
-  const [profile, setProfile] = useState<Profile | null>(null); // Track user profile data
+  const [profile, setProfile] = useState<Tables<"profiles"> | null>(null); // Track user profile data
   const [activeGroup, setActiveGroup] = useState<"ADMIN" | "USER" | null>(null);
   const lastUserIdRef = useRef<string | null>(null);
 
