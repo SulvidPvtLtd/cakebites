@@ -869,6 +869,7 @@ Now we can use the data in our component.
 4:31:39
 
 We Read Product by id,
+
 - To read a product by id, we will first create the `useProduct` hook inside `api/products/index.ts`
 - Then, use this hook in both `app/(user)/menu/[id].tsx` and `app/(admin)/menu/[id].tsx`
 
@@ -883,13 +884,62 @@ In [id].tsx: that screen was loading from local mock data (assets/data/products)
 WhatWhat needs to be changed:
 
 1. Switch admin detail lookup to Supabase hook:
-[id].tsx (line 58)
-now uses useProduct(productId ?? -1) instead of products.find(...).
+   [id].tsx (line 58)
+   now uses useProduct(productId ?? -1) instead of products.find(...).
 2. Make route param parsing robust:
-[id].tsx (line 40)
-handles id as string or string[] before parsing.
+   [id].tsx (line 40)
+   handles id as string or string[] before parsing.
 3. Update edit link to use parsed numeric id:
-[id].tsx (line 124)
-changed to /(admin)/menu/create?id=${productId}. 
+   [id].tsx (line 124)
+   changed to /(admin)/menu/create?id=${productId}.
 
-4:50.00
+At the moment our projcet or supabase doe not know what our product type is.
+Its currently declared as any.
+
+`src/api/products/index.ts`
+export const useProductList = () => {
+return const { data, error } = await supabase.from('products').select('\*');  
+};
+
+# Typescript
+
+Supabase has great support for Typescript.
+We can generate the types based on the Database and use them in our app.
+
+1. Login
+
+- run `npx supabase login`
+- https://supabase.com/dashboard/account/tokens
+
+2. Generate types type
+
+- run `npx supabase gen types typescript --project-id your_project_id > src/database.types.ts`
+
+- When ever you update your types in the database, go ahead and run the above command to update the types in the project as well.
+
+3. Supply the types to our client in lib/supabse.ts
+
+- import { Database } from '../database.types
+- export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
+
+4. Define type helpers inside types.ts
+
+```ts //Helper types
+import { Database } from "./database.types";
+
+export type Tables<T extends keyof Database["public"]["Tables"]> =
+  Database["public"]["Tables"][T]["Row"];
+export type Enums<T extends keyof Database["public"]["Enums"]> =
+  Database["public"]["Enums"][T];
+```
+
+5. Use the Table types instead of our hand written ones. For example in our Componets/productLitsItem.tsx folder:
+
+type ProductListItemProps = {
+product: Tables<'products'>;
+};
+
+Replace them in our custom components and also inside the api folder.
+
+At this stage replace all project defined types with supabase types.
+

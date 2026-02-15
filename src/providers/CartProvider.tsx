@@ -8,10 +8,12 @@ import {
   useMemo,
   useState,
 } from 'react';
-import { CartItem, Product, ProductSize } from '@/src/types';
+import { CartItem, ProductSize } from '@/src/types';
+import { Tables } from '../database.types';
+
 
 /* ---------------- Types ---------------- */
-
+type Product = Tables<'products'>;
 type CartContextType = {
   items: CartItem[];
   addItem: (product: Product, size: ProductSize) => void;

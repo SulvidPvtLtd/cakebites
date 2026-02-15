@@ -25,6 +25,7 @@ import {
 const MAX_NAME_LENGTH = 50;
 
 const CreateProductScreen = () => {
+  
   const [name, setName] = useState("");
   const [priceRaw, setPriceRaw] = useState("");
   const [description, setDescription] = useState("");
@@ -41,7 +42,7 @@ const CreateProductScreen = () => {
     const parsed = Number(idString);
     return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
   }, [idString]);
-  
+
   const isUpdating = productId !== null;
 
   const { mutateAsync: insertProduct } = useInsertProduct();

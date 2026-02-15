@@ -9,7 +9,8 @@ import {
   useColorScheme,
   View,
 } from 'react-native';
-import { Product } from '../types';
+// import { Product } from '../types'; - we used this because we had not exported the Tables type from database.types,
+import { Tables } from '../database.types';
 
 export const defaultPizzaImage =
   'https://notjustdev-dummy.s3.us-east-2.amazonaws.com/food/peperoni.png';
@@ -27,7 +28,9 @@ const truncateTitle = (title: string, maxLength = 16): string =>
   title.length <= maxLength ? title : title.slice(0, maxLength) + '...';
 
 type ProductListItemProps = {
-  product: Product;
+  // product: Product; - we used this because we had not exported the Tables type from database.types, 
+  // but now we can be more specific and use the exact type from the database schema for better type safety.
+  product: Tables<'products'>;
   numColumns: number;
 };
 

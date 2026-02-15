@@ -12,12 +12,21 @@
  * If the data is fetched successfully, we return the data.
  */
 import { supabase } from "@/src/lib/supabase";
+import type {
+    Tables,
+    TablesInsert,
+    TablesUpdate,
+} from "@/src/database.types";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+
+type ProductRow = Tables<"products">;
+type ProductInsert = TablesInsert<"products">;
+type ProductUpdate = TablesUpdate<"products">;
 
 
 // custom hook to fetch products from the database
 export const useProductList = () => {
-    return useQuery({
+    return useQuery<ProductRow[]>({
         // Define the object with some options.
         queryKey: ['products'], // The key to identify the query.
         queryFn: async () => {
@@ -26,14 +35,14 @@ export const useProductList = () => {
             //  console.error('Error fetching products:', error);
             throw new Error(error.message);
         }
-        return data;
+        return data ?? [];
         }
 
     });
 };
 
 export const useProduct = (id: number) => {
-     return useQuery({
+     return useQuery<ProductRow>({
         // Define the object with some options.
         queryKey: ['products', id], // The key to identify the query to the products with id = 1, =2,=3 etc.
         enabled: Number.isFinite(id) && id > 0,
@@ -56,7 +65,9 @@ export const useProduct = (id: number) => {
 export const useInsertProduct = () =>{
     const queryClient = useQueryClient();
     return useMutation({
-        async mutationFn(data: { image?: string | null; name: string; price: number; description?: string | null }) {
+        // project-defined payload type (replaced by generated Supabase Insert type)
+        // async mutationFn(data: { image?: string | null; name: string; price: number; description?: string | null }) {
+        async mutationFn(data: Pick<ProductInsert, "image" | "name" | "price" | "description">) {
         const { data: newProduct, error } =    await supabase.from('products').insert({                
                 image: data.image ?? null,
                 name: data.name,
@@ -81,7 +92,9 @@ export const useInsertProduct = () =>{
 export const useUpdateProduct = () =>{
     const queryClient = useQueryClient();
     return useMutation({
-        async mutationFn(data: { id: number; image?: string | null; name: string; price: number; description?: string | null }) {
+        // project-defined payload type (replaced by generated Supabase Update type)
+        // async mutationFn(data: { id: number; image?: string | null; name: string; price: number; description?: string | null }) {
+        async mutationFn(data: { id: ProductRow["id"] } & Pick<ProductUpdate, "image" | "name" | "price" | "description">) {
         const { data: updatedProduct, error } =    await supabase.from('products').update({                
                 image: data.image ?? null,
                 name: data.name,

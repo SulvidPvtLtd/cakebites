@@ -7,6 +7,7 @@
 import { createClient } from "@supabase/supabase-js";
 import * as SecureStore from "expo-secure-store";
 import "react-native-url-polyfill/auto";
+import { Database } from "../database.types";
 
 const ExpoSecureStoreAdapter = {
   getItem: (key: string) => {
@@ -23,7 +24,9 @@ const ExpoSecureStoreAdapter = {
 const supabaseUrl = "https://ctfirvzwlecmpwhfgvyy.supabase.co";
 const supabaseAnonKey = "sb_publishable_bSkket750hZFRKNuJAorqA_mho6hHa8";
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+// Assign <Database> so that the Supabase client 
+// is aware of the database schema and types to use. Currently without it, it will use `any` types.
+export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
   auth: {
     storage: ExpoSecureStoreAdapter as any,
     autoRefreshToken: true,

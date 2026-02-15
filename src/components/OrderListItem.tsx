@@ -19,7 +19,7 @@ type OrderListItemProps = {
 
 const OrderListItem = ({ order, routeGroup = 'user' }: OrderListItemProps) => {
   // Use the caller's explicit intent rather than deriving from navigation state.
-  const href =
+  const href: `/(admin)/orders/${number}` | `/(user)/orders/${number}` =
     routeGroup === 'admin'
       ? `/(admin)/orders/${order.id}`
       : `/(user)/orders/${order.id}`;
