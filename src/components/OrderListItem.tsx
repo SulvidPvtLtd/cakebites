@@ -1,6 +1,6 @@
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import React from 'react';
-import { Order } from '../types';
+import { Order, Tables } from '../types';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import dayjs from 'dayjs';
 import { Link } from 'expo-router';
@@ -8,7 +8,7 @@ import { Link } from 'expo-router';
 dayjs.extend(relativeTime);
 
 type OrderListItemProps = {
-  order: Order;
+  order: Tables<"orders">;
   /**
    * Explicitly control which route group to use for details navigation.
    * This is more defensive than inferring from segments because it won't
