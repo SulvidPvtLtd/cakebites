@@ -65,12 +65,16 @@ export const OrderStatusList: OrderStatus[] = [
   "Cancelled",
 ];
 
-export type Order = {
-  id: number;
-  created_at: string;
-  total: number;
-  user_id: string;
-  status: OrderStatus;
+// project-defined Order type (replaced with Supabase table row type)
+// export type Order = {
+//   id: number;
+//   created_at: string;
+//   total: number;
+//   user_id: string;
+//   status: OrderStatus;
+//   order_items?: OrderItem[];
+// };
+export type Order = SupabaseTables<"orders"> & {
   order_items?: OrderItem[];
 };
 
@@ -79,8 +83,7 @@ export type OrderItem = {
   product_id: number;
   // Supabase full row requires fields (like created_at) that mock assets don't include.
   products: Pick<
-    SupabaseTables<"products">,
-    "id" | "image" | "name" | "price" | "description"
+    SupabaseTables<"products">, "id" | "image" | "name" | "price" | "description"
   >; // Include only fields used by order UIs
   order_id: number;
   size: ProductSize;

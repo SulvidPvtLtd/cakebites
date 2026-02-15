@@ -827,16 +827,18 @@ Wrap it around our app in app/\_layout.tsx
 
 useQuery
 
-const {data, isLoading, error } = useQuery<Product[]>({
-queryKey: ['products'],
-queryFn: async () => {
-const { data, error } = await supabase.from('products').select('\*');
-if (error) {
-throw new Error(error.message);
-}
-return data;
-},
+```tsx
+const { data, isLoading, error } = useQuery<Product[]>({
+  queryKey: ["products"],
+  queryFn: async () => {
+    const { data, error } = await supabase.from("products").select("\*");
+    if (error) {
+      throw new Error(error.message);
+    }
+    return data;
+  },
 });
+```
 
 Create a separate folder for all our React Query requests
 
@@ -844,7 +846,7 @@ The folder `api` will contain all helper functions for our React Query requests.
 
 In api folder in fthe index.ts file, instead of destructuring the useQuery above, we can return the data directly.
 
-```
+`````tsx
 return useQuery<Product[]>({
   queryKey: ['products'],
   queryFn: async () => {
@@ -898,7 +900,7 @@ Its currently declared as any.
 
 `src/api/products/index.ts`
 export const useProductList = () => {
-return const { data, error } = await supabase.from('products').select('\*');  
+return const { data, error } = await supabase.from('products').select('\*');
 };
 
 # Typescript
@@ -943,3 +945,85 @@ Replace them in our custom components and also inside the api folder.
 
 At this stage replace all project defined types with supabase types.
 
+
+# Orders CRUD
+
+We will implement the CRUD features of the Orders.
+
+1. Orders table:
+- Let’s start by creating the `orders` and `order_items` tables in the Supabse Dashboard.
+- The product item `order_items` will have a link to the `products` that was placed.
+- Setup the permissions as well to authenticated users to create, read and update orders and order items.
+
+
+# Read orders
+
+Start by creating the api/orders/index.ts for all the data fetching functions.
+
+User Orders: For user orders, when we read orders, we need to filter by `user_id` to only show his orders.
+
+At this pint we need to re-update supabse types to include the orders table and the order_items table.
+
+````ts
+export const useMyOrders = () => {
+  const { user } = useAuth();
+
+  return useQuery<Order[]>({
+    queryKey: ['orders', { userId: user?.id }],
+    queryFn: async () => {
+      if (!user) return [];
+
+      const { data, error } = await supabase
+        .from('orders')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+      if (error) {
+        throw new Error(error.message);
+      }
+      return data;
+    },
+  });
+};
+`````
+
+Use it in `app/(user)/orders/index.tsx`
+
+`````tsx
+const { data: orders, isLoading, error } = useMyOrders();
+if (isLoading) {
+  return <ActivityIndicator />;
+}
+if (error) {
+  return <Text>Failed to fetch</Text>;
+}
+```
+
+
+Use it in the `app/(admin)/order/list/index.tsx`
+
+````ts
+const { data: orders, isLoading, error } = useOrderList({ archived: false });
+if (isLoading) {
+  return <ActivityIndicator />;
+}
+if (error) {
+  return <Text>Failed to fetch</Text>;
+}
+
+```
+
+And inside `app/(admin)/orders/archived.tsx`
+
+````ts
+const { data: orders, isLoading, error } = useOrderList({ archived: true });
+if (isLoading) {
+  return <ActivityIndicator />;
+}
+if (error) {
+  return <Text>Failed to fetch</Text>;
+}
+
+```
+
+`````
