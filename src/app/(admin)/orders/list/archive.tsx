@@ -1,18 +1,17 @@
-import { useAdminOrderList } from "@/src/api/orders";
-import orders from "@assets/data/orders";
+import { useOrderList } from "@/src/api/orders";
 import OrderListItem from "@components/OrderListItem";
 import { Stack } from "expo-router";
 import { ActivityIndicator, FlatList, Text } from "react-native";
 
 export default function OrdersScreen() {
 
-   const { data: orders, isLoading, error } = useAdminOrderList({archived: true});
+   const { data: orders, isLoading, error } = useOrderList({ archived: true });
 
     if (isLoading) {
       return <ActivityIndicator />;
     }
     if (error) {
-      return <Text>Failed to return the orders</Text>;
+      return <Text>Failed to fetch</Text>;
     }
 
   return (

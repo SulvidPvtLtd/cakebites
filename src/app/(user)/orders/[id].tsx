@@ -1,31 +1,19 @@
 import { Stack, useLocalSearchParams } from "expo-router";
-import { useCallback, useEffect, useMemo } from "react";
-import { Alert, FlatList, StyleSheet, Text, View } from "react-native";
+import { useEffect } from "react";
+import { ActivityIndicator, Alert, FlatList, StyleSheet, Text, View } from "react-native";
 
-import orders from "@/assets/data/orders";
+import { useOrderDetails } from "@/src/api/orders";
 import OrderListItem from "@/src/components/OrderListItem";
 import PlacedOrderListItems from "@/src/components/PlacedOrderListItems";
 import Colors from "@/src/constants/Colors";
-import { OrderStatusList } from "@/src/types";
+import { OrderItem } from "@/src/types";
 
-type Order = (typeof orders)[number];
-type OrderItems = NonNullable<Order["order_items"]>;
-type OrderItem = OrderItems[number];
-type OrderStatus = (typeof OrderStatusList)[number];
 
 export default function OrderDetailScreen() {
-  /**
-   * Route params are external input → always optional & unsafe.
-   */
+ 
   const { id } = useLocalSearchParams<{ id?: string }>();
 
-  /**
-   * Memoised order lookup
-   */
-  const orderFetched: Order | undefined = useMemo(() => {
-    if (!id) return undefined;
-    return orders.find((order) => order.id.toString() === id);
-  }, [id]);
+  const { data: orderFetched, isLoading, error } = useOrderDetails(id);
 
   // Notify the user once they've landed on the order details screen.
   useEffect(() => {
@@ -46,7 +34,16 @@ export default function OrderDetailScreen() {
     );
   }
 
-  if (!orderFetched) {
+  if (isLoading) {
+    return (
+      <View style={styles.centeredContainer}>
+        <Stack.Screen options={{ title: "Loading order" }} />
+        <ActivityIndicator />
+      </View>
+    );
+  }
+
+  if (error || !orderFetched) {
     return (
       <View style={styles.centeredContainer}>
         <Stack.Screen options={{ title: "Order not found" }} />
@@ -58,11 +55,24 @@ export default function OrderDetailScreen() {
   /**
    * Normalize possibly undefined array → always safe for FlatList
    */
-  const orderItems: OrderItems = orderFetched.order_items ?? [];
+  const orderItems: OrderItem[] = (orderFetched.order_items ?? []).flatMap(
+    (item) => {
+      if (!item.products) return [];
+      return [
+        {
+          id: item.id,
+          order_id: item.order_id,
+          product_id: item.product_id,
+          products: item.products,
+          quantity: item.quantity ?? 0,
+          size: item.size as OrderItem["size"],
+        },
+      ];
+    },
+  );
 
-  const renderPlacedItem = useCallback(
-    ({ item }: { item: OrderItem }) => <PlacedOrderListItems item={item} />,
-    [],
+  const renderPlacedItem = ({ item }: { item: OrderItem }) => (
+    <PlacedOrderListItems item={item} />
   );
 
   return (

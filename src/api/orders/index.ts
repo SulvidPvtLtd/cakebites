@@ -1,52 +1,80 @@
 import { supabase } from "@/src/lib/supabase";
 import type {
     Tables,
-    TablesInsert,
-    TablesUpdate,
 } from "@/src/database.types";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/src/providers/AuthProvider";
 
 type OrderRow = Tables<'orders'>;
+type OrderItemRow = Tables<'order_items'>;
+type ProductRow = Tables<'products'>;
 
-export const useAdminOrderList = ({archived = false}) => {
+export type OrderDetailsRow = OrderRow & {
+    order_items: Array<
+        OrderItemRow & {
+            products: ProductRow | null;
+        }
+    >;
+};
 
-    const statuses = archived ? ['Cancelled', 'Delivered'] : ['New','Cooking','Delivering'];
+export const useMyOrders = () => {
+    const { session } = useAuth();
+    const userId = session?.user.id;
 
     return useQuery<OrderRow[]>({
-        queryKey: ['orders', { archived }],
+        queryKey: ['orders', { userId }],
+        enabled: !!userId,
         queryFn: async () => {
-        const { data, error } = await supabase.from('orders').select('*').in('status', statuses);  
-        if (error) {
-            //  console.error('Error fetching orders:', error);
-            throw new Error(error.message);
-        }
-        return data ?? [];
+            if (!userId) return [];
+            const { data, error } = await supabase
+                .from('orders')
+                .select('*')
+                .eq('user_id', userId)
+                .order('created_at', { ascending: false });
+            if (error) {
+                throw new Error(error.message);
+            }
+            return data ?? [];
         }
     });
 };
 
-
-export const useMyOrderList = () => {
-
-    // Since this is a custom hook. we have access to other hooks, 
-    // such as the auth hook to get the current user id and then fetch only the orders for that user. 
-    // For simplicity, we are fetching all orders here.
-    const {session} = useAuth();
-    const id = session?.user.id;
+export const useOrderList = ({ archived = false }: { archived: boolean }) => {
+    const statuses = archived ? ['Delivered'] : ['New', 'Cooking', 'Delivering'];
 
     return useQuery<OrderRow[]>({
-        queryKey: ['orders', { userId: id }],
-        enabled: !!id,
+        queryKey: ['orders', { archived }],
         queryFn: async () => {
-            if (!id) return [];
-        const { data, error } = await supabase.from('orders').select('*').eq('user_id', id);  
-        if (error) {
-            //  console.error('Error fetching orders:', error);
-            throw new Error(error.message);
+            const { data, error } = await supabase
+                .from('orders')
+                .select('*')
+                .in('status', statuses)
+                .order('created_at', { ascending: false });
+            if (error) {
+                throw new Error(error.message);
+            }
+            return data ?? [];
         }
-        return data ?? [];
-        }
+    });
+};
 
+export const useOrderDetails = (id?: number | string | null) => {
+    const orderId = typeof id === "number" ? id : Number(id);
+    const isValidOrderId = Number.isFinite(orderId) && orderId > 0;
+
+    return useQuery<OrderDetailsRow>({
+        queryKey: ['order', orderId],
+        enabled: isValidOrderId,
+        queryFn: async () => {
+            const { data, error } = await supabase
+                .from('orders')
+                .select('*, order_items(*, products(*))')
+                .eq('id', orderId)
+                .single();
+            if (error) {
+                throw new Error(error.message);
+            }
+            return data as OrderDetailsRow;
+        }
     });
 };

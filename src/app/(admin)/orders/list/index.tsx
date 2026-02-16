@@ -1,4 +1,4 @@
-import { useAdminOrderList } from "@/src/api/orders";
+import { useOrderList } from "@/src/api/orders";
 import OrderListItem from "@components/OrderListItem";
 import type { Tables } from "@/src/database.types";
 import { Stack } from "expo-router";
@@ -10,12 +10,12 @@ export default function OrdersScreen() {
 
   // project-defined mock import usage (replaced by Supabase query data)
   // import ordersData from "@assets/data/orders";
-  const { data: orders, isLoading, error } = useAdminOrderList({archived: false});
+  const { data: orders, isLoading, error } = useOrderList({ archived: false });
   if (isLoading) {
     return <ActivityIndicator />;
   }
   if (error) {
-    return <Text>Failed to return the orders</Text>;
+    return <Text>Failed to fetch</Text>;
   }
 
   return (

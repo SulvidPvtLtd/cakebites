@@ -1,20 +1,20 @@
 import { Stack } from "expo-router";
 import { ActivityIndicator, FlatList, Text } from "react-native";
 import OrderListItem from "@components/OrderListItem";
-import { useMyOrderList } from "@/src/api/orders";
+import { useMyOrders } from "@/src/api/orders";
 import type { Tables } from "@/src/database.types";
 
 type UserOrder = Tables<"orders">;
 
 export default function OrdersScreen() {
 
-  const { data: orders, isLoading, error } = useMyOrderList();
+  const { data: orders, isLoading, error } = useMyOrders();
   const safeOrders = orders ?? [];
     if (isLoading) {
       return <ActivityIndicator />;
     }
     if (error) {
-      return <Text>Failed to return the orders</Text>;
+      return <Text>Failed to fetch</Text>;
   }
 
   return (
