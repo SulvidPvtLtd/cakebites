@@ -1,43 +1,22 @@
 import { Stack, useLocalSearchParams } from "expo-router";
-import { useCallback, useMemo } from "react";
-import { FlatList, Pressable, ScrollView, Text, View } from "react-native";
+import {
+  ActivityIndicator,
+  FlatList,
+  Pressable,
+  ScrollView,
+  Text,
+  View,
+} from "react-native";
 
-import orders from "@/assets/data/orders";
+import { useOrderDetails } from "@/src/api/orders";
 import OrderListItem from "@/src/components/OrderListItem";
 import PlacedOrderListItems from "@/src/components/PlacedOrderListItems";
 import Colors from "@/src/constants/Colors";
-import { OrderStatusList } from "@/src/types";
-
-/* -------------------------------------------------- */
-/* Strong domain typing derived from source data       */
-/* -------------------------------------------------- */
-
-type Order = (typeof orders)[number];
-type OrderItems = NonNullable<Order["order_items"]>;
-type OrderItem = OrderItems[number];
-
-/* -------------------------------------------------- */
-/* Screen                                             */
-/* -------------------------------------------------- */
+import { OrderItem, OrderStatusList } from "@/src/types";
 
 export default function OrderDetailScreen() {
-  /**
-   * Route params are external input → always optional & unsafe.
-   */
   const { id } = useLocalSearchParams<{ id?: string }>();
-
-  /**
-   * Memoised order lookup
-   */
-  const orderFetched: Order | undefined = useMemo(() => {
-    if (!id) return undefined;
-
-    return orders.find((order) => order.id.toString() === id);
-  }, [id]);
-
-  /* -------------------------------------------------- */
-  /* Defensive early exits                              */
-  /* -------------------------------------------------- */
+  const { data: orderFetched, isLoading, error } = useOrderDetails(id);
 
   if (!id) {
     return (
@@ -48,7 +27,16 @@ export default function OrderDetailScreen() {
     );
   }
 
-  if (!orderFetched) {
+  if (isLoading) {
+    return (
+      <View style={{ padding: 10 }}>
+        <Stack.Screen options={{ title: "Loading order" }} />
+        <ActivityIndicator />
+      </View>
+    );
+  }
+
+  if (error || !orderFetched) {
     return (
       <View style={{ padding: 10 }}>
         <Stack.Screen options={{ title: "Order not found" }} />
@@ -57,21 +45,25 @@ export default function OrderDetailScreen() {
     );
   }
 
-  /**
-   * Normalize possibly undefined array → always safe for FlatList
-   */
-  const orderItems: OrderItems = orderFetched.order_items ?? [];
-
-  /* -------------------------------------------------- */
-  /* Optimised FlatList render function                 */
-  /* -------------------------------------------------- */
-
-  const renderPlacedItem = useCallback(
-    ({ item }: { item: OrderItem }) => <PlacedOrderListItems item={item} />,
-    [],
+  const orderItems: OrderItem[] = (orderFetched.order_items ?? []).flatMap(
+    (item) => {
+      if (!item.products) return [];
+      return [
+        {
+          id: item.id,
+          order_id: item.order_id,
+          product_id: item.product_id,
+          products: item.products,
+          quantity: item.quantity ?? 0,
+          size: item.size as OrderItem["size"],
+        },
+      ];
+    },
   );
 
-
+  const renderPlacedItem = ({ item }: { item: OrderItem }) => (
+    <PlacedOrderListItems item={item} />
+  );
 
   return (
     <View style={{ padding: 10, gap: 10 }}>
@@ -129,4 +121,3 @@ export default function OrderDetailScreen() {
     </View>
   );
 }
-
