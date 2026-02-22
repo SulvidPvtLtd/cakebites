@@ -75,11 +75,7 @@ export default function OrderDetailScreen() {
     <PlacedOrderListItems item={item} />
   );
 
-  const computedTotal = orderItems.reduce(
-    (sum, item) => sum + (Number(item.products.price) || 0) * (item.quantity ?? 0),
-    0,
-  );
-  const orderTotal = computedTotal > 0 ? computedTotal : Number(orderFetched.total ?? 0);
+  const orderTotal = Number(orderFetched.total ?? 0);
 
   return (
     <View style={styles.container}>

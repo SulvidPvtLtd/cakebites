@@ -89,7 +89,10 @@ const VALID_ORDER_STATUSES = new Set([
     "Cancelled",
 ]);
 
-type InsertOrderInput = Pick<TablesInsert<"orders">, "total" | "status">;
+type InsertOrderInput = Pick<
+    TablesInsert<"orders">,
+    "total" | "status" | "delivery_option"
+>;
 type InsertOrderItemsInput = Array<
     Pick<TablesInsert<"order_items">, "order_id" | "product_id" | "quantity" | "size">
 >;
@@ -119,6 +122,7 @@ export const useInsertOrder = () =>{
                 total,
                 status,
                 user_id: userId,
+                delivery_option: input.delivery_option === "No" ? "No" : "Yes",
             };
 
             const { data: newOrder, error } = await supabase

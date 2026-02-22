@@ -1,5 +1,5 @@
 // src/app/(tabs)/menu/[id].tsx
-import { Link, Redirect, Stack, useLocalSearchParams } from 'expo-router';
+import { Link, Redirect, Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import {
   useEffect,
   useMemo,
@@ -8,6 +8,7 @@ import {
 } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   Animated,
   Pressable,
   ScrollView,
@@ -54,7 +55,13 @@ export default function ProductDetailsScreen() {
   const colorScheme = useColorScheme() ?? 'light';
   const theme = Colors[colorScheme];
 
-  const { addItem } = useCart();
+  const {
+    addItem,
+    fulfillmentOption,
+    hasAcceptedDeliveryTerms,
+    setFulfillmentOption,
+  } = useCart();
+  const router = useRouter();
 
   /* ---------------- State ---------------- */
 
@@ -101,10 +108,60 @@ export default function ProductDetailsScreen() {
   const handleAddToCart = () => {
     if (adding) return;
     if (!product) return;
-    // console.warn('Add to Cart: ', product, selectedSize );
+
     try {
       setAdding(true);
-      addItem(product, selectedSize);
+
+      if (fulfillmentOption === "COLLECTION") {
+        addItem(product, selectedSize);
+        router.push("/cart");
+        return;
+      }
+
+      if (fulfillmentOption === "DELIVERY") {
+        if (hasAcceptedDeliveryTerms) {
+          addItem(product, selectedSize);
+          router.push("/cart");
+        } else {
+          router.push({
+            pathname: "/delivery-terms",
+            params: { productId: String(product.id), size: selectedSize },
+          });
+        }
+        return;
+      }
+
+      Alert.alert(
+        "Choose Fulfilment",
+        "Do you want this order delivered, or will you self-collect?",
+        [
+          {
+            text: "Self collect",
+            onPress: () => {
+              setFulfillmentOption("COLLECTION");
+              addItem(product, selectedSize);
+              router.push("/cart");
+            },
+          },
+          {
+            text: "Delivery",
+            onPress: () => {
+              if (hasAcceptedDeliveryTerms) {
+                setFulfillmentOption("DELIVERY");
+                addItem(product, selectedSize);
+                router.push("/cart");
+                return;
+              }
+
+              router.push({
+                pathname: "/delivery-terms",
+                params: { productId: String(product.id), size: selectedSize },
+              });
+            },
+          },
+          { text: "Cancel", style: "cancel" },
+        ],
+      );
     } finally {
       // UX delay prevents accidental multi-taps
       setTimeout(() => setAdding(false), 300);
