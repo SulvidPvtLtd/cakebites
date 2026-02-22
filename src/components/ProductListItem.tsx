@@ -32,11 +32,17 @@ type ProductListItemProps = {
   // but now we can be more specific and use the exact type from the database schema for better type safety.
   product: Tables<'products'>;
   numColumns: number;
+  showAdminStockState?: boolean;
 };
 
-const ProductListItem = ({ product, numColumns }: ProductListItemProps) => {
+const ProductListItem = ({
+  product,
+  numColumns,
+  showAdminStockState = false,
+}: ProductListItemProps) => {
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme ?? 'light'];
+  const isOutOfStock = !product.is_active || !product.in_stock;
 
   return (
     <View style={[styles.itemWrapper, { width: `${100 / numColumns}%` }]}>
@@ -70,6 +76,10 @@ const ProductListItem = ({ product, numColumns }: ProductListItemProps) => {
                 <Text style={[styles.price, { color: theme.tint }]}>
                   ${product.price}
                 </Text>
+
+                {showAdminStockState && isOutOfStock && (
+                  <Text style={styles.stockBadge}>Out of stock</Text>
+                )}
 
                 <Text style={styles.linkText}>Go to details</Text>
               </View>
@@ -139,5 +149,18 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: 'orange',
     textDecorationLine: 'underline',
+  },
+
+  stockBadge: {
+    alignSelf: 'flex-start',
+    marginBottom: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 999,
+    backgroundColor: '#D32F2F',
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '700',
+    textTransform: 'uppercase',
   },
 });

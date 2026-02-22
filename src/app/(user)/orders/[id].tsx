@@ -8,24 +8,24 @@ import PlacedOrderListItems from "@/src/components/PlacedOrderListItems";
 import Colors from "@/src/constants/Colors";
 import { OrderItem } from "@/src/types";
 
+type OrderDetailsParams = {
+  id?: string;
+};
 
 export default function OrderDetailScreen() {
- 
-  const { id } = useLocalSearchParams<{ id?: string }>();
+  const { id: idParam } = useLocalSearchParams<OrderDetailsParams>();
+  const idString = typeof idParam === "string" ? idParam : idParam?.[0]; // Make sure id is a string.
 
-  const { data: orderFetched, isLoading, error } = useOrderDetails(id);
+  const { data: orderFetched, isLoading, error } = useOrderDetails(idString);
 
   // Notify the user once they've landed on the order details screen.
   useEffect(() => {
-    if (!id || !orderFetched) return;
-    Alert.alert("Order checked out");
-  }, [id, orderFetched]);
+    if (!idString || !orderFetched) return;
+    //Alert.alert("Paid Order!");
+  }, [idString, orderFetched]);
 
-  /* -------------------------------------------------- */
-  /* Defensive early exits                              */
-  /* -------------------------------------------------- */
-
-  if (!id) {
+  
+  if (!idString) {
     return (
       <View style={styles.centeredContainer}>
         <Stack.Screen options={{ title: "Invalid order" }} />
@@ -53,7 +53,7 @@ export default function OrderDetailScreen() {
   }
 
   /**
-   * Normalize possibly undefined array → always safe for FlatList
+   * Normalize possibly undefined array -> always safe for FlatList
    */
   const orderItems: OrderItem[] = (orderFetched.order_items ?? []).flatMap(
     (item) => {
@@ -75,12 +75,18 @@ export default function OrderDetailScreen() {
     <PlacedOrderListItems item={item} />
   );
 
+  const computedTotal = orderItems.reduce(
+    (sum, item) => sum + (Number(item.products.price) || 0) * (item.quantity ?? 0),
+    0,
+  );
+  const orderTotal = computedTotal > 0 ? computedTotal : Number(orderFetched.total ?? 0);
+
   return (
     <View style={styles.container}>
-      <Stack.Screen options={{ title: `User Order #${id}` }} />
+      <Stack.Screen options={{ title: `User Order #${idString}` }} />
 
       {/* Order summary */}
-      <OrderListItem order={orderFetched} />
+      <OrderListItem order={orderFetched} statusSubtext={`$${orderTotal.toFixed(2)}`} />
 
       {/* Items in the order */}
       <FlatList<OrderItem>

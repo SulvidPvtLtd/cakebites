@@ -40,24 +40,75 @@ export default function AuthProvider({ children }: PropsWithChildren) {
 
   // Query the session to check if the user is logged in and set the user state accordingly
   useEffect(() => {
-    const fetchProfile = async (userId: string) => {
+    const isInvalidRefreshTokenError = (message?: string) => {
+      if (!message) return false;
+      const normalized = message.toLowerCase();
+      return (
+        normalized.includes("invalid refresh token") ||
+        normalized.includes("refresh token not found")
+      );
+    };
+
+    const fetchOrCreateProfile = async (session: Session) => {
+      const userId = session.user.id;
+      const userEmail = session.user.email ?? null;
+      const userMobile =
+        typeof session.user.user_metadata?.mobile_number === "string"
+          ? session.user.user_metadata.mobile_number
+          : null;
+
       const { data, error } = await supabase
         .from("profiles")
         .select("*")
         .eq("id", userId)
-        .single();
+        .maybeSingle();
+
       if (error) {
         console.log("Profile fetch error:", error.message);
         return null;
       }
-      return data || null;
+
+      if (data) {
+        return data;
+      }
+
+      const { data: createdProfile, error: createError } = await supabase
+        .from("profiles")
+        .insert({
+          id: userId,
+          email: userEmail,
+          mobile_number: userMobile,
+          group: "USER",
+        })
+        .select("*")
+        .single();
+
+      if (createError) {
+        console.log("Profile create error:", createError.message);
+        return null;
+      }
+
+      return createdProfile ?? null;
     };
 
     // UseEffect expects nothing or a cleanup function and can not be async, so we define an async function inside it and call it immediately.
     const fecthSession = async () => {
       const {
         data: { session },
+        error,
       } = await supabase.auth.getSession();
+
+      if (error && isInvalidRefreshTokenError(error.message)) {
+        // Local-only sign out clears stale tokens that can trigger repeated refresh failures.
+        await supabase.auth.signOut({ scope: "local" });
+        setSession(null);
+        setProfile(null);
+        lastUserIdRef.current = null;
+        setActiveGroup(null);
+        setLoading(false);
+        return;
+      }
+
       setSession(session);
       if (!session) {
         lastUserIdRef.current = null;
@@ -68,7 +119,7 @@ export default function AuthProvider({ children }: PropsWithChildren) {
       }
 
       if (session) {
-        const data = await fetchProfile(session.user.id);
+        const data = await fetchOrCreateProfile(session);
         setProfile(data);
       } else {
         setProfile(null);
@@ -92,7 +143,7 @@ export default function AuthProvider({ children }: PropsWithChildren) {
         setActiveGroup(null);
       }
       if (session) {
-        const data = await fetchProfile(session.user.id);
+        const data = await fetchOrCreateProfile(session);
         setProfile(data);
       } else {
         setProfile(null);

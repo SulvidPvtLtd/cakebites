@@ -1,6 +1,7 @@
 // src/app/Cart.tsx
 
 import React from 'react';
+import { useRouter } from 'expo-router';
 import {
   View,
   Text,
@@ -16,7 +17,8 @@ import { useCart } from '@providers/CartProvider';
 import CartList from '@components/CartList';
 
 export default function CartScreen() {
-  const { items, total } = useCart();
+  const { items, total, checkout } = useCart();
+  const router = useRouter();
 
   const scheme = useColorScheme() ?? 'light';
   const theme = Colors[scheme];
@@ -89,9 +91,14 @@ export default function CartScreen() {
 
         {/* Checkout */}
         <Pressable
-          onPress={() => {
-            // Only show the checkout confirmation when the user actually taps the button.
-            Alert.alert('Order checked out');
+          onPress={async () => {
+            try {
+              const orderId = await checkout();
+              router.push(`/(user)/orders/${orderId}`);
+            } catch (error) {
+              const message = error instanceof Error ? error.message : 'Checkout failed';
+              Alert.alert('Checkout failed', message);
+            }
           }}
           style={[
             styles.checkoutButton,
