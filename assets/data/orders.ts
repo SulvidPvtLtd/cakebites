@@ -11,6 +11,7 @@ const orders: Order[] = [
     total: 31.4,
     status: 'Cooking',
     user_id: '1',
+    delivery_option: 'Yes',
     order_items: [
       {
         id: 1,
@@ -36,6 +37,7 @@ const orders: Order[] = [
     total: 11.4,
     status: 'Delivered',
     user_id: '1',
+    delivery_option: 'Yes',
     order_items: [
       {
         id: 1,
@@ -53,6 +55,7 @@ const orders: Order[] = [
     total: 11.4,
     status: 'Delivered',
     user_id: '1',
+    delivery_option: 'Yes',
     order_items: [
       {
         id: 1,

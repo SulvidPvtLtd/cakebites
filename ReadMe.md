@@ -1025,5 +1025,136 @@ if (error) {
 }
 
 ```
+5:29: 13
 
 `````
+# Data base schema changes done 
+
+- step 1: Add soft-delete/inventory columns
+
+alter table public.products
+  add column if not exists is_active boolean not null default true,
+  add column if not exists in_stock boolean not null default true;
+
+- verify step 1
+
+select column_name, data_type, is_nullable, column_default
+from information_schema.columns
+where table_schema = 'public'
+  and table_name = 'products'
+  and column_name in ('is_active', 'in_stock')
+order by column_name;
+
+- step 2: Ensure existing rows are visible by default
+
+update public.products
+set is_active = true
+where is_active is null;
+
+update public.products
+set in_stock = true
+where in_stock is null;
+
+- verify step 2
+
+select
+  count(*) as total,
+  count(*) filter (where is_active = true) as active_count,
+  count(*) filter (where in_stock = true) as in_stock_count
+from public.products;
+
+
+- Step 3: Lock down product policies (admin write, users read active)
+
+alter table public.products enable row level security;
+
+drop policy if exists "Allow authenticated users ALL operations" on public.products;
+drop policy if exists "products_select_active_for_users" on public.products;
+drop policy if exists "products_admin_write" on public.products;
+drop policy if exists "products_admin_update" on public.products;
+drop policy if exists "products_admin_delete" on public.products;
+
+create policy "products_select_active_for_users"
+on public.products
+for select
+to authenticated
+using (
+  is_active = true
+  or exists (
+    select 1
+    from public.profiles p
+    where p.id = auth.uid()
+      and p."group" = 'ADMIN'
+  )
+);
+
+create policy "products_admin_write"
+on public.products
+for insert
+to authenticated
+with check (
+  exists (
+    select 1
+    from public.profiles p
+    where p.id = auth.uid()
+      and p."group" = 'ADMIN'
+  )
+);
+
+create policy "products_admin_update"
+on public.products
+for update
+to authenticated
+using (
+  exists (
+    select 1
+    from public.profiles p
+    where p.id = auth.uid()
+      and p."group" = 'ADMIN'
+  )
+)
+with check (
+  exists (
+    select 1
+    from public.profiles p
+    where p.id = auth.uid()
+      and p."group" = 'ADMIN'
+  )
+);
+
+create policy "products_admin_delete"
+on public.products
+for delete
+to authenticated
+using (
+  exists (
+    select 1
+    from public.profiles p
+    where p.id = auth.uid()
+      and p."group" = 'ADMIN'
+  )
+);
+
+verify step 3
+
+select policyname, cmd, roles, permissive
+from pg_policies
+where schemaname = 'public'
+  and tablename = 'products'
+order by policyname;
+
+
+Step 4 (optional but recommended): add index for policy/filter speed
+
+create index if not exists idx_products_active_instock
+on public.products (is_active, in_stock);
+
+Verify step 4
+
+select indexname, indexdef
+from pg_indexes
+where schemaname = 'public'
+  and tablename = 'products'
+  and indexname = 'idx_products_active_instock';
+
+```

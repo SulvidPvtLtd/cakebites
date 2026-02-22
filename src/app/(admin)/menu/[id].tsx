@@ -40,14 +40,7 @@ export default function ProductDetailsScreen() {
   const { id: idParam } = useLocalSearchParams<ProductDetailsParams>();
   const idString = typeof idParam === 'string' ? idParam : idParam?.[0];
   
-  const { width } = useWindowDimensions();
-  const colorScheme = useColorScheme() ?? 'light';
-  const theme = Colors[colorScheme];
-
-  const { addItem } = useCart();
-
-  /* ---------------- Validation ---------------- */
-
+  /* safely convert a route/string parameter into a valid numeric product ID */
   const productId = useMemo(() => {
     if (!idString) return null;
     const parsed = Number(idString);
@@ -56,6 +49,12 @@ export default function ProductDetailsScreen() {
 
   /* ---------------- Data ---------------- */
   const { data: product } = useProduct(productId ?? -1);
+
+  const { width } = useWindowDimensions();
+  const colorScheme = useColorScheme() ?? 'light';
+  const theme = Colors[colorScheme];
+
+  const { addItem } = useCart();
 
   /* ---------------- State ---------------- */
 

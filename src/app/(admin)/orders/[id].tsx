@@ -65,12 +65,26 @@ export default function OrderDetailScreen() {
     <PlacedOrderListItems item={item} />
   );
 
+  const computedTotal = orderItems.reduce(
+    (sum, item) => sum + (Number(item.products.price) || 0) * (item.quantity ?? 0),
+    0,
+  );
+  const orderTotal = computedTotal > 0 ? computedTotal : Number(orderFetched.total ?? 0);
+  const customerEmail = orderFetched.profiles?.email ?? "Not available";
+  const customerMobile = orderFetched.profiles?.mobile_number ?? "+27 XX XXX XXXX";
+
   return (
     <View style={{ padding: 10, gap: 10 }}>
       <Stack.Screen options={{ title: `Admin Order #${id}` }} />
 
       {/* Order summary */}
-      <OrderListItem order={orderFetched} routeGroup="admin" />
+      <OrderListItem
+        order={orderFetched}
+        routeGroup="admin"
+        statusSubtext={`$${orderTotal.toFixed(2)}`}
+        customerEmail={customerEmail}
+        customerMobile={customerMobile}
+      />
 
       {/* Items in the order */}
       <FlatList<OrderItem>

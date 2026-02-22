@@ -229,12 +229,12 @@ const CreateProductScreen = () => {
     if (!productId) return;
     if (isSubmitting || isDeleting) return;
     Alert.alert(
-      "Confirm Delete",
-      "Are you sure you want to delete this product? This action cannot be undone.",
+      "Archive Product",
+      "This will remove the product from user menus while keeping past order history.",
       [
         { text: "Cancel", style: "cancel" },
         {
-          text: "Delete",
+          text: "Archive",
           style: "destructive",
           onPress: async () => {
             try {
@@ -243,10 +243,10 @@ const CreateProductScreen = () => {
               await deleteProduct(productId);
               resetForm();
               router.replace("/(admin)/menu");
-              Alert.alert("Deleted", "Product deleted successfully.");
+              Alert.alert("Archived", "Product hidden from users.");
             } catch (err) {
               // console.error("Delete error:", err);
-              Alert.alert("Error", "Failed to delete product.");
+              Alert.alert("Error", "Failed to archive product.");
             } finally {
               setIsDeleting(false);
             }
@@ -328,7 +328,7 @@ const CreateProductScreen = () => {
         {isUpdating && (
           <Pressable onPress={onDelete} style={styles.deleteWrapper}>
             <Text style={styles.deleteText}>
-              {isDeleting ? "Deleting..." : "Delete Product"}
+              {isDeleting ? "Archiving..." : "Archive Product"}
             </Text>
           </Pressable>
         )}

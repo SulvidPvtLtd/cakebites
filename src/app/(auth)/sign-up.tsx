@@ -9,24 +9,63 @@ const SignUpScreen = () => {
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [mobileNumber, setMobileNumber] = useState('');
 
   // Track the loading state to prevent multiple sign-up attempts
   const [loading, setLoading] = useState(false);
 
   async function signUpWithEmail() {
-    
     setLoading(true); // sign up starts
-    //console.warn('sign up with email');
-    
-    const signupResponse = await supabase.auth.signUp({ email, password});
-    
+
+    try {
+      const normalizedEmail = email.trim().toLowerCase();
+      const normalizedMobile = mobileNumber.trim() || null;
+
+      const signupResponse = await supabase.auth.signUp({
+        email: normalizedEmail,
+        password,
+        options: {
+          data: {
+            mobile_number: normalizedMobile,
+          },
+        },
+      });
+
       if (signupResponse.error) {
         Alert.alert('Error signing up', signupResponse.error.message);
-      } else {
-        Alert.alert('Success', 'Account created successfully! Please check your email to confirm your account.');
+        return;
       }
 
-    setLoading(false); // sign up ends
+      const newUser = signupResponse.data.user;
+      if (newUser) {
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .upsert(
+            {
+              id: newUser.id,
+              email: normalizedEmail,
+              mobile_number: normalizedMobile,
+              group: 'USER',
+            },
+            { onConflict: 'id' },
+          );
+
+        if (profileError) {
+          Alert.alert(
+            'Account created',
+            `Account was created, but profile setup failed: ${profileError.message}`,
+          );
+          return;
+        }
+      }
+
+      Alert.alert(
+        'Success',
+        'Account created successfully! Please check your email to confirm your account.',
+      );
+    } finally {
+      setLoading(false); // sign up ends
+    }
   }
 
   return (
@@ -54,6 +93,16 @@ const SignUpScreen = () => {
         editable
         autoFocus
         keyboardType="default"
+      />
+
+      <Text style={styles.label}>Mobile Number</Text>
+      <TextInput
+        value={mobileNumber}
+        onChangeText={setMobileNumber}
+        placeholder="+27 82 123 4567"
+        style={styles.input}
+        editable
+        keyboardType="phone-pad"
       />
 
       <Button onPress={signUpWithEmail} disabled={loading}   text={loading ? "Creating account..." : "Create account"} />

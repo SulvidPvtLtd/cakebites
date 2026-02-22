@@ -19,7 +19,7 @@
 
 */
 
-import type { Tables as SupabaseTables } from "./database.types";
+import type { Database, Tables as SupabaseTables } from "./database.types";
 export type {
   Database,
   Enums,
@@ -39,6 +39,8 @@ export type {
 //   name: string;
 //   price: number;
 // };
+export type InsertTables<T extends keyof Database["public"]["Tables"]> = Database["public"]["Tables"][T]["Row"];
+
 
 export type ProductSize = "S" | "M" | "L" | "XL";
 

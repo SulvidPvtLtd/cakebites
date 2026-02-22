@@ -30,7 +30,11 @@ export const useProductList = () => {
         // Define the object with some options.
         queryKey: ['products'], // The key to identify the query.
         queryFn: async () => {
-        const { data, error } = await supabase.from('products').select('*');  
+        const { data, error } = await supabase
+            .from('products')
+            .select('*')
+            .eq('is_active', true)
+            .eq('in_stock', true);
         if (error) {
             //  console.error('Error fetching products:', error);
             throw new Error(error.message);
@@ -38,6 +42,19 @@ export const useProductList = () => {
         return data ?? [];
         }
 
+    });
+};
+
+export const useAdminProductList = () => {
+    return useQuery<ProductRow[]>({
+        queryKey: ['admin-products'],
+        queryFn: async () => {
+            const { data, error } = await supabase.from('products').select('*');
+            if (error) {
+                throw new Error(error.message);
+            }
+            return data ?? [];
+        }
     });
 };
 
@@ -119,7 +136,13 @@ export const useDeleteProduct = () => {
     const queryClient = useQueryClient();
     return useMutation({
         async mutationFn(id: number) {
-            const { error } = await supabase.from('products').delete().eq('id', id);
+            const { error } = await supabase
+                .from('products')
+                .update({
+                    is_active: false,
+                    in_stock: false,
+                } satisfies Pick<ProductUpdate, 'is_active' | 'in_stock'>)
+                .eq('id', id);
             if (error) {
                 throw new Error(error.message);
             }
@@ -127,6 +150,7 @@ export const useDeleteProduct = () => {
         },
         onSuccess: async (deletedProductId) => {
             await queryClient.invalidateQueries({ queryKey: ['products'] });
+            await queryClient.invalidateQueries({ queryKey: ['admin-products'] });
             await queryClient.invalidateQueries({ queryKey: ['products', deletedProductId] });
         }
     });
