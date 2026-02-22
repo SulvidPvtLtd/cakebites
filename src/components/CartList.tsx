@@ -14,6 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import Colors from '@constants/Colors';
 import { useCart } from '@providers/CartProvider';
+import { getSafeImageUrl } from './ProductListItem';
 
 const IMAGE_SIZE = 44;
 
@@ -62,13 +63,11 @@ export default function CartList() {
                   { backgroundColor: theme.placeholder },
                 ]}
               >
-                {item.product.image ? (
-                  <Image
-                    source={{ uri: item.product.image }}
-                    style={styles.image}
-                    resizeMode="cover"
-                  />
-                ) : null}
+                <Image
+                  source={{ uri: getSafeImageUrl(item.product.image) }}
+                  style={styles.image}
+                  resizeMode="cover"
+                />
               </View>
 
               {/* Info */}

@@ -2,7 +2,7 @@ import { View, Text, StyleSheet, Image } from 'react-native';
 import React from 'react';
 import Colors from '../constants/Colors';
 import { OrderItem } from '../types';
-import { defaultPizzaImage } from './ProductListItem';
+import { getSafeImageUrl } from './ProductListItem';
 
 type OrderedItemListItemsProps = {
   item: OrderItem;
@@ -12,7 +12,7 @@ const PlacedOrderListItems = ({ item }: OrderedItemListItemsProps) => {
   return (
     <View style={styles.container}>
       <Image
-        source={{ uri: item.products.image || defaultPizzaImage }}
+        source={{ uri: getSafeImageUrl(item.products.image) }}
         style={styles.image}
         resizeMode="contain"
       />

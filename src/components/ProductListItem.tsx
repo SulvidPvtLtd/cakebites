@@ -19,9 +19,12 @@ const GAP = 16;
 const IMAGE_RATIO = 1;
 const CARD_TEXT_HEIGHT = 84;
 
-const sanitizeImageUrl = (url?: string | null): string => {
-  if (typeof url !== 'string') return defaultPizzaImage;
-  return url.startsWith('https://') ? url : defaultPizzaImage;
+export const getSafeImageUrl = (url?: string | null): string => {
+  const normalized = typeof url === 'string' ? url.trim() : '';
+  if (!normalized) return defaultPizzaImage;
+  return /^(https?:\/\/|file:\/\/|content:\/\/)/i.test(normalized)
+    ? normalized
+    : defaultPizzaImage;
 };
 
 const truncateTitle = (title: string, maxLength = 16): string =>
@@ -58,7 +61,7 @@ const ProductListItem = ({
           <View style={[styles.card, { backgroundColor: theme.card }]}>
             <View style={styles.imageContainer}>
               <Image
-                source={{ uri: sanitizeImageUrl(product.image) }}
+                source={{ uri: getSafeImageUrl(product.image) }}
                 style={styles.image}
                 resizeMode="contain"
               />
