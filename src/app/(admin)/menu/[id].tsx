@@ -23,7 +23,7 @@ import { useProduct } from '@/src/api/products';
 import Button from '@/src/components/Button';
 import { useCart } from '@/src/providers/CartProvider';
 import { ProductSize } from '@/src/types';
-import { defaultPizzaImage } from '@components/ProductListItem';
+import { getSafeImageUrl } from '@components/ProductListItem';
 import Colors from '@constants/Colors';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 
@@ -98,10 +98,7 @@ export default function ProductDetailsScreen() {
     );
   }
 
-  const imageSource =
-    typeof product.image === 'string' && product.image.length > 0
-      ? { uri: product.image }
-      : { uri: defaultPizzaImage };
+  const imageSource = { uri: getSafeImageUrl(product.image) };
 
   /* ---------------- Actions ---------------- */
 

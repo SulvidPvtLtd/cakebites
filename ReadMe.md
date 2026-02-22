@@ -1024,11 +1024,8 @@ if (error) {
   return <Text>Failed to fetch</Text>;
 }
 
-```
-5:29: 13
 
-`````
-# Data base schema changes done 
+# Data base schema changes done
 
 - step 1: Add soft-delete/inventory columns
 
@@ -1157,4 +1154,47 @@ where schemaname = 'public'
   and tablename = 'products'
   and indexname = 'idx_products_active_instock';
 
+# Storage bucket
+
+add bucket storage
+insert into storage.buckets (id, name, public)
+values ('product-images', 'product-images', true)
+on conflict (id) do nothing;
+
+
+
+Polocies
+
+-- Allow authenticated users to read images
+create policy "Product images are publicly readable"
+on storage.objects
+for select
+to public
+using (bucket_id = 'product-images');
+
+-- Allow authenticated users to upload
+create policy "Authenticated can upload product images"
+on storage.objects
+for insert
+to authenticated
+with check (bucket_id = 'product-images');
+
+-- Allow authenticated users to update their uploads
+create policy "Authenticated can update product images"
+on storage.objects
+for update
+to authenticated
+using (bucket_id = 'product-images')
+with check (bucket_id = 'product-images');
+
+-- Allow authenticated users to delete uploads
+create policy "Authenticated can delete product images"
+on storage.objects
+for delete
+to authenticated
+using (bucket_id = 'product-images');
+
+
 ```
+5:29: 13
+`````

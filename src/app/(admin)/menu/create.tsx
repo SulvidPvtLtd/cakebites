@@ -6,8 +6,12 @@ import {
   useUpdateProduct,
 } from "@/src/api/products";
 import Button from "@/src/components/Button";
-import { defaultPizzaImage } from "@/src/components/ProductListItem";
+import {
+  defaultPizzaImage,
+  getSafeImageUrl,
+} from "@/src/components/ProductListItem";
 import Colors from "@/src/constants/Colors";
+import { supabase } from "@/src/lib/supabase";
 import * as ImagePicker from "expo-image-picker";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
@@ -23,6 +27,29 @@ import {
 } from "react-native";
 
 const MAX_NAME_LENGTH = 50;
+const PRODUCT_IMAGE_BUCKET = "product-images";
+
+type PickedImageAsset = {
+  uri: string;
+  mimeType?: string | null;
+  fileName?: string | null;
+};
+
+const isLocalAssetUri = (uri: string) =>
+  /^(file:\/\/|content:\/\/|ph:\/\/|assets-library:\/\/)/i.test(uri);
+
+const getFileExt = (asset: PickedImageAsset) => {
+  const fromName = asset.fileName?.split(".").pop()?.toLowerCase();
+  if (fromName) return fromName;
+
+  const fromMime = asset.mimeType?.split("/").pop()?.toLowerCase();
+  if (fromMime) return fromMime;
+
+  const fromUri = asset.uri.split(".").pop()?.split("?")[0]?.toLowerCase();
+  if (fromUri) return fromUri;
+
+  return "jpg";
+};
 
 const CreateProductScreen = () => {
   
@@ -30,6 +57,7 @@ const CreateProductScreen = () => {
   const [priceRaw, setPriceRaw] = useState("");
   const [description, setDescription] = useState("");
   const [image, setImage] = useState<string | null>(null);
+  const [pickedImageAsset, setPickedImageAsset] = useState<PickedImageAsset | null>(null);
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -65,6 +93,7 @@ const CreateProductScreen = () => {
     );
     setDescription(productToEdit.description?.trim() ?? "");
     setImage(productToEdit.image ?? null);
+    setPickedImageAsset(null);
     setHydratedProductId(productToEdit.id);
   }, [hydratedProductId, isUpdating, productToEdit]);
 
@@ -73,6 +102,7 @@ const CreateProductScreen = () => {
     setPriceRaw("");
     setDescription("");
     setImage(null);
+    setPickedImageAsset(null);
     setError("");
     setHydratedProductId(null);
   };
@@ -134,16 +164,67 @@ const CreateProductScreen = () => {
         allowsEditing: true,
         aspect: [1, 1],
         quality: 0.9,
+        mediaTypes: ["images"],
       });
 
       if (!result.canceled) {
-        setImage(result.assets[0].uri);
+        const asset = result.assets[0];
+        const picked: PickedImageAsset = {
+          uri: asset.uri,
+          mimeType: asset.mimeType ?? null,
+          fileName: asset.fileName ?? null,
+        };
+        setImage(asset.uri);
+        setPickedImageAsset(picked);
       }
     } catch (err) {
       console.error("Image picker error:", err);
       Alert.alert("Error", "Failed to pick image.");
     }
   }, []);
+
+  const uploadImageIfNeeded = useCallback(async () => {
+    const uri = image?.trim();
+    if (!uri) return null;
+
+    if (!isLocalAssetUri(uri)) {
+      return uri;
+    }
+
+    const asset: PickedImageAsset = pickedImageAsset ?? { uri };
+    const extension = getFileExt(asset);
+    const contentType = asset.mimeType ?? `image/${extension}`;
+    const filePath = `products/${Date.now()}-${Math.random()
+      .toString(36)
+      .slice(2)}.${extension}`;
+
+    const response = await fetch(asset.uri);
+    if (!response.ok) {
+      throw new Error("Failed to read selected image file.");
+    }
+
+    const arrayBuffer = await response.arrayBuffer();
+    const { error: uploadError } = await supabase.storage
+      .from(PRODUCT_IMAGE_BUCKET)
+      .upload(filePath, arrayBuffer, {
+        contentType,
+        upsert: false,
+      });
+
+    if (uploadError) {
+      throw new Error(uploadError.message);
+    }
+
+    const { data } = supabase.storage
+      .from(PRODUCT_IMAGE_BUCKET)
+      .getPublicUrl(filePath);
+
+    if (!data?.publicUrl) {
+      throw new Error("Could not generate public image URL.");
+    }
+
+    return data.publicUrl;
+  }, [image, pickedImageAsset]);
 
   // CREATE
   const onCreate = useCallback(async () => {
@@ -152,11 +233,12 @@ const CreateProductScreen = () => {
 
     try {
       setIsSubmitting(true);
+      const imageUrl = await uploadImageIfNeeded();
 
       const payload = {
         name: name.trim(),
         price: priceValue!,
-        image,
+        image: imageUrl,
         description: description.trim() || null,
       };
 
@@ -172,7 +254,6 @@ const CreateProductScreen = () => {
       setIsSubmitting(false);
     }
   }, [
-    image,
     insertProduct,
     isDeleting,
     isSubmitting,
@@ -180,6 +261,7 @@ const CreateProductScreen = () => {
     description,
     priceValue,
     router,
+    uploadImageIfNeeded,
     validate,
   ]);
 
@@ -191,12 +273,13 @@ const CreateProductScreen = () => {
 
     try {
       setIsSubmitting(true);
+      const imageUrl = await uploadImageIfNeeded();
 
       const payload = {
         id: productId,
         name: name.trim(),
         price: priceValue!,
-        image,
+        image: imageUrl,
         description: description.trim() || null,
       };
 
@@ -213,13 +296,13 @@ const CreateProductScreen = () => {
     }
   }, [
     description,
-    image,
     isDeleting,
     isSubmitting,
     name,
     priceValue,
     productId,
     router,
+    uploadImageIfNeeded,
     updateProduct,
     validate,
   ]);
@@ -280,7 +363,7 @@ const CreateProductScreen = () => {
 
       <Pressable style={styles.imageWrapper} onPress={pickImage}>
         <Image
-          source={{ uri: image || defaultPizzaImage }}
+          source={{ uri: getSafeImageUrl(image ?? defaultPizzaImage) }}
           style={styles.image}
         />
         <Text style={styles.imageHint}>Tap to select image</Text>
