@@ -17,6 +17,7 @@ import {
 import { Tables } from "../database.types";
 
 type Product = Tables<"products">;
+type FulfillmentOption = "DELIVERY" | "COLLECTION";
 
 type CartType = {
   items: CartItem[];
@@ -25,7 +26,11 @@ type CartType = {
   removeItem: (productId: number, size: ProductSize) => void;
   clearCart: () => void;
   total: number;
-  checkout: () => Promise<number>;
+  checkout: (deliveryFee?: number) => Promise<number>;
+  fulfillmentOption: FulfillmentOption | null;
+  hasAcceptedDeliveryTerms: boolean;
+  setFulfillmentOption: (option: FulfillmentOption | null) => void;
+  acceptDeliveryTerms: () => void;
 };
 
 const CartContext = createContext<CartType | undefined>(undefined);
@@ -51,6 +56,8 @@ const sanitizeQuantity = (qty: number) =>
 
 export default function CartProvider({ children }: PropsWithChildren) {
   const [items, setItems] = useState<CartItem[]>([]);
+  const [fulfillmentOption, setFulfillmentOption] = useState<FulfillmentOption | null>(null);
+  const [hasAcceptedDeliveryTerms, setHasAcceptedDeliveryTerms] = useState(false);
   const { mutateAsync: insertOrder } = useInsertOrder();
   const { mutateAsync: insertOrderItems } = useInsertOrderItems();
   const { mutateAsync: deleteOrder } = useDeleteOrder();
@@ -127,9 +134,17 @@ export default function CartProvider({ children }: PropsWithChildren) {
     [removeItem],
   );
 
-  const clearCart = useCallback(() => setItems([]), []);
+  const clearCart = useCallback(() => {
+    setItems([]);
+    setFulfillmentOption(null);
+    setHasAcceptedDeliveryTerms(false);
+  }, []);
 
-  const checkout = useCallback(async () => {
+  const acceptDeliveryTerms = useCallback(() => {
+    setHasAcceptedDeliveryTerms(true);
+  }, []);
+
+  const checkout = useCallback(async (deliveryFee = 0) => {
     if (!Array.isArray(items) || items.length === 0) {
       throw new Error("Cart is empty.");
     }
@@ -138,7 +153,21 @@ export default function CartProvider({ children }: PropsWithChildren) {
       throw new Error("Invalid cart total.");
     }
 
-    const newOrder = await insertOrder({ total });
+    if (!fulfillmentOption) {
+      throw new Error("Please choose delivery or collection before checkout.");
+    }
+
+    const safeDeliveryFee =
+      fulfillmentOption === "DELIVERY" && Number.isFinite(deliveryFee) && deliveryFee > 0
+        ? deliveryFee
+        : 0;
+
+    const finalTotal = total + safeDeliveryFee;
+
+    const newOrder = await insertOrder({
+      total: finalTotal,
+      delivery_option: fulfillmentOption === "DELIVERY" ? "Yes" : "No",
+    });
     if (!newOrder?.id) {
       throw new Error("Failed to create order.");
     }
@@ -162,7 +191,7 @@ export default function CartProvider({ children }: PropsWithChildren) {
     }
     clearCart();
     return newOrder.id;
-  }, [items, total, insertOrder, insertOrderItems, deleteOrder, clearCart]);
+  }, [items, total, fulfillmentOption, insertOrder, insertOrderItems, deleteOrder, clearCart]);
 
   /* ---------- Value ---------- */
 
@@ -175,8 +204,24 @@ export default function CartProvider({ children }: PropsWithChildren) {
       clearCart,
       total,
       checkout,
+      fulfillmentOption,
+      hasAcceptedDeliveryTerms,
+      setFulfillmentOption,
+      acceptDeliveryTerms,
     }),
-    [items, addItem, updateQuantity, removeItem, clearCart, total, checkout],
+    [
+      items,
+      addItem,
+      updateQuantity,
+      removeItem,
+      clearCart,
+      total,
+      checkout,
+      fulfillmentOption,
+      hasAcceptedDeliveryTerms,
+      setFulfillmentOption,
+      acceptDeliveryTerms,
+    ],
   );
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

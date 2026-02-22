@@ -17,12 +17,15 @@ import { useCart } from '@providers/CartProvider';
 import CartList from '@components/CartList';
 
 export default function CartScreen() {
-  const { items, total, checkout } = useCart();
+  const { items, total, checkout, fulfillmentOption } = useCart();
   const router = useRouter();
+  const DELIVERY_FEE = 5;
 
   const scheme = useColorScheme() ?? 'light';
   const theme = Colors[scheme];
   const insets = useSafeAreaInsets();
+  const deliveryFee = fulfillmentOption === "DELIVERY" ? DELIVERY_FEE : 0;
+  const finalTotal = total + deliveryFee;
 
   /* ---------------- Empty State ---------------- */
   if (!Array.isArray(items) || items.length === 0) {
@@ -89,11 +92,83 @@ export default function CartScreen() {
           </Text>
         </View>
 
+        <View style={styles.summaryRow}>
+          <Text
+            style={[
+              styles.summaryLabel,
+              { color: theme.textSecondary },
+            ]}
+          >
+            Fulfilment
+          </Text>
+
+          <Text
+            style={[
+              styles.summaryLabel,
+              { color: theme.textPrimary, fontWeight: '600' },
+            ]}
+          >
+            {fulfillmentOption === "DELIVERY"
+              ? "Delivery"
+              : fulfillmentOption === "COLLECTION"
+                ? "Self collect"
+                : "Not selected"}
+          </Text>
+        </View>
+
+        <View style={styles.summaryRow}>
+          <Text
+            style={[
+              styles.summaryLabel,
+              { color: theme.textSecondary },
+            ]}
+          >
+            Delivery fee
+          </Text>
+
+          <Text
+            style={[
+              styles.summaryLabel,
+              { color: theme.textPrimary },
+            ]}
+          >
+            ${deliveryFee.toFixed(2)}
+          </Text>
+        </View>
+
+        <View style={styles.summaryRow}>
+          <Text
+            style={[
+              styles.summaryValue,
+              { color: theme.textPrimary },
+            ]}
+          >
+            Total
+          </Text>
+
+          <Text
+            style={[
+              styles.summaryValue,
+              { color: theme.tint },
+            ]}
+          >
+            ${finalTotal.toFixed(2)}
+          </Text>
+        </View>
+
         {/* Checkout */}
         <Pressable
           onPress={async () => {
+            if (!fulfillmentOption) {
+              Alert.alert(
+                'Choose fulfilment first',
+                'Go back to product and choose Delivery or Self collect before checkout.',
+              );
+              return;
+            }
+
             try {
-              const orderId = await checkout();
+              const orderId = await checkout(deliveryFee);
               router.push(`/(user)/orders/${orderId}`);
             } catch (error) {
               const message = error instanceof Error ? error.message : 'Checkout failed';

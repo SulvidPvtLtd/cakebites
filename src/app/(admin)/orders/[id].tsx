@@ -65,11 +65,7 @@ export default function OrderDetailScreen() {
     <PlacedOrderListItems item={item} />
   );
 
-  const computedTotal = orderItems.reduce(
-    (sum, item) => sum + (Number(item.products.price) || 0) * (item.quantity ?? 0),
-    0,
-  );
-  const orderTotal = computedTotal > 0 ? computedTotal : Number(orderFetched.total ?? 0);
+  const orderTotal = Number(orderFetched.total ?? 0);
   const customerEmail = orderFetched.profiles?.email ?? "Not available";
   const customerMobile = orderFetched.profiles?.mobile_number ?? "+27 XX XXX XXXX";
 

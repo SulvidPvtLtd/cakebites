@@ -46,6 +46,8 @@ const OrderListItem = ({
         second: "2-digit",
         hour12: false,
       }).format(createdAtDate);
+  const fulfillmentLabel =
+    order.delivery_option === "No" ? "Self collect" : "Delivery";
 
   return (
     <Link href={href} asChild>
@@ -56,6 +58,9 @@ const OrderListItem = ({
           <Text style={styles.timeExact}>{createdAtSouthAfrica} SAST</Text>
           {customerEmail ? <Text style={styles.contactText}>Email: {customerEmail}</Text> : null}
           {customerMobile ? <Text style={styles.contactText}>Mobile: {customerMobile}</Text> : null}
+          {routeGroup === "admin" ? (
+            <Text style={styles.fulfillmentText}>Fulfilment: {fulfillmentLabel}</Text>
+          ) : null}
         </View>
 
         <View style={styles.statusContainer}>
@@ -103,6 +108,12 @@ const styles = StyleSheet.create({
     color: 'gray',
     fontSize: 12,
     marginTop: 2,
+  },
+  fulfillmentText: {
+    color: '#1f5fbf',
+    fontSize: 12,
+    marginTop: 4,
+    fontWeight: '600',
   },
 });
 
