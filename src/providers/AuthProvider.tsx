@@ -4,12 +4,12 @@
 import type { Tables } from "@/src/database.types";
 import { Session } from "@supabase/supabase-js";
 import {
-    createContext,
-    PropsWithChildren,
-    useContext,
-    useEffect,
-    useRef,
-    useState,
+  createContext,
+  PropsWithChildren,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
 } from "react";
 
 // Declare type for the auth data
@@ -31,6 +31,8 @@ const AuthContext = createContext<AuthData>({
   setActiveGroup: () => {},
 });
 
+const PROFILE_REQUEST_TIMEOUT_MS = 3500;
+
 export default function AuthProvider({ children }: PropsWithChildren) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true); // Track loading state
@@ -40,16 +42,33 @@ export default function AuthProvider({ children }: PropsWithChildren) {
 
   // Query the session to check if the user is logged in and set the user state accordingly
   useEffect(() => {
-    const isInvalidRefreshTokenError = (message?: string) => {
-      if (!message) return false;
-      const normalized = message.toLowerCase();
-      return (
-        normalized.includes("invalid refresh token") ||
-        normalized.includes("refresh token not found")
-      );
+    const clearLocalSession = async () => {
+      await supabase.auth.signOut({ scope: "local" });
+      setSession(null);
+      setProfile(null);
+      lastUserIdRef.current = null;
+      setActiveGroup(null);
     };
 
     const fetchOrCreateProfile = async (session: Session) => {
+      const withTimeout = async <T,>(promise: PromiseLike<T>, timeoutMs: number) => {
+        return new Promise<T>((resolve, reject) => {
+          const timeout = setTimeout(() => {
+            reject(new Error("Profile request timed out"));
+          }, timeoutMs);
+
+          Promise.resolve(promise)
+            .then((value) => {
+              clearTimeout(timeout);
+              resolve(value);
+            })
+            .catch((err) => {
+              clearTimeout(timeout);
+              reject(err);
+            });
+        });
+      };
+
       const userId = session.user.id;
       const userEmail = session.user.email ?? null;
       const userMobile =
@@ -57,11 +76,19 @@ export default function AuthProvider({ children }: PropsWithChildren) {
           ? session.user.user_metadata.mobile_number
           : null;
 
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", userId)
-        .maybeSingle();
+      let data: Tables<"profiles"> | null = null;
+      let error: Error | null = null;
+      try {
+        const response = await withTimeout(
+          supabase.from("profiles").select("*").eq("id", userId).maybeSingle(),
+          PROFILE_REQUEST_TIMEOUT_MS
+        );
+        data = response.data;
+        error = response.error;
+      } catch {
+        // Keep startup responsive when network is slow/unavailable.
+        return null;
+      }
 
       if (error) {
         console.log("Profile fetch error:", error.message);
@@ -72,16 +99,28 @@ export default function AuthProvider({ children }: PropsWithChildren) {
         return data;
       }
 
-      const { data: createdProfile, error: createError } = await supabase
-        .from("profiles")
-        .insert({
-          id: userId,
-          email: userEmail,
-          mobile_number: userMobile,
-          group: "USER",
-        })
-        .select("*")
-        .single();
+      let createdProfile: Tables<"profiles"> | null = null;
+      let createError: Error | null = null;
+      try {
+        const response = await withTimeout(
+          supabase
+            .from("profiles")
+            .insert({
+              id: userId,
+              email: userEmail,
+              mobile_number: userMobile,
+              group: "USER",
+            })
+            .select("*")
+            .single(),
+          PROFILE_REQUEST_TIMEOUT_MS
+        );
+        createdProfile = response.data;
+        createError = response.error;
+      } catch {
+        // Keep startup responsive when network is slow/unavailable.
+        return null;
+      }
 
       if (createError) {
         console.log("Profile create error:", createError.message);
@@ -93,18 +132,23 @@ export default function AuthProvider({ children }: PropsWithChildren) {
 
     // UseEffect expects nothing or a cleanup function and can not be async, so we define an async function inside it and call it immediately.
     const fecthSession = async () => {
-      const {
-        data: { session },
-        error,
-      } = await supabase.auth.getSession();
+      let session: Session | null = null;
+      try {
+        const {
+          data: { session: currentSession },
+          error,
+        } = await supabase.auth.getSession();
 
-      if (error && isInvalidRefreshTokenError(error.message)) {
-        // Local-only sign out clears stale tokens that can trigger repeated refresh failures.
-        await supabase.auth.signOut({ scope: "local" });
-        setSession(null);
-        setProfile(null);
-        lastUserIdRef.current = null;
-        setActiveGroup(null);
+        if (error) {
+          // Clear stale local credentials for any session bootstrap error.
+          await clearLocalSession();
+          setLoading(false);
+          return;
+        }
+
+        session = currentSession;
+      } catch {
+        await clearLocalSession();
         setLoading(false);
         return;
       }
