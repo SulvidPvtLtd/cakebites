@@ -1,6 +1,7 @@
 import { useProduct } from "@/src/api/products";
 import Button from "@/src/components/Button";
 import Colors from "@/src/constants/Colors";
+import { getProductSizePriceMap } from "@/src/lib/sizePricing";
 import { useCart } from "@/src/providers/CartProvider";
 import { ProductSize } from "@/src/types";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
@@ -61,10 +62,11 @@ Allergen information must be requested before ordering.`;
 type TermsParams = {
   productId?: string;
   size?: string;
+  unitPrice?: string;
 };
 
 export default function DeliveryTermsScreen() {
-  const { productId: productIdParam, size: sizeParam } =
+  const { productId: productIdParam, size: sizeParam, unitPrice: unitPriceParam } =
     useLocalSearchParams<TermsParams>();
   const router = useRouter();
   const colorScheme = useColorScheme() ?? "light";
@@ -87,6 +89,13 @@ export default function DeliveryTermsScreen() {
   }, [sizeParam]);
 
   const { data: product } = useProduct(productId ?? -1);
+  const unitPrice = useMemo(() => {
+    const parsed = Number(unitPriceParam);
+    if (Number.isFinite(parsed) && parsed > 0) return parsed;
+    if (!product || !size) return null;
+    const sizePriceMap = getProductSizePriceMap(product);
+    return sizePriceMap[size];
+  }, [product, size, unitPriceParam]);
 
   const onAcceptTerms = async () => {
     if (!confirmed) {
@@ -97,7 +106,7 @@ export default function DeliveryTermsScreen() {
       return;
     }
 
-    if (!product || !size) {
+    if (!product || !size || unitPrice === null) {
       Alert.alert(
         "Unable to continue",
         "Product details were not found. Please go back and try again.",
@@ -109,7 +118,7 @@ export default function DeliveryTermsScreen() {
       setSaving(true);
       acceptDeliveryTerms();
       setFulfillmentOption("DELIVERY");
-      addItem(product, size);
+      addItem(product, size, unitPrice);
       router.replace("/cart");
     } finally {
       setSaving(false);

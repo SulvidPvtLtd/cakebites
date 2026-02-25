@@ -49,7 +49,9 @@ export type CartItem = {
   product: SupabaseTables<"products">;
   product_id: number;
   size: ProductSize;
+  unitPrice: number;
   quantity: number;
+  totalPrice: number;
 };
 
 export type OrderStatus =
@@ -86,7 +88,8 @@ export type OrderItem = {
   // Supabase full row requires fields (like created_at) that mock assets don't include.
   products: Pick<
     SupabaseTables<"products">, "id" | "image" | "name" | "price" | "description"
-  >; // Include only fields used by order UIs
+  > &
+    Partial<Pick<SupabaseTables<"products">, "size_prices">>; // Include optional size_prices for backward-compatible mocks
   order_id: number;
   size: ProductSize;
   quantity: number;

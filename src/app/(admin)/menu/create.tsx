@@ -11,6 +11,10 @@ import {
   getSafeImageUrl,
 } from "@/src/components/ProductListItem";
 import Colors from "@/src/constants/Colors";
+import {
+  PRODUCT_SIZES,
+  getProductSizePriceMap,
+} from "@/src/lib/sizePricing";
 import { supabase } from "@/src/lib/supabase";
 import * as ImagePicker from "expo-image-picker";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
@@ -25,6 +29,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { ProductSize } from "@/src/types";
 
 const MAX_NAME_LENGTH = 50;
 const PRODUCT_IMAGE_BUCKET = "product-images";
@@ -54,7 +59,12 @@ const getFileExt = (asset: PickedImageAsset) => {
 const CreateProductScreen = () => {
   
   const [name, setName] = useState("");
-  const [priceRaw, setPriceRaw] = useState("");
+  const [sizePricesRaw, setSizePricesRaw] = useState<Record<ProductSize, string>>({
+    S: "",
+    M: "",
+    L: "",
+    XL: "",
+  });
   const [description, setDescription] = useState("");
   const [inStock, setInStock] = useState(true);
   const [image, setImage] = useState<string | null>(null);
@@ -87,11 +97,13 @@ const CreateProductScreen = () => {
     if (hydratedProductId === productToEdit.id) return;
 
     setName(productToEdit.name ?? "");
-    setPriceRaw(
-      typeof productToEdit.price === "number"
-        ? String(productToEdit.price)
-        : "",
-    );
+    const sizePrices = getProductSizePriceMap(productToEdit);
+    setSizePricesRaw({
+      S: String(sizePrices.S),
+      M: String(sizePrices.M),
+      L: String(sizePrices.L),
+      XL: String(sizePrices.XL),
+    });
     setDescription(productToEdit.description?.trim() ?? "");
     setInStock(productToEdit.in_stock ?? true);
     setImage(productToEdit.image ?? null);
@@ -101,7 +113,7 @@ const CreateProductScreen = () => {
 
   const resetForm = () => {
     setName("");
-    setPriceRaw("");
+    setSizePricesRaw({ S: "", M: "", L: "", XL: "" });
     setDescription("");
     setInStock(true);
     setImage(null);
@@ -117,9 +129,18 @@ const CreateProductScreen = () => {
     return value > 0 ? value : null;
   }, []);
 
-  const priceValue = useMemo(
-    () => parsePrice(priceRaw),
-    [priceRaw, parsePrice],
+  const sizePrices = useMemo(() => {
+    return {
+      S: parsePrice(sizePricesRaw.S),
+      M: parsePrice(sizePricesRaw.M),
+      L: parsePrice(sizePricesRaw.L),
+      XL: parsePrice(sizePricesRaw.XL),
+    };
+  }, [parsePrice, sizePricesRaw]);
+
+  const hasAllSizePrices = useMemo(
+    () => PRODUCT_SIZES.every((size) => sizePrices[size] !== null),
+    [sizePrices],
   );
 
   const validate = useCallback(() => {
@@ -140,19 +161,14 @@ const CreateProductScreen = () => {
       return false;
     }
 
-    if (!priceRaw.trim()) {
-      setError("Price is required.");
-      return false;
-    }
-
-    if (priceValue === null) {
-      setError("Enter a valid positive price.");
+    if (!hasAllSizePrices) {
+      setError("Enter a valid positive price for each size.");
       return false;
     }
 
     setError("");
     return true;
-  }, [name, priceRaw, priceValue]);
+  }, [hasAllSizePrices, name]);
 
   const pickImage = useCallback(async () => {
     try {
@@ -229,6 +245,10 @@ const CreateProductScreen = () => {
     return data.publicUrl;
   }, [image, pickedImageAsset]);
 
+  const updateSizePrice = (size: ProductSize, value: string) => {
+    setSizePricesRaw((current) => ({ ...current, [size]: value }));
+  };
+
   // CREATE
   const onCreate = useCallback(async () => {
     if (isSubmitting || isDeleting) return;
@@ -238,12 +258,19 @@ const CreateProductScreen = () => {
       setIsSubmitting(true);
       const imageUrl = await uploadImageIfNeeded();
 
+      const normalizedSizePrices = {
+        S: sizePrices.S!,
+        M: sizePrices.M!,
+        L: sizePrices.L!,
+        XL: sizePrices.XL!,
+      };
       const payload = {
         name: name.trim(),
-        price: priceValue!,
+        price: normalizedSizePrices.M,
         image: imageUrl,
         description: description.trim() || null,
         in_stock: inStock,
+        size_prices: normalizedSizePrices,
       };
 
       await insertProduct(payload);
@@ -264,7 +291,7 @@ const CreateProductScreen = () => {
     name,
     description,
     inStock,
-    priceValue,
+    sizePrices,
     router,
     uploadImageIfNeeded,
     validate,
@@ -279,14 +306,21 @@ const CreateProductScreen = () => {
     try {
       setIsSubmitting(true);
       const imageUrl = await uploadImageIfNeeded();
+      const normalizedSizePrices = {
+        S: sizePrices.S!,
+        M: sizePrices.M!,
+        L: sizePrices.L!,
+        XL: sizePrices.XL!,
+      };
 
       const payload = {
         id: productId,
         name: name.trim(),
-        price: priceValue!,
+        price: normalizedSizePrices.M,
         image: imageUrl,
         description: description.trim() || null,
         in_stock: inStock,
+        size_prices: normalizedSizePrices,
       };
 
       await updateProduct(payload);
@@ -306,7 +340,7 @@ const CreateProductScreen = () => {
     isSubmitting,
     name,
     inStock,
-    priceValue,
+    sizePrices,
     productId,
     router,
     uploadImageIfNeeded,
@@ -388,14 +422,21 @@ const CreateProductScreen = () => {
           keyboardType="default"
         />
 
-        <Text style={styles.label}>Price ($)</Text>
-        <TextInput
-          value={priceRaw}
-          onChangeText={setPriceRaw}
-          placeholder="9.99"
-          keyboardType="decimal-pad"
-          style={styles.input}
-        />
+        <Text style={styles.label}>Prices by Size ($)</Text>
+        <View style={styles.sizePriceRow}>
+          {PRODUCT_SIZES.map((size) => (
+            <View key={size} style={styles.sizePriceCell}>
+              <Text style={styles.sizePriceLabel}>{size}</Text>
+              <TextInput
+                value={sizePricesRaw[size]}
+                onChangeText={(value) => updateSizePrice(size, value)}
+                placeholder="0.00"
+                keyboardType="decimal-pad"
+                style={[styles.input, styles.sizePriceInput]}
+              />
+            </View>
+          ))}
+        </View>
 
         <Text style={styles.label}>Description</Text>
         <TextInput
@@ -496,6 +537,24 @@ const styles = StyleSheet.create({
   },
   descriptionInput: {
     minHeight: 96,
+  },
+  sizePriceRow: {
+    flexDirection: "row",
+    gap: 8,
+    marginBottom: 8,
+  },
+  sizePriceCell: {
+    flex: 1,
+  },
+  sizePriceLabel: {
+    marginBottom: 6,
+    color: "#555",
+    fontWeight: "600",
+    fontSize: 12,
+  },
+  sizePriceInput: {
+    marginBottom: 8,
+    paddingHorizontal: 8,
   },
   stockRow: {
     flexDirection: "row",

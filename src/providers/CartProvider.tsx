@@ -21,7 +21,7 @@ type FulfillmentOption = "DELIVERY" | "COLLECTION";
 
 type CartType = {
   items: CartItem[];
-  addItem: (product: Product, size: ProductSize) => void;
+  addItem: (product: Product, size: ProductSize, unitPrice: number) => void;
   updateQuantity: ( productId: number, size: ProductSize, quantity: number ) => void;
   removeItem: (productId: number, size: ProductSize) => void;
   clearCart: () => void;
@@ -51,6 +51,8 @@ const isValidProduct = (product: unknown): product is Product => {
 
 const sanitizeQuantity = (qty: number) =>
   Number.isFinite(qty) ? Math.max(1, Math.floor(qty)) : 1;
+const sanitizeUnitPrice = (price: number) =>
+  Number.isFinite(price) ? Math.max(0, price) : 0;
 
 /* ---------------- Provider ---------------- */
 
@@ -70,17 +72,18 @@ export default function CartProvider({ children }: PropsWithChildren) {
         return sum;
       }
 
-      return sum + item.product.price * item.quantity;
+      return sum + sanitizeUnitPrice(item.unitPrice) * item.quantity;
     }, 0);
   }, [items]);
 
   /* ---------- Actions ---------- */
 
-  const addItem = useCallback((product: Product, size: ProductSize) => {
+  const addItem = useCallback((product: Product, size: ProductSize, unitPrice: number) => {
     if (!isValidProduct(product)) {
       __DEV__ && console.warn("Invalid product passed to addItem");
       return;
     }
+    const safeUnitPrice = sanitizeUnitPrice(unitPrice);
 
     const cartItemId = createCartItemId(product.id, size);
 
@@ -88,9 +91,15 @@ export default function CartProvider({ children }: PropsWithChildren) {
       const existing = current.find((it) => it.id === cartItemId);
 
       if (existing) {
+        const updatedQuantity = sanitizeQuantity(existing.quantity + 1);
         return current.map((it) =>
           it.id === cartItemId
-            ? { ...it, quantity: sanitizeQuantity(it.quantity + 1) }
+            ? {
+                ...it,
+                unitPrice: safeUnitPrice,
+                quantity: updatedQuantity,
+                totalPrice: safeUnitPrice * updatedQuantity,
+              }
             : it,
         );
       }
@@ -102,7 +111,9 @@ export default function CartProvider({ children }: PropsWithChildren) {
           product,
           product_id: product.id,
           size,
+          unitPrice: safeUnitPrice,
           quantity: 1,
+          totalPrice: safeUnitPrice,
         },
       ];
     });
@@ -126,9 +137,14 @@ export default function CartProvider({ children }: PropsWithChildren) {
       const cartItemId = createCartItemId(productId, size);
 
       setItems((current) =>
-        current.map((it) =>
-          it.id === cartItemId ? { ...it, quantity: safeQty } : it,
-        ),
+        current.map((it) => {
+          if (it.id !== cartItemId) return it;
+          return {
+            ...it,
+            quantity: safeQty,
+            totalPrice: sanitizeUnitPrice(it.unitPrice) * safeQty,
+          };
+        }),
       );
     },
     [removeItem],

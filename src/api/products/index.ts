@@ -84,7 +84,7 @@ export const useInsertProduct = () =>{
     return useMutation({
         // project-defined payload type (replaced by generated Supabase Insert type)
         // async mutationFn(data: { image?: string | null; name: string; price: number; description?: string | null }) {
-        async mutationFn(data: Pick<ProductInsert, "image" | "name" | "price" | "description" | "in_stock">) {
+        async mutationFn(data: Pick<ProductInsert, "image" | "name" | "price" | "description" | "in_stock" | "size_prices">) {
         const { data: newProduct, error } =    await supabase.from('products').insert({                
                 image: data.image ?? null,
                 name: data.name,
@@ -92,6 +92,7 @@ export const useInsertProduct = () =>{
                 description: data.description ?? null,
                 in_stock: data.in_stock ?? true,
                 is_active: true,
+                size_prices: data.size_prices,
             }).select().single();
             if (error) {
                 //  console.error('Error fetching products:', error);
@@ -114,7 +115,7 @@ export const useUpdateProduct = () =>{
     return useMutation({
         // project-defined payload type (replaced by generated Supabase Update type)
         // async mutationFn(data: { id: number; image?: string | null; name: string; price: number; description?: string | null }) {
-        async mutationFn(data: { id: ProductRow["id"] } & Pick<ProductUpdate, "image" | "name" | "price" | "description" | "in_stock">) {
+        async mutationFn(data: { id: ProductRow["id"] } & Pick<ProductUpdate, "image" | "name" | "price" | "description" | "in_stock" | "size_prices">) {
         const { data: updatedProduct, error } =    await supabase.from('products').update({                
                 image: data.image ?? null,
                 name: data.name,
@@ -122,6 +123,7 @@ export const useUpdateProduct = () =>{
                 description: data.description ?? null,
                 in_stock: data.in_stock,
                 is_active: true,
+                size_prices: data.size_prices,
             }).eq('id', data.id).select().single();
             if (error) {
                 throw new Error(error.message);

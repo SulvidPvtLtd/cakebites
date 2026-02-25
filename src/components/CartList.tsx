@@ -1,20 +1,18 @@
-// src/components/CartList.tsx
-
-import React from 'react';
+import React from "react";
 import {
-    FlatList,
-    Image,
-    Pressable,
-    StyleSheet,
-    Text,
-    useColorScheme,
-    View,
-} from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+  FlatList,
+  Image,
+  Pressable,
+  StyleSheet,
+  Text,
+  useColorScheme,
+  View,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import Colors from '@constants/Colors';
-import { useCart } from '@providers/CartProvider';
-import { getSafeImageUrl } from './ProductListItem';
+import Colors from "@constants/Colors";
+import { useCart } from "@providers/CartProvider";
+import { getSafeImageUrl } from "./ProductListItem";
 
 const IMAGE_SIZE = 44;
 
@@ -22,7 +20,7 @@ export default function CartList() {
   const { items, updateQuantity, removeItem } = useCart();
   const insets = useSafeAreaInsets();
 
-  const scheme = useColorScheme() ?? 'light';
+  const scheme = useColorScheme() ?? "light";
   const theme = Colors[scheme];
 
   if (!Array.isArray(items)) return null;
@@ -42,7 +40,8 @@ export default function CartList() {
         }
 
         const quantity = Math.max(1, item.quantity);
-        const price = Number(item.product.price) || 0;
+        const unitPrice = Number(item.unitPrice) || 0;
+        const lineTotal = unitPrice * quantity;
 
         return (
           <View
@@ -54,9 +53,7 @@ export default function CartList() {
               },
             ]}
           >
-            {/* ---------- Single Row ---------- */}
             <View style={styles.row}>
-              {/* Image */}
               <View
                 style={[
                   styles.imageWrapper,
@@ -70,7 +67,6 @@ export default function CartList() {
                 />
               </View>
 
-              {/* Info */}
               <View style={styles.info}>
                 <Text
                   style={[
@@ -82,18 +78,14 @@ export default function CartList() {
                   {item.product.name}
                 </Text>
 
-                <Text
-                  style={[
-                    styles.meta,
-                    { color: theme.textSecondary },
-                  ]}
-                  numberOfLines={1}
-                >
-                  ${price.toFixed(2)} · Size {item.size}
+                <Text style={[styles.meta, { color: theme.textSecondary }]} numberOfLines={1}>
+                  ${unitPrice.toFixed(2)} · Size {item.size}
+                </Text>
+                <Text style={[styles.meta, { color: theme.textSecondary }]}>
+                  Line total: ${lineTotal.toFixed(2)}
                 </Text>
               </View>
 
-              {/* Stepper */}
               <View style={styles.stepper}>
                 <Pressable
                   disabled={quantity <= 1}
@@ -109,7 +101,7 @@ export default function CartList() {
                     { backgroundColor: theme.tint },
                   ]}
                 >
-                  <Text style={styles.stepText}>−</Text>
+                  <Text style={styles.stepText}>-</Text>
                 </Pressable>
 
                 <Text
@@ -139,7 +131,6 @@ export default function CartList() {
               </View>
             </View>
 
-            {/* Optional remove */}
             <Pressable
               onPress={() =>
                 removeItem(item.product_id, item.size)
@@ -162,8 +153,6 @@ export default function CartList() {
   );
 }
 
-/* ---------------- Styles ---------------- */
-
 const styles = StyleSheet.create({
   card: {
     borderRadius: 14,
@@ -173,8 +162,8 @@ const styles = StyleSheet.create({
   },
 
   row: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
 
   imageWrapper: {
@@ -182,12 +171,12 @@ const styles = StyleSheet.create({
     height: IMAGE_SIZE,
     borderRadius: IMAGE_SIZE / 2,
     marginRight: 12,
-    backgroundColor: '#EAEAEA',
+    backgroundColor: "#EAEAEA",
   },
 
   image: {
-    width: '100%',
-    height: '100%',
+    width: "100%",
+    height: "100%",
   },
 
   info: {
@@ -197,7 +186,7 @@ const styles = StyleSheet.create({
 
   name: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
   },
 
   meta: {
@@ -206,8 +195,8 @@ const styles = StyleSheet.create({
   },
 
   stepper: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
   },
 
@@ -215,26 +204,27 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
 
   stepText: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: "700",
   },
 
   quantity: {
     minWidth: 20,
-    textAlign: 'center',
+    textAlign: "center",
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
   },
 
   remove: {
     fontSize: 12,
     marginTop: 8,
-    fontWeight: '500',
+    fontWeight: "500",
   },
 });
+

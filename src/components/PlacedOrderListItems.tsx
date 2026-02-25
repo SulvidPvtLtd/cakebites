@@ -3,12 +3,16 @@ import React from 'react';
 import Colors from '../constants/Colors';
 import { OrderItem } from '../types';
 import { getSafeImageUrl } from './ProductListItem';
+import { getProductSizePriceMap } from '../lib/sizePricing';
 
 type OrderedItemListItemsProps = {
   item: OrderItem;
 };
 
 const PlacedOrderListItems = ({ item }: OrderedItemListItemsProps) => {
+  const sizePriceMap = getProductSizePriceMap(item.products);
+  const priceForSize = sizePriceMap[item.size] ?? item.products.price;
+
   return (
     <View style={styles.container}>
       <Image
@@ -19,7 +23,7 @@ const PlacedOrderListItems = ({ item }: OrderedItemListItemsProps) => {
       <View style={{ flex: 1 }}>
         <Text style={styles.title}>{item.products.name}</Text>
         <View style={styles.subtitleContainer}>
-          <Text style={styles.price}>${item.products.price.toFixed(2)}</Text>
+          <Text style={styles.price}>${priceForSize.toFixed(2)}</Text>
           <Text>Size: {item.size}</Text>
         </View>
       </View>
