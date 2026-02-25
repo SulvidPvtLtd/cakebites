@@ -1,6 +1,6 @@
-import { Stack, useLocalSearchParams } from "expo-router";
+import { Stack, router, useLocalSearchParams } from "expo-router";
 import { useEffect } from "react";
-import { ActivityIndicator, Alert, FlatList, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { useOrderDetails } from "@/src/api/orders";
 import OrderListItem from "@/src/components/OrderListItem";
@@ -79,7 +79,16 @@ export default function OrderDetailScreen() {
 
   return (
     <View style={styles.container}>
-      <Stack.Screen options={{ title: `User Order #${idString}` }} />
+      <Stack.Screen
+        options={{
+          title: `User Order #${idString}`,
+          headerRight: () => (
+            <Pressable onPress={() => router.replace("/(user)/orders")}>
+              <Text style={styles.headerLink}>Order List</Text>
+            </Pressable>
+          ),
+        }}
+      />
 
       {/* Order summary */}
       <OrderListItem order={orderFetched} statusSubtext={`$${orderTotal.toFixed(2)}`} />
@@ -151,5 +160,10 @@ const styles = StyleSheet.create({
 
   statusTextActive: {
     color: "#fff",
+  },
+
+  headerLink: {
+    color: Colors.light.tint,
+    fontWeight: "600",
   },
 });

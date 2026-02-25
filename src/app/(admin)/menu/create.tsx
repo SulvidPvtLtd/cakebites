@@ -56,6 +56,7 @@ const CreateProductScreen = () => {
   const [name, setName] = useState("");
   const [priceRaw, setPriceRaw] = useState("");
   const [description, setDescription] = useState("");
+  const [inStock, setInStock] = useState(true);
   const [image, setImage] = useState<string | null>(null);
   const [pickedImageAsset, setPickedImageAsset] = useState<PickedImageAsset | null>(null);
   const [error, setError] = useState("");
@@ -92,6 +93,7 @@ const CreateProductScreen = () => {
         : "",
     );
     setDescription(productToEdit.description?.trim() ?? "");
+    setInStock(productToEdit.in_stock ?? true);
     setImage(productToEdit.image ?? null);
     setPickedImageAsset(null);
     setHydratedProductId(productToEdit.id);
@@ -101,6 +103,7 @@ const CreateProductScreen = () => {
     setName("");
     setPriceRaw("");
     setDescription("");
+    setInStock(true);
     setImage(null);
     setPickedImageAsset(null);
     setError("");
@@ -240,6 +243,7 @@ const CreateProductScreen = () => {
         price: priceValue!,
         image: imageUrl,
         description: description.trim() || null,
+        in_stock: inStock,
       };
 
       await insertProduct(payload);
@@ -259,6 +263,7 @@ const CreateProductScreen = () => {
     isSubmitting,
     name,
     description,
+    inStock,
     priceValue,
     router,
     uploadImageIfNeeded,
@@ -281,6 +286,7 @@ const CreateProductScreen = () => {
         price: priceValue!,
         image: imageUrl,
         description: description.trim() || null,
+        in_stock: inStock,
       };
 
       await updateProduct(payload);
@@ -299,6 +305,7 @@ const CreateProductScreen = () => {
     isDeleting,
     isSubmitting,
     name,
+    inStock,
     priceValue,
     productId,
     router,
@@ -400,6 +407,26 @@ const CreateProductScreen = () => {
           textAlignVertical="top"
         />
 
+        <Text style={styles.label}>Stock Status</Text>
+        <View style={styles.stockRow}>
+          <Pressable
+            onPress={() => setInStock(true)}
+            style={[styles.stockButton, inStock && styles.stockButtonActive]}
+          >
+            <Text style={[styles.stockText, inStock && styles.stockTextActive]}>
+              In stock
+            </Text>
+          </Pressable>
+          <Pressable
+            onPress={() => setInStock(false)}
+            style={[styles.stockButton, !inStock && styles.stockButtonActive]}
+          >
+            <Text style={[styles.stockText, !inStock && styles.stockTextActive]}>
+              Out of stock
+            </Text>
+          </Pressable>
+        </View>
+
         {!!error && <Text style={styles.error}>{error}</Text>}
 
         <Button
@@ -469,6 +496,31 @@ const styles = StyleSheet.create({
   },
   descriptionInput: {
     minHeight: 96,
+  },
+  stockRow: {
+    flexDirection: "row",
+    gap: 10,
+    marginBottom: 16,
+  },
+  stockButton: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: "#DDD",
+    borderRadius: 10,
+    paddingVertical: 10,
+    alignItems: "center",
+    backgroundColor: "#FAFAFA",
+  },
+  stockButtonActive: {
+    backgroundColor: Colors.light.tint,
+    borderColor: Colors.light.tint,
+  },
+  stockText: {
+    color: "#444",
+    fontWeight: "600",
+  },
+  stockTextActive: {
+    color: "#FFF",
   },
   error: {
     color: "#D32F2F",

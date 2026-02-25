@@ -1,4 +1,4 @@
-import { Stack, useLocalSearchParams } from "expo-router";
+import { Stack, router, useLocalSearchParams } from "expo-router";
 import {
   ActivityIndicator,
   FlatList,
@@ -71,7 +71,18 @@ export default function OrderDetailScreen() {
 
   return (
     <View style={{ padding: 10, gap: 10 }}>
-      <Stack.Screen options={{ title: `Admin Order #${id}` }} />
+      <Stack.Screen
+        options={{
+          title: `Admin Order #${id}`,
+          headerRight: () => (
+            <Pressable onPress={() => router.replace("/(admin)/orders/list")}>
+              <Text style={{ color: Colors.light.tint, fontWeight: "600" }}>
+                Order List
+              </Text>
+            </Pressable>
+          ),
+        }}
+      />
 
       {/* Order summary */}
       <OrderListItem
