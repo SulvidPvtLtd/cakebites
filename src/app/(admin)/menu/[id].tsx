@@ -26,6 +26,7 @@ import { ProductSize } from '@/src/types';
 import { getSafeImageUrl } from '@components/ProductListItem';
 import Colors from '@constants/Colors';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
+import { getVisibleProductDescription } from '@/src/lib/sizePricing';
 
 type ProductDetailsParams = {
   id?: string;
@@ -99,6 +100,7 @@ export default function ProductDetailsScreen() {
   }
 
   const imageSource = { uri: getSafeImageUrl(product.image) };
+  const visibleDescription = getVisibleProductDescription(product.description);
 
   /* ---------------- Actions ---------------- */
 
@@ -110,14 +112,14 @@ export default function ProductDetailsScreen() {
       setAdding(true);
 
       if (fulfillmentOption === "COLLECTION") {
-        addItem(product, selectedSize);
+        addItem(product, selectedSize, product.price);
         router.push("/cart");
         return;
       }
 
       if (fulfillmentOption === "DELIVERY") {
         if (hasAcceptedDeliveryTerms) {
-          addItem(product, selectedSize);
+          addItem(product, selectedSize, product.price);
           router.push("/cart");
         } else {
           router.push({
@@ -136,7 +138,7 @@ export default function ProductDetailsScreen() {
             text: "Self collect",
             onPress: () => {
               setFulfillmentOption("COLLECTION");
-              addItem(product, selectedSize);
+              addItem(product, selectedSize, product.price);
               router.push("/cart");
             },
           },
@@ -145,7 +147,7 @@ export default function ProductDetailsScreen() {
             onPress: () => {
               if (hasAcceptedDeliveryTerms) {
                 setFulfillmentOption("DELIVERY");
-                addItem(product, selectedSize);
+                addItem(product, selectedSize, product.price);
                 router.push("/cart");
                 return;
               }
@@ -240,7 +242,7 @@ export default function ProductDetailsScreen() {
             numberOfLines={expanded ? undefined : 2}
             style={[styles.description, { color: theme.textSecondary }]}
           >
-            {product.description?.trim() || 'No description available.'}
+            {visibleDescription || 'No description available.'}
           </Text>
 
           <Pressable
