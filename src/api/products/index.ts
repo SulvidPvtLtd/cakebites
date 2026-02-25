@@ -84,12 +84,14 @@ export const useInsertProduct = () =>{
     return useMutation({
         // project-defined payload type (replaced by generated Supabase Insert type)
         // async mutationFn(data: { image?: string | null; name: string; price: number; description?: string | null }) {
-        async mutationFn(data: Pick<ProductInsert, "image" | "name" | "price" | "description">) {
+        async mutationFn(data: Pick<ProductInsert, "image" | "name" | "price" | "description" | "in_stock">) {
         const { data: newProduct, error } =    await supabase.from('products').insert({                
                 image: data.image ?? null,
                 name: data.name,
                 price: data.price,
-                description: data.description ?? null
+                description: data.description ?? null,
+                in_stock: data.in_stock ?? true,
+                is_active: true,
             }).select().single();
             if (error) {
                 //  console.error('Error fetching products:', error);
@@ -99,6 +101,7 @@ export const useInsertProduct = () =>{
         },
         onSuccess: async (newProduct) => {
             await queryClient.invalidateQueries({ queryKey: ['products'] });
+            await queryClient.invalidateQueries({ queryKey: ['admin-products'] });
             if (newProduct?.id) {
                 await queryClient.invalidateQueries({ queryKey: ['products', newProduct.id] });
             }
@@ -111,12 +114,14 @@ export const useUpdateProduct = () =>{
     return useMutation({
         // project-defined payload type (replaced by generated Supabase Update type)
         // async mutationFn(data: { id: number; image?: string | null; name: string; price: number; description?: string | null }) {
-        async mutationFn(data: { id: ProductRow["id"] } & Pick<ProductUpdate, "image" | "name" | "price" | "description">) {
+        async mutationFn(data: { id: ProductRow["id"] } & Pick<ProductUpdate, "image" | "name" | "price" | "description" | "in_stock">) {
         const { data: updatedProduct, error } =    await supabase.from('products').update({                
                 image: data.image ?? null,
                 name: data.name,
                 price: data.price,
-                description: data.description ?? null
+                description: data.description ?? null,
+                in_stock: data.in_stock,
+                is_active: true,
             }).eq('id', data.id).select().single();
             if (error) {
                 throw new Error(error.message);
@@ -125,6 +130,7 @@ export const useUpdateProduct = () =>{
         },
         onSuccess: async (updatedProduct) => {
             await queryClient.invalidateQueries({ queryKey: ['products'] });
+            await queryClient.invalidateQueries({ queryKey: ['admin-products'] });
             if (updatedProduct?.id) {
                 await queryClient.invalidateQueries({ queryKey: ['products', updatedProduct.id] });
             }
