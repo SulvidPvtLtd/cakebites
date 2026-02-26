@@ -1,4 +1,4 @@
-﻿import { supabase } from "@/src/lib/supabase"; // supabase client
+import { supabase } from "@/src/lib/supabase"; // supabase client
 // project-defined profile type import (replaced by Supabase generated table type)
 // import type { Profile } from "@/src/types";
 import type { Tables } from "@/src/database.types";
@@ -32,6 +32,8 @@ const AuthContext = createContext<AuthData>({
 });
 
 const PROFILE_REQUEST_TIMEOUT_MS = 3500;
+const normalizeGroup = (group: string | null | undefined): string | null =>
+  typeof group === "string" ? group.trim().toLowerCase() : null;
 
 export default function AuthProvider({ children }: PropsWithChildren) {
   const [session, setSession] = useState<Session | null>(null);
@@ -109,7 +111,7 @@ export default function AuthProvider({ children }: PropsWithChildren) {
               id: userId,
               email: userEmail,
               mobile_number: userMobile,
-              group: "USER",
+              group: "user",
             })
             .select("*")
             .single(),
@@ -208,7 +210,8 @@ export default function AuthProvider({ children }: PropsWithChildren) {
       return;
     }
 
-    if (profile?.group && profile.group !== "ADMIN") {
+    const normalizedGroup = normalizeGroup(profile?.group);
+    if (normalizedGroup && normalizedGroup !== "admin") {
       if (activeGroup !== "USER") {
         setActiveGroup("USER");
       }
@@ -224,7 +227,7 @@ export default function AuthProvider({ children }: PropsWithChildren) {
         session,
         loading,
         profile,
-        isAdmin: profile?.group === "ADMIN",
+        isAdmin: normalizeGroup(profile?.group) === "admin",
         activeGroup,
         setActiveGroup,
       }}
@@ -235,3 +238,4 @@ export default function AuthProvider({ children }: PropsWithChildren) {
 }
 
 export const useAuth = () => useContext(AuthContext);
+

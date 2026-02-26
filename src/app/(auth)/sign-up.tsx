@@ -36,29 +36,6 @@ const SignUpScreen = () => {
         return;
       }
 
-      const newUser = signupResponse.data.user;
-      if (newUser) {
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .upsert(
-            {
-              id: newUser.id,
-              email: normalizedEmail,
-              mobile_number: normalizedMobile,
-              group: 'USER',
-            },
-            { onConflict: 'id' },
-          );
-
-        if (profileError) {
-          Alert.alert(
-            'Account created',
-            `Account was created, but profile setup failed: ${profileError.message}`,
-          );
-          return;
-        }
-      }
-
       Alert.alert(
         'Success',
         'Account created successfully! Please check your email to confirm your account.',
@@ -140,3 +117,4 @@ const styles = StyleSheet.create({
 });
 
 export default SignUpScreen;
+
