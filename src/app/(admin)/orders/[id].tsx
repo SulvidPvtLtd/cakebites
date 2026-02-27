@@ -1,6 +1,8 @@
 import { Stack, router, useLocalSearchParams } from "expo-router";
+import { useMemo } from "react";
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
   Pressable,
   ScrollView,
@@ -8,7 +10,7 @@ import {
   View,
 } from "react-native";
 
-import { useOrderDetails } from "@/src/api/orders";
+import { useOrderDetails, useUpdateOrderStatus } from "@/src/api/orders";
 import OrderListItem from "@/src/components/OrderListItem";
 import PlacedOrderListItems from "@/src/components/PlacedOrderListItems";
 import Colors from "@/src/constants/Colors";
@@ -17,6 +19,52 @@ import { OrderItem, OrderStatusList } from "@/src/types";
 export default function OrderDetailScreen() {
   const { id } = useLocalSearchParams<{ id?: string }>();
   const { data: orderFetched, isLoading, error } = useOrderDetails(id);
+  const { mutateAsync: updateOrderStatus, isPending: isUpdatingStatus } =
+    useUpdateOrderStatus();
+
+  const normalizeOrderStatus = (
+    status: string,
+  ): (typeof OrderStatusList)[number] | null => {
+    const normalized = status.trim().toLowerCase();
+    switch (normalized) {
+      case "new":
+        return "New";
+      case "cooking":
+        return "Cooking";
+      case "delivering":
+        return "Delivering";
+      case "delivered":
+        return "Delivered";
+      case "cancelled":
+        return "Cancelled";
+      default:
+        return null;
+    }
+  };
+
+  const getStatusIndex = (status: string) => OrderStatusList.indexOf(status as (typeof OrderStatusList)[number]);
+  const normalizedCurrentStatus = orderFetched
+    ? normalizeOrderStatus(orderFetched.status)
+    : null;
+
+  const isStatusSelectable = useMemo(() => {
+    if (!orderFetched) return () => false;
+
+    return (nextStatus: (typeof OrderStatusList)[number]) => {
+      const currentStatus = normalizeOrderStatus(orderFetched.status);
+      if (!currentStatus) return false;
+      if (currentStatus === nextStatus) return false;
+      if (currentStatus === "Delivered" || currentStatus === "Cancelled") return false;
+
+      if (nextStatus === "Cancelled") {
+        return currentStatus === "New" || currentStatus === "Cooking" || currentStatus === "Delivering";
+      }
+
+      const currentIndex = getStatusIndex(currentStatus);
+      const nextIndex = getStatusIndex(nextStatus);
+      return currentIndex >= 0 && nextIndex === currentIndex + 1;
+    };
+  }, [orderFetched]);
 
   if (!id) {
     return (
@@ -111,24 +159,46 @@ export default function OrderDetailScreen() {
               {OrderStatusList.map((status) => (
                 <Pressable
                   key={status}
-                  onPress={() => console.warn("Update status")}
+                  onPress={async () => {
+                    if (!orderFetched || !isStatusSelectable(status)) return;
+
+                    try {
+                      await updateOrderStatus({
+                        orderId: orderFetched.id,
+                        currentStatus: orderFetched.status,
+                        nextStatus: status,
+                      });
+                    } catch (err) {
+                      const message =
+                        err instanceof Error
+                          ? err.message
+                          : "Failed to update order status.";
+                      Alert.alert("Status update failed", message);
+                    }
+                  }}
+                  disabled={!isStatusSelectable(status) || isUpdatingStatus}
                   style={{
                     borderColor: Colors.light.tint,
                     borderWidth: 1,
                     padding: 10,
                     borderRadius: 5,
                     backgroundColor:
-                      orderFetched.status === status
+                      normalizedCurrentStatus === status
                         ? Colors.light.tint
-                        : "transparent",
+                        : !isStatusSelectable(status)
+                          ? "#EAEAEA"
+                          : "transparent",
+                    opacity: !isStatusSelectable(status) || isUpdatingStatus ? 0.6 : 1,
                   }}
                 >
                   <Text
                     style={{
                       color:
-                        orderFetched.status === status
+                        normalizedCurrentStatus === status
                           ? "white"
-                          : Colors.light.tint,
+                          : !isStatusSelectable(status)
+                            ? "#8A8A8A"
+                            : Colors.light.tint,
                     }}
                   >
                     {status}
