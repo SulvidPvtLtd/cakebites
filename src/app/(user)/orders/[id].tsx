@@ -6,6 +6,7 @@ import { useOrderDetails } from "@/src/api/orders";
 import OrderListItem from "@/src/components/OrderListItem";
 import PlacedOrderListItems from "@/src/components/PlacedOrderListItems";
 import Colors from "@/src/constants/Colors";
+import { supabase } from "@/src/lib/supabase";
 import { OrderItem } from "@/src/types";
 
 type OrderDetailsParams = {
@@ -16,13 +17,37 @@ export default function OrderDetailScreen() {
   const { id: idParam } = useLocalSearchParams<OrderDetailsParams>();
   const idString = typeof idParam === "string" ? idParam : idParam?.[0]; // Make sure id is a string.
 
-  const { data: orderFetched, isLoading, error } = useOrderDetails(idString);
+  const { data: orderFetched, isLoading, error, refetch } = useOrderDetails(idString);
 
   // Notify the user once they've landed on the order details screen.
   useEffect(() => {
     if (!idString || !orderFetched) return;
     //Alert.alert("Paid Order!");
   }, [idString, orderFetched]);
+
+  useEffect(() => {
+    if (!idString) return;
+
+    const orders = supabase
+      .channel("custom-filter-channel")
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "orders",
+          filter: `id=eq.${idString}`,
+        },
+        () => {
+          refetch();
+        },
+      )
+      .subscribe();
+
+    return () => {
+      orders.unsubscribe();
+    };
+  }, [idString, refetch]);
 
   
   if (!idString) {
