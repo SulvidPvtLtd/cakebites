@@ -59,6 +59,12 @@ const getFileExt = (asset: PickedImageAsset) => {
 const CreateProductScreen = () => {
   
   const [name, setName] = useState("");
+  const [activeSizes, setActiveSizes] = useState<Record<ProductSize, boolean>>({
+    S: true,
+    M: true,
+    L: true,
+    XL: true,
+  });
   const [sizePricesRaw, setSizePricesRaw] = useState<Record<ProductSize, string>>({
     S: "",
     M: "",
@@ -98,6 +104,12 @@ const CreateProductScreen = () => {
 
     setName(productToEdit.name ?? "");
     const sizePrices = getProductSizePriceMap(productToEdit);
+    setActiveSizes({
+      S: sizePrices.S > 0,
+      M: sizePrices.M > 0,
+      L: sizePrices.L > 0,
+      XL: sizePrices.XL > 0,
+    });
     setSizePricesRaw({
       S: String(sizePrices.S),
       M: String(sizePrices.M),
@@ -113,6 +125,7 @@ const CreateProductScreen = () => {
 
   const resetForm = () => {
     setName("");
+    setActiveSizes({ S: true, M: true, L: true, XL: true });
     setSizePricesRaw({ S: "", M: "", L: "", XL: "" });
     setDescription("");
     setInStock(true);
@@ -138,9 +151,14 @@ const CreateProductScreen = () => {
     };
   }, [parsePrice, sizePricesRaw]);
 
-  const hasAllSizePrices = useMemo(
-    () => PRODUCT_SIZES.every((size) => sizePrices[size] !== null),
-    [sizePrices],
+  const hasAtLeastOneActiveSize = useMemo(
+    () => PRODUCT_SIZES.some((size) => activeSizes[size]),
+    [activeSizes],
+  );
+
+  const hasValidActiveSizePrices = useMemo(
+    () => PRODUCT_SIZES.every((size) => !activeSizes[size] || sizePrices[size] !== null),
+    [activeSizes, sizePrices],
   );
 
   const validate = useCallback(() => {
@@ -161,14 +179,19 @@ const CreateProductScreen = () => {
       return false;
     }
 
-    if (!hasAllSizePrices) {
-      setError("Enter a valid positive price for each size.");
+    if (!hasAtLeastOneActiveSize) {
+      setError("Activate at least one size.");
+      return false;
+    }
+
+    if (!hasValidActiveSizePrices) {
+      setError("Enter a valid positive price for each active size.");
       return false;
     }
 
     setError("");
     return true;
-  }, [hasAllSizePrices, name]);
+  }, [hasAtLeastOneActiveSize, hasValidActiveSizePrices, name]);
 
   const pickImage = useCallback(async () => {
     try {
@@ -249,6 +272,39 @@ const CreateProductScreen = () => {
     setSizePricesRaw((current) => ({ ...current, [size]: value }));
   };
 
+  const toggleSizeActive = (size: ProductSize) => {
+    setActiveSizes((current) => {
+      const nextActive = !current[size];
+      setSizePricesRaw((prices) => ({
+        ...prices,
+        [size]: nextActive ? (prices[size] === "0" ? "" : prices[size]) : "0",
+      }));
+      return { ...current, [size]: nextActive };
+    });
+  };
+
+  const normalizedSizePrices = useMemo(
+    () => ({
+      S: activeSizes.S ? (sizePrices.S ?? 0) : 0,
+      M: activeSizes.M ? (sizePrices.M ?? 0) : 0,
+      L: activeSizes.L ? (sizePrices.L ?? 0) : 0,
+      XL: activeSizes.XL ? (sizePrices.XL ?? 0) : 0,
+    }),
+    [activeSizes, sizePrices],
+  );
+
+  const basePrice = useMemo(() => {
+    if (activeSizes.M && normalizedSizePrices.M > 0) {
+      return normalizedSizePrices.M;
+    }
+    for (const size of PRODUCT_SIZES) {
+      if (activeSizes[size] && normalizedSizePrices[size] > 0) {
+        return normalizedSizePrices[size];
+      }
+    }
+    return 0;
+  }, [activeSizes, normalizedSizePrices]);
+
   // CREATE
   const onCreate = useCallback(async () => {
     if (isSubmitting || isDeleting) return;
@@ -258,15 +314,9 @@ const CreateProductScreen = () => {
       setIsSubmitting(true);
       const imageUrl = await uploadImageIfNeeded();
 
-      const normalizedSizePrices = {
-        S: sizePrices.S!,
-        M: sizePrices.M!,
-        L: sizePrices.L!,
-        XL: sizePrices.XL!,
-      };
       const payload = {
         name: name.trim(),
-        price: normalizedSizePrices.M,
+        price: basePrice,
         image: imageUrl,
         description: description.trim() || null,
         in_stock: inStock,
@@ -291,7 +341,8 @@ const CreateProductScreen = () => {
     name,
     description,
     inStock,
-    sizePrices,
+    basePrice,
+    normalizedSizePrices,
     router,
     uploadImageIfNeeded,
     validate,
@@ -306,17 +357,10 @@ const CreateProductScreen = () => {
     try {
       setIsSubmitting(true);
       const imageUrl = await uploadImageIfNeeded();
-      const normalizedSizePrices = {
-        S: sizePrices.S!,
-        M: sizePrices.M!,
-        L: sizePrices.L!,
-        XL: sizePrices.XL!,
-      };
-
       const payload = {
         id: productId,
         name: name.trim(),
-        price: normalizedSizePrices.M,
+        price: basePrice,
         image: imageUrl,
         description: description.trim() || null,
         in_stock: inStock,
@@ -340,7 +384,8 @@ const CreateProductScreen = () => {
     isSubmitting,
     name,
     inStock,
-    sizePrices,
+    basePrice,
+    normalizedSizePrices,
     productId,
     router,
     uploadImageIfNeeded,
@@ -426,12 +471,35 @@ const CreateProductScreen = () => {
         <View style={styles.sizePriceRow}>
           {PRODUCT_SIZES.map((size) => (
             <View key={size} style={styles.sizePriceCell}>
-              <Text style={styles.sizePriceLabel}>{size}</Text>
+              <View style={styles.sizePriceHeader}>
+                <Text style={styles.sizePriceLabel}>{size}</Text>
+                <Pressable
+                  onPress={() => toggleSizeActive(size)}
+                  style={[
+                    styles.sizeStatusChip,
+                    activeSizes[size]
+                      ? styles.sizeStatusChipActive
+                      : styles.sizeStatusChipInactive,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.sizeStatusText,
+                      activeSizes[size]
+                        ? styles.sizeStatusTextActive
+                        : styles.sizeStatusTextInactive,
+                    ]}
+                  >
+                    {activeSizes[size] ? "Active" : "Inactive"}
+                  </Text>
+                </Pressable>
+              </View>
               <TextInput
                 value={sizePricesRaw[size]}
                 onChangeText={(value) => updateSizePrice(size, value)}
                 placeholder="0.00"
                 keyboardType="decimal-pad"
+                editable={activeSizes[size]}
                 style={[styles.input, styles.sizePriceInput]}
               />
             </View>
@@ -547,10 +615,40 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   sizePriceLabel: {
-    marginBottom: 6,
     color: "#555",
     fontWeight: "600",
     fontSize: 12,
+  },
+  sizePriceHeader: {
+    marginBottom: 6,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  sizeStatusChip: {
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderWidth: 1,
+  },
+  sizeStatusChipActive: {
+    borderColor: "#2E7D32",
+    backgroundColor: "#E8F5E9",
+  },
+  sizeStatusChipInactive: {
+    borderColor: "#BDBDBD",
+    backgroundColor: "#F2F2F2",
+  },
+  sizeStatusText: {
+    fontSize: 10,
+    fontWeight: "700",
+    textTransform: "uppercase",
+  },
+  sizeStatusTextActive: {
+    color: "#2E7D32",
+  },
+  sizeStatusTextInactive: {
+    color: "#757575",
   },
   sizePriceInput: {
     marginBottom: 8,

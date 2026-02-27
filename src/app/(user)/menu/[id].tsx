@@ -48,7 +48,7 @@ export default function ProductDetailsScreen() {
 
   const { data: product } = useProduct(productId ?? -1);
 
-  const [selectedSize, setSelectedSize] = useState<ProductSize | null>("M");
+  const [selectedSize, setSelectedSize] = useState<ProductSize | null>(null);
   const [expanded, setExpanded] = useState(false);
   const [adding, setAdding] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
@@ -64,11 +64,34 @@ export default function ProductDetailsScreen() {
     }).start();
   }, [imageLoaded, imageOpacity]);
 
+  const sizePriceMap = useMemo(
+    () => (product ? getProductSizePriceMap(product) : null),
+    [product],
+  );
+
+  const availableSizes = useMemo(() => {
+    if (!sizePriceMap) return [];
+    return PRODUCT_SIZES.filter((size) => sizePriceMap[size] > 0);
+  }, [sizePriceMap]);
+
+  useEffect(() => {
+    if (!sizePriceMap) {
+      if (selectedSize !== null) setSelectedSize(null);
+      return;
+    }
+
+    if (selectedSize && sizePriceMap[selectedSize] > 0) {
+      return;
+    }
+
+    setSelectedSize(availableSizes[0] ?? null);
+  }, [availableSizes, selectedSize, sizePriceMap]);
+
   if (!productId) {
     return <Redirect href="/(user)/menu" />;
   }
 
-  if (!product) {
+  if (!product || !sizePriceMap) {
     return (
       <View style={[styles.center, { backgroundColor: theme.background }]}>
         <ActivityIndicator size="large" color={theme.tint} />
@@ -77,8 +100,8 @@ export default function ProductDetailsScreen() {
   }
 
   const imageSource = { uri: getSafeImageUrl(product.image) };
-  const sizePriceMap = getProductSizePriceMap(product);
-  const selectedPrice = selectedSize ? sizePriceMap[selectedSize] : null;
+  const selectedPrice =
+    selectedSize && sizePriceMap[selectedSize] > 0 ? sizePriceMap[selectedSize] : null;
   const visibleDescription = getVisibleProductDescription(product.description);
 
   const handleAddToCart = () => {
@@ -208,21 +231,38 @@ export default function ProductDetailsScreen() {
               return (
                 <Pressable
                   key={size}
-                  onPress={() => setSelectedSize(size)}
+                  onPress={() => {
+                    if (sizePriceMap[size] > 0) {
+                      setSelectedSize(size);
+                    }
+                  }}
                   accessibilityRole="button"
-                  accessibilityState={{ selected: active }}
+                  accessibilityState={{ selected: active, disabled: sizePriceMap[size] <= 0 }}
                   style={[
                     styles.sizeButton,
                     {
-                      backgroundColor: active ? theme.tint : theme.card,
-                      borderColor: theme.border,
+                      backgroundColor:
+                        sizePriceMap[size] <= 0
+                          ? theme.border
+                          : active
+                            ? theme.tint
+                            : theme.card,
+                      borderColor: sizePriceMap[size] <= 0 ? theme.border : theme.border,
+                      opacity: sizePriceMap[size] <= 0 ? 0.55 : 1,
                     },
                   ]}
                 >
                   <Text
                     style={[
                       styles.sizeText,
-                      { color: active ? "#FFFFFF" : theme.textPrimary },
+                      {
+                        color:
+                          sizePriceMap[size] <= 0
+                            ? theme.textSecondary
+                            : active
+                              ? "#FFFFFF"
+                              : theme.textPrimary,
+                      },
                     ]}
                   >
                     {size}
@@ -248,7 +288,7 @@ export default function ProductDetailsScreen() {
           <Button
             text={adding ? "Adding..." : "Add to Cart"}
             onPress={handleAddToCart}
-            disabled={adding || !selectedSize}
+            disabled={adding || !selectedSize || selectedPrice === null}
           />
         </View>
       </ScrollView>
@@ -329,4 +369,3 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
 });
-
