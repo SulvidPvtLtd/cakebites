@@ -3,6 +3,7 @@ import type {
     Tables,
     TablesInsert,
 } from "@/src/database.types";
+import type { OrderStatus as AppOrderStatus } from "@/src/types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/src/providers/AuthProvider";
 
@@ -96,6 +97,60 @@ type InsertOrderInput = Pick<
 type InsertOrderItemsInput = Array<
     Pick<TablesInsert<"order_items">, "order_id" | "product_id" | "quantity" | "size">
 >;
+type OrderStatus = AppOrderStatus;
+
+const ORDER_STATUS_FLOW: readonly OrderStatus[] = [
+    "New",
+    "Cooking",
+    "Delivering",
+    "Delivered",
+    "Cancelled",
+];
+
+const TERMINAL_STATUSES = new Set<OrderStatus>(["Delivered", "Cancelled"]);
+
+const normalizeOrderStatus = (status: unknown): OrderStatus | null => {
+    if (typeof status !== "string") return null;
+    const normalized = status.trim().toLowerCase();
+
+    switch (normalized) {
+        case "new":
+            return "New";
+        case "cooking":
+            return "Cooking";
+        case "delivering":
+            return "Delivering";
+        case "delivered":
+            return "Delivered";
+        case "cancelled":
+            return "Cancelled";
+        default:
+            return null;
+    }
+};
+
+const canTransitionOrderStatus = (
+    currentStatus: OrderStatus,
+    nextStatus: OrderStatus,
+) => {
+    if (currentStatus === nextStatus) return false;
+    if (TERMINAL_STATUSES.has(currentStatus)) return false;
+
+    if (nextStatus === "Cancelled") {
+        return (
+            currentStatus === "New" ||
+            currentStatus === "Cooking" ||
+            currentStatus === "Delivering"
+        );
+    }
+
+    const currentIndex = ORDER_STATUS_FLOW.indexOf(currentStatus);
+    const nextIndex = ORDER_STATUS_FLOW.indexOf(nextStatus);
+    if (currentIndex === -1 || nextIndex === -1) return false;
+
+    // Strictly forward one step (New -> Cooking -> Delivering -> Delivered).
+    return nextIndex === currentIndex + 1;
+};
 
 export const useInsertOrder = () =>{
     const queryClient = useQueryClient();
@@ -233,6 +288,59 @@ export const useDeleteOrder = () => {
             await queryClient.invalidateQueries({ queryKey: ["orders"] });
             await queryClient.invalidateQueries({ queryKey: ["orders", { userId }] });
             await queryClient.invalidateQueries({ queryKey: ["order", deletedOrderId] });
+        },
+        onError(error) {
+            console.log(error);
+        },
+    });
+};
+
+export const useUpdateOrderStatus = () => {
+    const queryClient = useQueryClient();
+    const { session } = useAuth();
+    const userId = session?.user.id;
+
+    return useMutation<
+        OrderRow,
+        Error,
+        { orderId: number; currentStatus: string; nextStatus: OrderStatus }
+    >({
+        async mutationFn({ orderId, currentStatus, nextStatus }) {
+            if (!Number.isFinite(orderId) || orderId <= 0) {
+                throw new Error("Invalid order id.");
+            }
+
+            const normalizedCurrentStatus = normalizeOrderStatus(currentStatus);
+            const normalizedNextStatus = normalizeOrderStatus(nextStatus);
+
+            if (!normalizedCurrentStatus || !normalizedNextStatus) {
+                throw new Error("Invalid order status.");
+            }
+
+            if (!canTransitionOrderStatus(normalizedCurrentStatus, normalizedNextStatus)) {
+                throw new Error(
+                    `Invalid status transition: ${normalizedCurrentStatus} -> ${normalizedNextStatus}.`,
+                );
+            }
+
+            const { data, error } = await supabase
+                .from("orders")
+                .update({ status: normalizedNextStatus })
+                .eq("id", orderId)
+                .eq("status", currentStatus)
+                .select("*")
+                .single();
+
+            if (error) {
+                throw new Error(error.message);
+            }
+
+            return data;
+        },
+        onSuccess: async (updatedOrder) => {
+            await queryClient.invalidateQueries({ queryKey: ["orders"] });
+            await queryClient.invalidateQueries({ queryKey: ["orders", { userId }] });
+            await queryClient.invalidateQueries({ queryKey: ["order", updatedOrder.id] });
         },
         onError(error) {
             console.log(error);
