@@ -1199,9 +1199,9 @@ using (bucket_id = 'product-images');
 
 # Real time data with Subscriptions
 
-So far, our data is being fetched when we navigate to a screen. However, if the items are being updated in the database, we won’t know it until we refresh the application. 
+So far, our data is being fetched when we navigate to a screen. However, if the items are being updated in the database, we won’t know it until we refresh the application.
 
-Sometimes, it’s important to update the user as soon as changes happen. 
+Sometimes, it’s important to update the user as soon as changes happen.
 
 For that, we have subscriptions wich allows us to subscribe to data updates, and when particular events happen, such as a new item being added, updated, deleted, etc, we update the UI of our app to reflect the updates.
 
@@ -1213,3 +1213,6 @@ In this project i will listen to 2 events:
 1. Enable subscriptions
 
 First we have to Enable Realtime option on the Orders table.
+
+Enable Realtime: Broadcast changes on this table to authorized subscribers
+`````
