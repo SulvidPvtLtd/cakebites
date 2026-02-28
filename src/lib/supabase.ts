@@ -23,12 +23,14 @@ const ExpoSecureStoreAdapter = {
 
 const supabaseUrl = "https://ctfirvzwlecmpwhfgvyy.supabase.co";
 const supabaseAnonKey = "sb_publishable_bSkket750hZFRKNuJAorqA_mho6hHa8";
+export const SUPABASE_AUTH_STORAGE_KEY = "sb-ctfirvzwlecmpwhfgvyy-auth-token";
 
 // Assign <Database> so that the Supabase client 
 // is aware of the database schema and types to use. Currently without it, it will use `any` types.
 export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
   auth: {
     storage: ExpoSecureStoreAdapter as any,
+    storageKey: SUPABASE_AUTH_STORAGE_KEY,
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: false,

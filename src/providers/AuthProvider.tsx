@@ -1,8 +1,9 @@
-import { supabase } from "@/src/lib/supabase"; // supabase client
+import { SUPABASE_AUTH_STORAGE_KEY, supabase } from "@/src/lib/supabase"; // supabase client
 // project-defined profile type import (replaced by Supabase generated table type)
 // import type { Profile } from "@/src/types";
 import type { Tables } from "@/src/database.types";
 import { Session } from "@supabase/supabase-js";
+import * as SecureStore from "expo-secure-store";
 import {
   createContext,
   PropsWithChildren,
@@ -45,6 +46,8 @@ export default function AuthProvider({ children }: PropsWithChildren) {
   // Query the session to check if the user is logged in and set the user state accordingly
   useEffect(() => {
     const clearLocalSession = async () => {
+      // Ensure persisted auth payload is removed even when Supabase encounters stale refresh tokens.
+      await SecureStore.deleteItemAsync(SUPABASE_AUTH_STORAGE_KEY);
       await supabase.auth.signOut({ scope: "local" });
       setSession(null);
       setProfile(null);

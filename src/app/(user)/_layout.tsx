@@ -105,8 +105,11 @@ export default function TabLayout() {
                 {
                   text: "Log out",
                   style: "destructive",
-                  onPress: () => {
-                    supabase.auth.signOut();
+                  onPress: async () => {
+                    const { error } = await supabase.auth.signOut();
+                    if (error) {
+                      await supabase.auth.signOut({ scope: "local" });
+                    }
                   },
                 },
               ]
