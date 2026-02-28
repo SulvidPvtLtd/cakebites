@@ -1,10 +1,9 @@
 import ProductListItem from '@components/ProductListItem';
-import React, { useEffect } from 'react';
+import React from 'react';
 import { ActivityIndicator, FlatList , Text} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useProductList } from '@/src/api/products';
-import { useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/src/lib/supabase';
+import { useProductSubscription } from './subscriptions';
 
 
 const GAP = 16;
@@ -13,38 +12,8 @@ const NUM_COLUMNS = 2;
 export default function MenuScreen() {
 
   const { data: products, error, isLoading } = useProductList();
-  const queryClient = useQueryClient();
-
-  useEffect(() => {
-    const productsChannel = supabase
-      .channel('user-products-channel')
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'products' },
-        () => {
-          queryClient.invalidateQueries({ queryKey: ['products'] });
-        },
-      )
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'products' },
-        () => {
-          queryClient.invalidateQueries({ queryKey: ['products'] });
-        },
-      )
-      .on(
-        'postgres_changes',
-        { event: 'DELETE', schema: 'public', table: 'products' },
-        () => {
-          queryClient.invalidateQueries({ queryKey: ['products'] });
-        },
-      )
-      .subscribe();
-
-    return () => {
-      productsChannel.unsubscribe();
-    };
-  }, [queryClient]);
+  
+  useProductSubscription();
 
   if(isLoading) {
     return <ActivityIndicator size="large" color="midnightblue" />;  
