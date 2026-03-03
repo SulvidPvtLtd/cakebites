@@ -3,7 +3,7 @@ import OrderListItem from "@components/OrderListItem";
 import type { Tables } from "@/src/database.types";
 import { Stack } from "expo-router";
 import { ActivityIndicator,  Text,  FlatList } from "react-native";
-import { useInsertOrderSubscription } from "./subscriptions";
+import { useInsertOrderSubscription } from "@/src/lib/subscriptions/adminOrderSubscriptions";
 
 type AdminOrder = Tables<"orders">;
 

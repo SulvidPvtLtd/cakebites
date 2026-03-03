@@ -3,7 +3,7 @@ import React from 'react';
 import { ActivityIndicator, FlatList , Text} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useProductList } from '@/src/api/products';
-import { useProductSubscription } from './subscriptions';
+import { useProductSubscription } from "@/src/lib/subscriptions/userProductSubscriptions";
 
 
 const GAP = 16;

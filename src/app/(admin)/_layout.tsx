@@ -1,13 +1,12 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { Redirect, Tabs } from 'expo-router';
 import React from 'react';
-import { ActivityIndicator, Alert, View } from 'react-native';
+import { ActivityIndicator, View } from 'react-native';
 
 import { useClientOnlyValue } from '../../components/useClientOnlyValue';
 import { useColorScheme } from '../../components/useColorScheme';
 import Colors from '../../constants/Colors';
 import { useAuth } from '@/src/providers/AuthProvider';
-import { supabase } from '@/src/lib/supabase';
 
 // You can explore the built-in icon families and icons on the web at https://icons.expo.fyi/
 function TabBarIcon(props: {
@@ -94,32 +93,8 @@ export default function TabLayout() {
       <Tabs.Screen
         name="log-out"
         options={{
-          title: 'Log out',
-          tabBarIcon: ({ color }) => (
-            <TabBarIcon name="sign-out" color={color} />
-          ),
-        }}
-        listeners={{
-          tabPress: (e) => {
-            e.preventDefault();
-            Alert.alert(
-              'Log out',
-              'Are you sure you want to log out?',
-              [
-                { text: 'Cancel', style: 'cancel' },
-                {
-                  text: 'Log out',
-                  style: 'destructive',
-                  onPress: async () => {
-                    const { error } = await supabase.auth.signOut();
-                    if (error) {
-                      await supabase.auth.signOut({ scope: "local" });
-                    }
-                  },
-                },
-              ]
-            );
-          },
+          title: 'Profile',
+          tabBarIcon: ({ color }) => <TabBarIcon name="user" color={color} />,
         }}
       />
     </Tabs>
