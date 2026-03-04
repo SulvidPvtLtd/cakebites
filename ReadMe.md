@@ -1215,4 +1215,41 @@ In this project i will listen to 2 events:
 First we have to Enable Realtime option on the Orders table.
 
 Enable Realtime: Broadcast changes on this table to authorized subscribers
+
+
+
+# Supabase Local
+
+https://supabase.com/docs/guides/cli/local-development
+
+
+npx supabase init
+npx supabase link --project-ref
+npx supabase db pull
+npx supabase db push
+
+Now commit your local changes to Git and run the local development setup:
+
+git add .
+git commit -m "init supabase"
+npx supabase start
+
+You need docker to run supabase locally:
+
+npx supabase status.
+
+### Trigger not being pulled
+
+If during the `db pull` command, the trigger is not created. Add it manually and run `npx supabase db reset`
+
+```tsx
+-- trigger the function every time a user is created
+create trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute procedure public.handle_new_user();
+```
+
+
+
+6:22:11
 `````

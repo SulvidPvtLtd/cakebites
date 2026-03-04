@@ -21,9 +21,17 @@ const ExpoSecureStoreAdapter = {
   },
 };
 
-const supabaseUrl = "https://YOUR_PROJECT_REF.supabase.co";
-const supabaseAnonKey = "sb_publishable_REDACTED";
-export const SUPABASE_AUTH_STORAGE_KEY = "sb-ctfirvzwlecmpwhfgvyy-auth-token";
+const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
+
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error(
+    "Missing Supabase environment variables. Set EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY in .env."
+  );
+}
+
+const supabaseProjectRef = supabaseUrl.split("//")[1]?.split(".")[0] ?? "unknown";
+export const SUPABASE_AUTH_STORAGE_KEY = `sb-${supabaseProjectRef}-auth-token`;
 
 // Assign <Database> so that the Supabase client 
 // is aware of the database schema and types to use. Currently without it, it will use `any` types.
