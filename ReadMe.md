@@ -1222,7 +1222,7 @@ Enable Realtime: Broadcast changes on this table to authorized subscribers
 
 https://supabase.com/docs/guides/cli/local-development
 
-
+npm install supabase --save-dev
 npx supabase init
 npx supabase link --project-ref
 npx supabase db pull
