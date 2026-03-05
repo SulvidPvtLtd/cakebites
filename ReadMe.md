@@ -1218,38 +1218,149 @@ Enable Realtime: Broadcast changes on this table to authorized subscribers
 
 
 
-# Supabase Local
+# Supabase Local (Docker Desktop)
 
+Official reference:
 https://supabase.com/docs/guides/cli/local-development
 
-npm install supabase --save-dev
-npx supabase init
-npx supabase link --project-ref
-npx supabase db pull
-npx supabase db push
+This project already has:
+- a `supabase/` folder
+- migration files
+- `supabase` CLI in `devDependencies`
 
-Now commit your local changes to Git and run the local development setup:
+So for this repo, **do not run**:
+- `npx supabase init`
+- `npx supabase link --project-ref`
+- `npx supabase db pull`
+- `npx supabase db push`
 
-git add .
-git commit -m "init supabase"
-npx supabase start
+Those are for a different workflow (syncing with a hosted project).
 
-You need docker to run supabase locally:
+## 0. Prerequisites (one-time)
 
-npx supabase status.
+1. Install Docker Desktop.
+2. Open Docker Desktop and wait until it shows Docker is running.
+3. In project root, install Node packages:
 
-### Trigger not being pulled
-
-If during the `db pull` command, the trigger is not created. Add it manually and run `npx supabase db reset`
-
-```tsx
--- trigger the function every time a user is created
-create trigger on_auth_user_created
-  after insert on auth.users
-  for each row execute procedure public.handle_new_user();
+```powershell
+npm install
 ```
 
+## 1. Make sure local Supabase env is set
 
+Edit `.env` and use local URL:
 
-6:22:11
-`````
+```env
+EXPO_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
+EXPO_PUBLIC_SUPABASE_ANON_KEY=PASTE_LOCAL_ANON_KEY_HERE
+```
+
+Important:
+- If hosted Supabase keys are in `.env`, keep them commented out.
+- You will get the local anon key from `npx supabase status` in Step 4.
+
+## 2. Clean old local containers (safe reset)
+
+If previous runs failed, clear old project containers first:
+
+```powershell
+npx supabase stop --no-backup
+```
+
+If Docker still has stale Supabase containers:
+
+```powershell
+docker ps -a --filter "name=supabase_" --format "{{.ID}}" | ForEach-Object { docker rm -f $_ }
+docker network prune -f
+docker volume prune -f
+```
+
+## 3. Start Supabase locally
+
+From project root:
+
+```powershell
+npx supabase start
+```
+
+This launches local services in Docker (database, auth, api, storage, studio, realtime, etc.).
+
+## 4. Apply schema and migrations from this repo
+
+Run:
+
+```powershell
+npx supabase db reset
+```
+
+This recreates the local database and applies all migrations in `supabase/migrations`.
+
+## 5. Check service status and copy anon key
+
+Run:
+
+```powershell
+npx supabase status
+```
+
+Copy the `anon key` shown in output and paste it into:
+- `EXPO_PUBLIC_SUPABASE_ANON_KEY` in `.env`
+
+Also verify local endpoints are up:
+- API: `http://127.0.0.1:54321`
+- DB: `postgresql://postgres:postgres@127.0.0.1:54322/postgres`
+- Studio: `http://127.0.0.1:54323`
+- Mailpit: `http://127.0.0.1:54324`
+
+## 6. Start the app
+
+```powershell
+npm start
+```
+
+If env is missing, app will throw:
+`Missing Supabase environment variables...`
+Fix `.env`, then restart app.
+
+## 7. Stop local Supabase when done
+
+```powershell
+npx supabase stop
+```
+
+## Troubleshooting
+
+### A) `No such container: supabase_db_cakebites`
+Containers are not running. Run:
+
+```powershell
+npx supabase start
+npx supabase status
+```
+
+### B) `duplicate key value violates unique constraint "schema_migrations_pkey"`
+Migration filenames have duplicate numeric version prefixes.
+Each migration filename must have a unique leading timestamp number.
+
+### C) `supabase_storage_cakebites container is not ready: unhealthy`
+Run a clean restart:
+
+```powershell
+npx supabase stop --no-backup
+docker ps -a --filter "name=supabase_" --format "{{.ID}}" | ForEach-Object { docker rm -f $_ }
+docker network prune -f
+docker volume prune -f
+npx supabase start --debug
+```
+
+### D) Trigger note (if you ever need manual SQL)
+In this project, trigger creation is already handled by migration:
+`20260226_auto_create_profiles_on_signup.sql`
+
+Manual SQL (only if required):
+
+```sql
+create trigger on_auth_user_created
+after insert on auth.users
+for each row execute function public.handle_new_user_profile();
+```
