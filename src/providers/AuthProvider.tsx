@@ -33,8 +33,27 @@ const AuthContext = createContext<AuthData>({
 });
 
 const PROFILE_REQUEST_TIMEOUT_MS = 3500;
+const AUTH_REQUEST_TIMEOUT_MS = 3500;
 const normalizeGroup = (group: string | null | undefined): string | null =>
   typeof group === "string" ? group.trim().toLowerCase() : null;
+
+const withTimeout = async <T,>(promise: PromiseLike<T>, timeoutMs: number) => {
+  return new Promise<T>((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      reject(new Error("Request timed out"));
+    }, timeoutMs);
+
+    Promise.resolve(promise)
+      .then((value) => {
+        clearTimeout(timeout);
+        resolve(value);
+      })
+      .catch((err) => {
+        clearTimeout(timeout);
+        reject(err);
+      });
+  });
+};
 
 export default function AuthProvider({ children }: PropsWithChildren) {
   const [session, setSession] = useState<Session | null>(null);
@@ -56,24 +75,6 @@ export default function AuthProvider({ children }: PropsWithChildren) {
     };
 
     const fetchOrCreateProfile = async (session: Session) => {
-      const withTimeout = async <T,>(promise: PromiseLike<T>, timeoutMs: number) => {
-        return new Promise<T>((resolve, reject) => {
-          const timeout = setTimeout(() => {
-            reject(new Error("Profile request timed out"));
-          }, timeoutMs);
-
-          Promise.resolve(promise)
-            .then((value) => {
-              clearTimeout(timeout);
-              resolve(value);
-            })
-            .catch((err) => {
-              clearTimeout(timeout);
-              reject(err);
-            });
-        });
-      };
-
       const userId = session.user.id;
       const userEmail = session.user.email ?? null;
       const userMobile =
@@ -142,7 +143,10 @@ export default function AuthProvider({ children }: PropsWithChildren) {
         const {
           data: { session: currentSession },
           error,
-        } = await supabase.auth.getSession();
+        } = await withTimeout(
+          supabase.auth.getSession(),
+          AUTH_REQUEST_TIMEOUT_MS
+        );
 
         if (error) {
           // Clear stale local credentials for any session bootstrap error.

@@ -5,7 +5,9 @@
   "scripts": {
     "start": "set \"EXPO_NO_DEPENDENCY_VALIDATION=1\" && expo start",
     "start:lan": "set \"EXPO_NO_DEPENDENCY_VALIDATION=1\" && expo start --lan",
-    "android": "set \"EXPO_NO_DEPENDENCY_VALIDATION=1\" && expo start --localhost --android",
+    "start:tunnel": "set \"EXPO_NO_DEPENDENCY_VALIDATION=1\" && expo start --tunnel",
+    "android": "set \"EXPO_NO_DEPENDENCY_VALIDATION=1\" && expo start --lan --android",
+    "android:tunnel": "set \"EXPO_NO_DEPENDENCY_VALIDATION=1\" && expo start --tunnel --android",
     "ios": "set \"EXPO_NO_DEPENDENCY_VALIDATION=1\" && expo start --ios",
     "web": "set \"EXPO_NO_DEPENDENCY_VALIDATION=1\" && expo start --web"
   },

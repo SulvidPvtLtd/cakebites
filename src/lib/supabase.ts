@@ -22,17 +22,25 @@ const ExpoSecureStoreAdapter = {
   },
 };
 
-const supabaseUrl = Platform.select({
-  ios: "http://127.0.0.1:54321",
-  android: "http://10.0.2.2:54321",
-  default: "http://localhost:54321",
-});
+const envSupabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL?.trim();
+const localSupabaseHost =
+  process.env.EXPO_PUBLIC_LOCAL_SUPABASE_HOST?.trim() || "10.0.2.2";
+
+const supabaseUrl =
+  envSupabaseUrl ||
+  Platform.select({
+    ios: "http://127.0.0.1:54321",
+    // Android emulator can access host machine via 10.0.2.2.
+    // For physical Android + local Supabase, set EXPO_PUBLIC_LOCAL_SUPABASE_HOST to your PC LAN IP.
+    android: `http://${localSupabaseHost}:54321`,
+    default: "http://192.168.0.221:54321",
+  });
 
 const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error(
-    "Missing Supabase environment variable. Set EXPO_PUBLIC_SUPABASE_ANON_KEY in .env.",
+    "Missing Supabase environment variable. Set EXPO_PUBLIC_SUPABASE_ANON_KEY and optionally EXPO_PUBLIC_SUPABASE_URL in .env.",
   );
 }
 
