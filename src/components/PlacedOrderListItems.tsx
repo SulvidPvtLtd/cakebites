@@ -1,34 +1,36 @@
-import { View, Text, StyleSheet, Image } from 'react-native';
-import React from 'react';
-import Colors from '../constants/Colors';
-import { OrderItem } from '../types';
-import { getSafeImageUrl } from './ProductListItem';
-import { getProductSizePriceMap } from '../lib/sizePricing';
+import { View, Text, StyleSheet, Image, useColorScheme } from "react-native";
+import React from "react";
+import { OrderItem } from "../types";
+import { getSafeImageUrl } from "./ProductListItem";
+import { getProductSizePriceMap } from "../lib/sizePricing";
+import Colors from "@/src/constants/Colors";
 
 type OrderedItemListItemsProps = {
   item: OrderItem;
 };
 
 const PlacedOrderListItems = ({ item }: OrderedItemListItemsProps) => {
+  const scheme = useColorScheme() ?? "light";
+  const theme = Colors[scheme];
   const sizePriceMap = getProductSizePriceMap(item.products);
   const priceForSize = sizePriceMap[item.size] ?? item.products.price;
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.card, borderColor: theme.border }]}>
       <Image
         source={{ uri: getSafeImageUrl(item.products.image) }}
         style={styles.image}
         resizeMode="contain"
       />
       <View style={{ flex: 1 }}>
-        <Text style={styles.title}>{item.products.name}</Text>
+        <Text style={[styles.title, { color: theme.textPrimary }]}>{item.products.name}</Text>
         <View style={styles.subtitleContainer}>
-          <Text style={styles.price}>${priceForSize.toFixed(2)}</Text>
-          <Text>Size: {item.size}</Text>
+          <Text style={[styles.price, { color: theme.tint }]}>${priceForSize.toFixed(2)}</Text>
+          <Text style={{ color: theme.textSecondary }}>Size: {item.size}</Text>
         </View>
       </View>
       <View style={styles.quantitySelector}>
-        <Text style={styles.quantity}>{item.quantity}</Text>
+        <Text style={[styles.quantity, { color: theme.textPrimary }]}>{item.quantity}</Text>
       </View>
     </View>
   );
@@ -36,41 +38,40 @@ const PlacedOrderListItems = ({ item }: OrderedItemListItemsProps) => {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: 'white',
     borderRadius: 10,
+    borderWidth: 1,
     padding: 5,
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
   image: {
     width: 75,
     aspectRatio: 1,
-    alignSelf: 'center',
+    alignSelf: "center",
     marginRight: 10,
   },
   title: {
-    fontWeight: '500',
+    fontWeight: "500",
     fontSize: 16,
     marginBottom: 5,
   },
   subtitleContainer: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 5,
   },
   quantitySelector: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 10,
-    alignItems: 'center',
+    alignItems: "center",
     marginVertical: 10,
   },
   quantity: {
-    fontWeight: '500',
+    fontWeight: "500",
     fontSize: 18,
   },
   price: {
-    color: Colors.light.tint,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
 });
 

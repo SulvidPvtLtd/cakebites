@@ -11,6 +11,7 @@ import { useEffect } from "react";
 import "react-native-reanimated";
 
 import { useColorScheme } from "@components/useColorScheme";
+import Colors from "@constants/Colors";
 import CartProvider from "@providers/CartProvider";
 
 import AuthProvider from "@providers/AuthProvider";
@@ -58,9 +59,23 @@ export default function RootLayout() {
 
 function RootLayoutNav() {
   const colorScheme = useColorScheme();
+  const navTheme = colorScheme === "dark" ? DarkTheme : DefaultTheme;
+  const appColors = Colors[colorScheme === "dark" ? "dark" : "light"];
+  const appNavigationTheme = {
+    ...navTheme,
+    colors: {
+      ...navTheme.colors,
+      primary: appColors.tint,
+      background: appColors.background,
+      card: appColors.card,
+      text: appColors.textPrimary,
+      border: appColors.border,
+      notification: appColors.error,
+    },
+  };
 
   return (
-    <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
+    <ThemeProvider value={appNavigationTheme}>
       <AuthProvider>
         <QueryProvider>
           {/*Its below AuthProvider becasue it needs to know all the details of authentication*/}

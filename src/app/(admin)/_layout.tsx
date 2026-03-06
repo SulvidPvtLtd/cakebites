@@ -1,16 +1,15 @@
-import FontAwesome from '@expo/vector-icons/FontAwesome';
-import { Redirect, Tabs } from 'expo-router';
-import React from 'react';
-import { ActivityIndicator, View } from 'react-native';
+import FontAwesome from "@expo/vector-icons/FontAwesome";
+import { Redirect, Tabs } from "expo-router";
+import React from "react";
+import { ActivityIndicator, View } from "react-native";
 
-import { useClientOnlyValue } from '../../components/useClientOnlyValue';
-import { useColorScheme } from '../../components/useColorScheme';
-import Colors from '../../constants/Colors';
-import { useAuth } from '@/src/providers/AuthProvider';
+import { useClientOnlyValue } from "../../components/useClientOnlyValue";
+import { useColorScheme } from "../../components/useColorScheme";
+import Colors from "../../constants/Colors";
+import { useAuth } from "@/src/providers/AuthProvider";
 
-// You can explore the built-in icon families and icons on the web at https://icons.expo.fyi/
 function TabBarIcon(props: {
-  name: React.ComponentProps<typeof FontAwesome>['name'];
+  name: React.ComponentProps<typeof FontAwesome>["name"];
   color: string;
 }) {
   return <FontAwesome size={28} style={{ marginBottom: -3 }} {...props} />;
@@ -18,11 +17,12 @@ function TabBarIcon(props: {
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
+  const theme = Colors[colorScheme ?? "light"];
   const { session, loading, isAdmin, activeGroup } = useAuth();
 
   if (loading) {
     return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+      <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
         <ActivityIndicator />
       </View>
     );
@@ -33,7 +33,7 @@ export default function TabLayout() {
   }
 
   if (!isAdmin) {
-    return <Redirect href="/(user)" />; // Non-admins go to user area
+    return <Redirect href="/(user)" />;
   }
 
   if (!activeGroup) {
@@ -47,29 +47,21 @@ export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
-        tabBarInactiveTintColor: colorScheme === 'dark' ? '#C9A227' : '#000000',
-        // Uber Eats–style dynamic bottom tab bar
+        tabBarActiveTintColor: theme.tint,
+        tabBarInactiveTintColor: theme.tabIconDefault,
         tabBarStyle: {
-          backgroundColor:
-            colorScheme === 'dark'
-              ? '#095841'   // Dark mode surface
-              : '#FFFFFF', // Light mode surface
+          backgroundColor: theme.card,
           borderTopWidth: 0,
-          elevation: 0, // Android shadow
+          elevation: 0,
         },
-        // Disable the static render of the header on web
-        // to prevent a hydration error in React Navigation v6.
         headerShown: useClientOnlyValue(false, true),
-      }}>
-
-      {/* Disable the "index" tab by setting href to null */}
-      <Tabs.Screen name="index" options={{ href: null}}/>
-
+      }}
+    >
+      <Tabs.Screen name="index" options={{ href: null }} />
       <Tabs.Screen
         name="menu"
         options={{
-          title: 'Admin Menu',
+          title: "Admin Menu",
           headerShown: false,
           tabBarIcon: ({ color }) => <TabBarIcon name="home" color={color} />,
         }}
@@ -77,7 +69,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="orders"
         options={{
-          title: 'Admin Orders',
+          title: "Admin Orders",
           headerShown: false,
           tabBarIcon: ({ color }) => <TabBarIcon name="list" color={color} />,
         }}
@@ -85,7 +77,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="switch-mode"
         options={{
-          title: 'Switch',
+          title: "Switch",
           headerShown: false,
           tabBarIcon: ({ color }) => <TabBarIcon name="exchange" color={color} />,
         }}
@@ -93,7 +85,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="log-out"
         options={{
-          title: 'Profile',
+          title: "Profile",
           tabBarIcon: ({ color }) => <TabBarIcon name="user" color={color} />,
         }}
       />

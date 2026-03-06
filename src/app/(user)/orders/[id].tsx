@@ -1,6 +1,14 @@
 import { Stack, router, useLocalSearchParams } from "expo-router";
 import { useEffect } from "react";
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from "react-native";
+import {
+  ActivityIndicator,
+  FlatList,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+  useColorScheme,
+} from "react-native";
 
 import { useOrderDetails } from "@/src/api/orders";
 import OrderListItem from "@/src/components/OrderListItem";
@@ -14,6 +22,8 @@ type OrderDetailsParams = {
 };
 
 export default function OrderDetailScreen() {
+  const scheme = useColorScheme() ?? "light";
+  const theme = Colors[scheme];
   const { id: idParam } = useLocalSearchParams<OrderDetailsParams>();
   const idString = typeof idParam === "string" ? idParam : idParam?.[0]; // Make sure id is a string.
 
@@ -54,7 +64,7 @@ export default function OrderDetailScreen() {
     return (
       <View style={styles.centeredContainer}>
         <Stack.Screen options={{ title: "Invalid order" }} />
-        <Text>Invalid order reference.</Text>
+        <Text style={{ color: theme.textPrimary }}>Invalid order reference.</Text>
       </View>
     );
   }
@@ -63,7 +73,7 @@ export default function OrderDetailScreen() {
     return (
       <View style={styles.centeredContainer}>
         <Stack.Screen options={{ title: "Loading order" }} />
-        <ActivityIndicator />
+        <ActivityIndicator color={theme.tint} />
       </View>
     );
   }
@@ -72,7 +82,7 @@ export default function OrderDetailScreen() {
     return (
       <View style={styles.centeredContainer}>
         <Stack.Screen options={{ title: "Order not found" }} />
-        <Text>Order not found.</Text>
+        <Text style={{ color: theme.textPrimary }}>Order not found.</Text>
       </View>
     );
   }
@@ -103,13 +113,13 @@ export default function OrderDetailScreen() {
   const orderTotal = Number(orderFetched.total ?? 0);
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
       <Stack.Screen
         options={{
           title: `User Order #${idString}`,
           headerRight: () => (
             <Pressable onPress={() => router.replace("/(user)/orders")}>
-              <Text style={styles.headerLink}>Order List</Text>
+              <Text style={[styles.headerLink, { color: theme.tint }]}>Order List</Text>
             </Pressable>
           ),
         }}
@@ -164,31 +174,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
 
-  statusChip: {
-    borderWidth: 1,
-    borderColor: Colors.light.tint,
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    borderRadius: 20,
-    backgroundColor: "transparent",
-  },
-
-  statusChipActive: {
-    backgroundColor: Colors.light.tint,
-  },
-
-  statusText: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: Colors.light.tint,
-  },
-
-  statusTextActive: {
-    color: "#fff",
-  },
-
   headerLink: {
-    color: Colors.light.tint,
     fontWeight: "600",
   },
 });

@@ -1,9 +1,11 @@
 import Colors from "@/src/constants/Colors";
 import { FontAwesome } from "@expo/vector-icons";
 import { Link, Stack } from "expo-router";
-import { Pressable } from "react-native";
+import { Pressable, useColorScheme } from "react-native";
 
 export default function MenuStack() {
+  const scheme = useColorScheme() ?? "light";
+  const theme = Colors[scheme];
   return (
     <Stack>
       <Stack.Screen
@@ -17,7 +19,7 @@ export default function MenuStack() {
                   <FontAwesome
                     name="plus-square-o"
                     size={25}
-                    color={Colors.light.tint}
+                    color={theme.tint}
                     style={{ marginRight: 15, opacity: pressed ? 0.5 : 1 }}
                   />
                 )}

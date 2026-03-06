@@ -260,7 +260,7 @@ export default function ProductDetailsScreen() {
                           sizePriceMap[size] <= 0
                             ? theme.textSecondary
                             : active
-                              ? "#FFFFFF"
+                              ? theme.card
                               : theme.textPrimary,
                       },
                     ]}

@@ -8,6 +8,7 @@ import {
   ScrollView,
   Text,
   View,
+  useColorScheme,
 } from "react-native";
 
 import { useOrderDetails, useUpdateOrderStatus } from "@/src/api/orders";
@@ -17,6 +18,8 @@ import Colors from "@/src/constants/Colors";
 import { OrderItem, OrderStatusList } from "@/src/types";
 
 export default function OrderDetailScreen() {
+  const scheme = useColorScheme() ?? "light";
+  const theme = Colors[scheme];
   const { id } = useLocalSearchParams<{ id?: string }>();
   const { data: orderFetched, isLoading, error } = useOrderDetails(id);
   const { mutateAsync: updateOrderStatus, isPending: isUpdatingStatus } =
@@ -70,7 +73,7 @@ export default function OrderDetailScreen() {
     return (
       <View style={{ padding: 10 }}>
         <Stack.Screen options={{ title: "Invalid order" }} />
-        <Text>Invalid order reference.</Text>
+        <Text style={{ color: theme.textPrimary }}>Invalid order reference.</Text>
       </View>
     );
   }
@@ -79,7 +82,7 @@ export default function OrderDetailScreen() {
     return (
       <View style={{ padding: 10 }}>
         <Stack.Screen options={{ title: "Loading order" }} />
-        <ActivityIndicator />
+        <ActivityIndicator color={theme.tint} />
       </View>
     );
   }
@@ -88,7 +91,7 @@ export default function OrderDetailScreen() {
     return (
       <View style={{ padding: 10 }}>
         <Stack.Screen options={{ title: "Order not found" }} />
-        <Text>Order not found.</Text>
+        <Text style={{ color: theme.textPrimary }}>Order not found.</Text>
       </View>
     );
   }
@@ -118,13 +121,13 @@ export default function OrderDetailScreen() {
   const customerMobile = orderFetched.profiles?.mobile_number ?? "+27 XX XXX XXXX";
 
   return (
-    <View style={{ padding: 10, gap: 10 }}>
+    <View style={{ padding: 10, gap: 10, backgroundColor: theme.background, flex: 1 }}>
       <Stack.Screen
         options={{
           title: `Admin Order #${id}`,
           headerRight: () => (
             <Pressable onPress={() => router.replace("/(admin)/orders/list")}>
-              <Text style={{ color: Colors.light.tint, fontWeight: "600" }}>
+              <Text style={{ color: theme.tint, fontWeight: "600" }}>
                 Order List
               </Text>
             </Pressable>
@@ -178,15 +181,15 @@ export default function OrderDetailScreen() {
                   }}
                   disabled={!isStatusSelectable(status) || isUpdatingStatus}
                   style={{
-                    borderColor: Colors.light.tint,
+                    borderColor: theme.tint,
                     borderWidth: 1,
                     padding: 10,
                     borderRadius: 5,
                     backgroundColor:
                       normalizedCurrentStatus === status
-                        ? Colors.light.tint
+                        ? theme.tint
                         : !isStatusSelectable(status)
-                          ? "#EAEAEA"
+                          ? theme.placeholder
                           : "transparent",
                     opacity: !isStatusSelectable(status) || isUpdatingStatus ? 0.6 : 1,
                   }}
@@ -195,10 +198,10 @@ export default function OrderDetailScreen() {
                     style={{
                       color:
                         normalizedCurrentStatus === status
-                          ? "white"
+                          ? theme.card
                           : !isStatusSelectable(status)
-                            ? "#8A8A8A"
-                            : Colors.light.tint,
+                            ? theme.textSecondary
+                            : theme.tint,
                     }}
                   >
                     {status}

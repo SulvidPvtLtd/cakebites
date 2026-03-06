@@ -182,7 +182,7 @@ export default function ProductDetailsScreen() {
                   <FontAwesome
                     name="pencil"
                     size={25}
-                    color={Colors.light.tint}
+                    color={theme.tint}
                     style={{ marginRight: 15, opacity: pressed ? 0.5 : 1 }}
                   />
                 )}

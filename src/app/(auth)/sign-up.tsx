@@ -1,21 +1,20 @@
-import { View, Text, TextInput, StyleSheet, Alert } from 'react-native';
-import React, { useState } from 'react';
-import Button from '../../components/Button';
-import Colors from '../../constants/Colors';
-import { Link, Stack } from 'expo-router';
-import { supabase } from '@/src/lib/supabase'; // supabase client
+import { View, Text, TextInput, StyleSheet, Alert, useColorScheme } from "react-native";
+import React, { useState } from "react";
+import Button from "../../components/Button";
+import Colors from "../../constants/Colors";
+import { Link, Stack } from "expo-router";
+import { supabase } from "@/src/lib/supabase";
 
 const SignUpScreen = () => {
-
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [mobileNumber, setMobileNumber] = useState('');
-
-  // Track the loading state to prevent multiple sign-up attempts
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [mobileNumber, setMobileNumber] = useState("");
   const [loading, setLoading] = useState(false);
+  const scheme = useColorScheme() ?? "light";
+  const theme = Colors[scheme];
 
   async function signUpWithEmail() {
-    setLoading(true); // sign up starts
+    setLoading(true);
 
     try {
       const normalizedEmail = email.trim().toLowerCase();
@@ -32,58 +31,73 @@ const SignUpScreen = () => {
       });
 
       if (signupResponse.error) {
-        Alert.alert('Error signing up', signupResponse.error.message);
+        Alert.alert("Error signing up", signupResponse.error.message);
         return;
       }
 
       Alert.alert(
-        'Success',
-        'Account created successfully! Please check your email to confirm your account.',
+        "Success",
+        "Account created successfully! Please check your email to confirm your account."
       );
     } finally {
-      setLoading(false); // sign up ends
+      setLoading(false);
     }
   }
 
   return (
-    <View style={styles.container}>
-      <Stack.Screen options={{ title: 'Sign up' }} />
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
+      <Stack.Screen options={{ title: "Sign up" }} />
 
-      <Text style={styles.label}>Email</Text>
+      <Text style={[styles.label, { color: theme.textSecondary }]}>Email</Text>
       <TextInput
         value={email}
         onChangeText={setEmail}
         placeholder="jon@gmail.com"
-        style={styles.input}
+        placeholderTextColor={theme.textSecondary}
+        style={[
+          styles.input,
+          { borderColor: theme.border, backgroundColor: theme.card, color: theme.textPrimary },
+        ]}
         editable
         autoFocus
         keyboardType="default"
       />
 
-      <Text style={styles.label}>Password</Text>
+      <Text style={[styles.label, { color: theme.textSecondary }]}>Password</Text>
       <TextInput
         value={password}
         onChangeText={setPassword}
         placeholder=""
-        style={styles.input}
+        placeholderTextColor={theme.textSecondary}
+        style={[
+          styles.input,
+          { borderColor: theme.border, backgroundColor: theme.card, color: theme.textPrimary },
+        ]}
         secureTextEntry
         editable
-        autoFocus
         keyboardType="default"
       />
 
-      <Text style={styles.label}>Mobile Number</Text>
+      <Text style={[styles.label, { color: theme.textSecondary }]}>Mobile Number</Text>
       <TextInput
         value={mobileNumber}
         onChangeText={setMobileNumber}
         placeholder="+27 82 123 4567"
-        style={styles.input}
+        placeholderTextColor={theme.textSecondary}
+        style={[
+          styles.input,
+          { borderColor: theme.border, backgroundColor: theme.card, color: theme.textPrimary },
+        ]}
         editable
         keyboardType="phone-pad"
       />
 
-      <Button onPress={signUpWithEmail} disabled={loading}   text={loading ? "Creating account..." : "Create account"} />
-      <Link href="/sign-in" style={styles.textButton}>
+      <Button
+        onPress={signUpWithEmail}
+        disabled={loading}
+        text={loading ? "Creating account..." : "Create account"}
+      />
+      <Link href="/sign-in" style={[styles.textButton, { color: theme.tint }]}>
         Sign in
       </Link>
     </View>
@@ -93,28 +107,24 @@ const SignUpScreen = () => {
 const styles = StyleSheet.create({
   container: {
     padding: 20,
-    justifyContent: 'center',
+    justifyContent: "center",
     flex: 1,
   },
   label: {
-    color: 'gray',
+    marginBottom: 4,
   },
   input: {
     borderWidth: 1,
-    borderColor: 'gray',
     padding: 10,
     marginTop: 5,
     marginBottom: 20,
-    backgroundColor: 'white',
-    borderRadius: 5,
+    borderRadius: 10,
   },
   textButton: {
-    alignSelf: 'center',
-    fontWeight: 'bold',
-    color: Colors.light.tint,
+    alignSelf: "center",
+    fontWeight: "bold",
     marginVertical: 10,
   },
 });
 
 export default SignUpScreen;
-

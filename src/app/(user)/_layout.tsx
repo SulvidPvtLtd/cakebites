@@ -18,6 +18,7 @@ function TabBarIcon(props: {
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
+  const theme = Colors[colorScheme ?? "light"];
   const { session, loading, isAdmin, activeGroup } = useAuth();
 
   if (loading) {
@@ -43,12 +44,10 @@ export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? "light"].tint,
+        tabBarActiveTintColor: theme.tint,
+        tabBarInactiveTintColor: theme.tabIconDefault,
         tabBarStyle: {
-          backgroundColor:
-            colorScheme === "dark"
-              ? "#121212" // Dark mode surface
-              : "#FFFFFF", // Light mode surface
+          backgroundColor: theme.card,
           borderTopWidth: 0,
           elevation: 0, // Android shadow
         },

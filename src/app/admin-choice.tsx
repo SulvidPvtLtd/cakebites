@@ -1,15 +1,25 @@
 import { useAuth } from "@providers/AuthProvider";
 import { Redirect, router } from "expo-router";
 import React from "react";
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
+import {
+  ActivityIndicator,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+  useColorScheme,
+} from "react-native";
+import Colors from "@/src/constants/Colors";
 
 const AdminChoice = () => {
+  const scheme = useColorScheme() ?? "light";
+  const theme = Colors[scheme];
   const { session, loading, isAdmin, setActiveGroup } = useAuth();
 
   if (loading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator />
+        <ActivityIndicator color={theme.tint} />
       </View>
     );
   }
@@ -33,18 +43,18 @@ const AdminChoice = () => {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Choose where to continue</Text>
-      <Text style={styles.subtitle}>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
+      <Text style={[styles.title, { color: theme.textPrimary }]}>Choose where to continue</Text>
+      <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
         You can switch back to this page anytime from the Switch tab.
       </Text>
 
-      <Pressable style={[styles.button, styles.adminButton]} onPress={goToAdmin}>
-        <Text style={styles.buttonText}>Go to Admin Pages</Text>
+      <Pressable style={[styles.button, { backgroundColor: theme.tint }]} onPress={goToAdmin}>
+        <Text style={[styles.buttonText, { color: theme.card }]}>Go to Admin Pages</Text>
       </Pressable>
 
-      <Pressable style={[styles.button, styles.userButton]} onPress={goToUser}>
-        <Text style={styles.buttonText}>Go to User Pages</Text>
+      <Pressable style={[styles.button, { backgroundColor: theme.card, borderColor: theme.border, borderWidth: 1 }]} onPress={goToUser}>
+        <Text style={[styles.buttonText, { color: theme.textPrimary }]}>Go to User Pages</Text>
       </Pressable>
     </View>
   );
@@ -68,7 +78,6 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 14,
-    color: "#555",
     marginBottom: 24,
   },
   button: {
@@ -77,14 +86,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 12,
   },
-  adminButton: {
-    backgroundColor: "#0B5D48",
-  },
-  userButton: {
-    backgroundColor: "#111827",
-  },
   buttonText: {
-    color: "#FFFFFF",
     fontSize: 16,
     fontWeight: "600",
   },

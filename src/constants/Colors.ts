@@ -1,54 +1,54 @@
-const tintColorLight = '#2F80ED';
-const tintColorDark = '#4C9AFF';
+const tintColorLight = "#89BF2F";
+const tintColorDark = "#9DCC47";
 
 export default {
   light: {
     // Core
-    text: '#111111',
-    background: '#F9F9F9',
+    text: "#1E2430",
+    background: "#F6F7FB",
     tint: tintColorLight,
 
     // Navigation
-    tabIconDefault: '#BDBDBD',
+    tabIconDefault: "#B4BBC6",
     tabIconSelected: tintColorLight,
 
     // UI Surfaces
-    card: '#FFFFFF',
-    border: '#E5E5E5',
-    placeholder: '#E5E5E5',
+    card: "#FFFFFF",
+    border: "#E7EBF1",
+    placeholder: "#E2E7EE",
 
     // Text variants
-    textPrimary: '#111111',
-    textSecondary: '#666666',
+    textPrimary: "#1E2430",
+    textSecondary: "#6F788A",
 
     // States
-    error: '#D32F2F',
-    success: '#2E7D32',
-    warning: '#ED6C02',
+    error: "#E55D64",
+    success: "#63AA3B",
+    warning: "#D79A25",
   },
 
   dark: {
     // Core
-    text: '#FFFFFF',
-    background: '#0E0E0E',
+    text: "#EDF2E3",
+    background: "#10150F",
     tint: tintColorDark,
 
     // Navigation
-    tabIconDefault: '#777777',
+    tabIconDefault: "#7D8A74",
     tabIconSelected: tintColorDark,
 
     // UI Surfaces
-    card: '#1A1A1A',
-    border: '#2A2A2A',
-    placeholder: '#2A2A2A',
+    card: "#1B2419",
+    border: "#2A3828",
+    placeholder: "#2B3929",
 
     // Text variants
-    textPrimary: '#FFFFFF',
-    textSecondary: '#AAAAAA',
+    textPrimary: "#EDF2E3",
+    textSecondary: "#A7B39A",
 
     // States
-    error: '#EF5350',
-    success: '#66BB6A',
-    warning: '#FF9800',
+    error: "#FF7D81",
+    success: "#7DCD5D",
+    warning: "#F2B648",
   },
 };

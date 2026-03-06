@@ -27,6 +27,7 @@ import {
   StyleSheet,
   Text,
   TextInput,
+  useColorScheme,
   View,
 } from "react-native";
 import { ProductSize } from "@/src/types";
@@ -57,6 +58,8 @@ const getFileExt = (asset: PickedImageAsset) => {
 };
 
 const CreateProductScreen = () => {
+  const scheme = useColorScheme() ?? "light";
+  const theme = Colors[scheme];
   
   const [name, setName] = useState("");
   const [activeSizes, setActiveSizes] = useState<Record<ProductSize, boolean>>({
@@ -440,7 +443,7 @@ const CreateProductScreen = () => {
 
   return (
     <ScrollView
-      contentContainerStyle={styles.container}
+      contentContainerStyle={[styles.container, { backgroundColor: theme.background }]}
       keyboardShouldPersistTaps="handled"
     >
       <Stack.Screen
@@ -452,42 +455,43 @@ const CreateProductScreen = () => {
           source={{ uri: getSafeImageUrl(image ?? defaultPizzaImage) }}
           style={styles.image}
         />
-        <Text style={styles.imageHint}>Tap to select image</Text>
+        <Text style={[styles.imageHint, { color: theme.tint }]}>Tap to select image</Text>
       </Pressable>
 
-      <View style={styles.formCard}>
-        <Text style={styles.label}>Name</Text>
+      <View style={[styles.formCard, { backgroundColor: theme.card }]}>
+        <Text style={[styles.label, { color: theme.textSecondary }]}>Name</Text>
         <TextInput
           value={name}
           onChangeText={setName}
           placeholder="Product name"
-          style={styles.input}
+          placeholderTextColor={theme.textSecondary}
+          style={[styles.input, { backgroundColor: theme.background, borderColor: theme.border, color: theme.textPrimary }]}
           maxLength={MAX_NAME_LENGTH}
           autoCapitalize="words"
           keyboardType="default"
         />
 
-        <Text style={styles.label}>Prices by Size ($)</Text>
+        <Text style={[styles.label, { color: theme.textSecondary }]}>Prices by Size ($)</Text>
         <View style={styles.sizePriceRow}>
           {PRODUCT_SIZES.map((size) => (
             <View key={size} style={styles.sizePriceCell}>
               <View style={styles.sizePriceHeader}>
-                <Text style={styles.sizePriceLabel}>{size}</Text>
+                <Text style={[styles.sizePriceLabel, { color: theme.textPrimary }]}>{size}</Text>
                 <Pressable
                   onPress={() => toggleSizeActive(size)}
                   style={[
                     styles.sizeStatusChip,
                     activeSizes[size]
-                      ? styles.sizeStatusChipActive
-                      : styles.sizeStatusChipInactive,
+                      ? { borderColor: theme.success, backgroundColor: theme.background }
+                      : { borderColor: theme.border, backgroundColor: theme.placeholder },
                   ]}
                 >
                   <Text
                     style={[
                       styles.sizeStatusText,
                       activeSizes[size]
-                        ? styles.sizeStatusTextActive
-                        : styles.sizeStatusTextInactive,
+                        ? { color: theme.success }
+                        : { color: theme.textSecondary },
                     ]}
                   >
                     {activeSizes[size] ? "Active" : "Inactive"}
@@ -500,43 +504,61 @@ const CreateProductScreen = () => {
                 placeholder="0.00"
                 keyboardType="decimal-pad"
                 editable={activeSizes[size]}
-                style={[styles.input, styles.sizePriceInput]}
+                placeholderTextColor={theme.textSecondary}
+                style={[
+                  styles.input,
+                  styles.sizePriceInput,
+                  { backgroundColor: theme.background, borderColor: theme.border, color: theme.textPrimary },
+                ]}
               />
             </View>
           ))}
         </View>
 
-        <Text style={styles.label}>Description</Text>
+        <Text style={[styles.label, { color: theme.textSecondary }]}>Description</Text>
         <TextInput
           value={description}
           onChangeText={setDescription}
           placeholder="Describe this product"
-          style={[styles.input, styles.descriptionInput]}
+          placeholderTextColor={theme.textSecondary}
+          style={[
+            styles.input,
+            styles.descriptionInput,
+            { backgroundColor: theme.background, borderColor: theme.border, color: theme.textPrimary },
+          ]}
           multiline
           textAlignVertical="top"
         />
 
-        <Text style={styles.label}>Stock Status</Text>
+        <Text style={[styles.label, { color: theme.textSecondary }]}>Stock Status</Text>
         <View style={styles.stockRow}>
           <Pressable
             onPress={() => setInStock(true)}
-            style={[styles.stockButton, inStock && styles.stockButtonActive]}
+            style={[
+              styles.stockButton,
+              { borderColor: theme.border, backgroundColor: theme.background },
+              inStock && { backgroundColor: theme.tint, borderColor: theme.tint },
+            ]}
           >
-            <Text style={[styles.stockText, inStock && styles.stockTextActive]}>
+            <Text style={[styles.stockText, { color: inStock ? theme.card : theme.textPrimary }]}>
               In stock
             </Text>
           </Pressable>
           <Pressable
             onPress={() => setInStock(false)}
-            style={[styles.stockButton, !inStock && styles.stockButtonActive]}
+            style={[
+              styles.stockButton,
+              { borderColor: theme.border, backgroundColor: theme.background },
+              !inStock && { backgroundColor: theme.tint, borderColor: theme.tint },
+            ]}
           >
-            <Text style={[styles.stockText, !inStock && styles.stockTextActive]}>
+            <Text style={[styles.stockText, { color: !inStock ? theme.card : theme.textPrimary }]}>
               Out of stock
             </Text>
           </Pressable>
         </View>
 
-        {!!error && <Text style={styles.error}>{error}</Text>}
+        {!!error && <Text style={[styles.error, { color: theme.error }]}>{error}</Text>}
 
         <Button
           onPress={handleButtonPress}
@@ -546,7 +568,7 @@ const CreateProductScreen = () => {
 
         {isUpdating && (
           <Pressable onPress={onDelete} style={styles.deleteWrapper}>
-            <Text style={styles.deleteText}>
+            <Text style={[styles.deleteText, { color: theme.error }]}>
               {isDeleting ? "Archiving..." : "Archive Product"}
             </Text>
           </Pressable>
@@ -561,7 +583,6 @@ export default CreateProductScreen;
 const styles = StyleSheet.create({
   container: {
     padding: 16,
-    backgroundColor: "#F7F7F7",
   },
   imageWrapper: {
     alignItems: "center",
@@ -575,11 +596,9 @@ const styles = StyleSheet.create({
   },
   imageHint: {
     marginTop: 8,
-    color: Colors.light.tint,
     fontWeight: "600",
   },
   formCard: {
-    backgroundColor: "#FFF",
     borderRadius: 16,
     padding: 16,
     shadowColor: "#000",
@@ -588,18 +607,15 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   label: {
-    color: "#666",
     marginBottom: 6,
     fontSize: 14,
     fontWeight: "500",
   },
   input: {
-    backgroundColor: "#FAFAFA",
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
     borderWidth: 1,
-    borderColor: "#DDD",
     marginBottom: 16,
     fontSize: 16,
   },
@@ -615,7 +631,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   sizePriceLabel: {
-    color: "#555",
     fontWeight: "600",
     fontSize: 12,
   },
@@ -631,24 +646,10 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
     borderWidth: 1,
   },
-  sizeStatusChipActive: {
-    borderColor: "#2E7D32",
-    backgroundColor: "#E8F5E9",
-  },
-  sizeStatusChipInactive: {
-    borderColor: "#BDBDBD",
-    backgroundColor: "#F2F2F2",
-  },
   sizeStatusText: {
     fontSize: 10,
     fontWeight: "700",
     textTransform: "uppercase",
-  },
-  sizeStatusTextActive: {
-    color: "#2E7D32",
-  },
-  sizeStatusTextInactive: {
-    color: "#757575",
   },
   sizePriceInput: {
     marginBottom: 8,
@@ -662,25 +663,14 @@ const styles = StyleSheet.create({
   stockButton: {
     flex: 1,
     borderWidth: 1,
-    borderColor: "#DDD",
     borderRadius: 10,
     paddingVertical: 10,
     alignItems: "center",
-    backgroundColor: "#FAFAFA",
-  },
-  stockButtonActive: {
-    backgroundColor: Colors.light.tint,
-    borderColor: Colors.light.tint,
   },
   stockText: {
-    color: "#444",
     fontWeight: "600",
   },
-  stockTextActive: {
-    color: "#FFF",
-  },
   error: {
-    color: "#D32F2F",
     textAlign: "center",
     marginBottom: 12,
   },
@@ -689,7 +679,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   deleteText: {
-    color: "#D32F2F",
     fontWeight: "600",
     textDecorationLine: "underline",
   },

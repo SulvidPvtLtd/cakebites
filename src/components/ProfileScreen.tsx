@@ -2,6 +2,7 @@ import { supabase } from "@/src/lib/supabase";
 import { useAuth } from "@/src/providers/AuthProvider";
 import Colors from "@/src/constants/Colors";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
+import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import * as ImagePicker from "expo-image-picker";
 import {
@@ -63,8 +64,8 @@ export default function ProfileScreen({ title }: ProfileScreenProps) {
     null
   );
   const [isEditing, setIsEditing] = useState(false);
+  const [profileExpanded, setProfileExpanded] = useState(false);
   const [saving, setSaving] = useState(false);
-  const heading = username.trim() || "Username not set";
 
   const hydrateForm = () => {
     setEmail(profile?.email ?? session?.user?.email ?? "");
@@ -83,13 +84,13 @@ export default function ProfileScreen({ title }: ProfileScreenProps) {
 
   const inputStyle = {
     borderColor: theme.border,
-    backgroundColor: theme.card,
+    backgroundColor: theme.background,
     color: theme.textPrimary,
   };
 
   const labelStyle = { color: theme.textSecondary };
   const readOnlyStyle = {
-    backgroundColor: theme.background,
+    backgroundColor: theme.placeholder,
     color: theme.textSecondary,
   };
 
@@ -202,6 +203,7 @@ export default function ProfileScreen({ title }: ProfileScreenProps) {
       }
 
       setIsEditing(false);
+      setProfileExpanded(false);
       setPickedImageAsset(null);
 
       Alert.alert(
@@ -239,7 +241,29 @@ export default function ProfileScreen({ title }: ProfileScreenProps) {
       style={[styles.container, { backgroundColor: theme.background }]}
       contentContainerStyle={[styles.content, { paddingTop: insets.top + 16 }]}
     >
-      <Text style={[styles.title, { color: theme.textPrimary }]}>{heading}</Text>
+      <View style={styles.headerRow}>
+        <Pressable
+          onPress={() => router.back()}
+          style={[
+            styles.headerIconButton,
+            { borderColor: theme.border, backgroundColor: theme.card },
+          ]}
+        >
+          <FontAwesome name="angle-left" size={20} color={theme.textPrimary} />
+        </Pressable>
+
+        <Text style={[styles.pageTitle, { color: theme.textPrimary }]}>Profile</Text>
+
+        <Pressable
+          onPress={() => Alert.alert("Notifications", "No new notifications.")}
+          style={[
+            styles.headerIconButton,
+            { borderColor: theme.border, backgroundColor: theme.card },
+          ]}
+        >
+          <FontAwesome name="bell-o" size={16} color={theme.textPrimary} />
+        </Pressable>
+      </View>
 
       <View style={styles.avatarWrap}>
         <View style={styles.avatarContainer}>
@@ -251,102 +275,188 @@ export default function ProfileScreen({ title }: ProfileScreenProps) {
             }
             style={[styles.avatar, { borderColor: theme.border }]}
           />
-          {isEditing && (
-            <Pressable
-              onPress={pickProfileImage}
-              style={[
-                styles.avatarEditButton,
-                { backgroundColor: theme.tint, borderColor: theme.card },
-              ]}
-            >
-              <FontAwesome name="pencil" size={14} color="#FFFFFF" />
-            </Pressable>
-          )}
+          <Pressable
+            onPress={pickProfileImage}
+            style={[
+              styles.avatarEditButton,
+              { backgroundColor: theme.tint, borderColor: theme.background },
+            ]}
+          >
+            <FontAwesome name="pencil" size={13} color={theme.card} />
+          </Pressable>
         </View>
-        {isEditing && (
-          <Text style={[styles.changeImage, { color: theme.textSecondary }]}>
-            Tap the icon to edit profile image
-          </Text>
+      </View>
+      <View style={[styles.groupCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
+        <Pressable
+          style={styles.optionRow}
+          onPress={() => setProfileExpanded((prev) => !prev)}
+        >
+          <View style={styles.optionLeft}>
+            <View style={[styles.iconBadge, { backgroundColor: theme.background }]}>
+              <FontAwesome name="user-o" size={15} color={theme.textPrimary} />
+            </View>
+            <Text style={[styles.optionText, { color: theme.textPrimary }]}>Profile Details</Text>
+          </View>
+          <FontAwesome
+            name={profileExpanded ? "angle-up" : "angle-down"}
+            size={18}
+            color={theme.textPrimary}
+          />
+        </Pressable>
+
+        {profileExpanded && (
+          <View style={[styles.profileFormWrap, { borderTopColor: theme.border }]}>
+            <Text style={[styles.label, labelStyle]}>Email address</Text>
+            <TextInput
+              value={email}
+              onChangeText={setEmail}
+              editable={isEditing}
+              autoCapitalize="none"
+              keyboardType="email-address"
+              style={[styles.input, inputStyle, !isEditing && readOnlyStyle]}
+            />
+
+            <Text style={[styles.label, labelStyle]}>Username</Text>
+            <TextInput
+              value={username}
+              onChangeText={setUsername}
+              editable={isEditing}
+              autoCapitalize="none"
+              style={[styles.input, inputStyle, !isEditing && readOnlyStyle]}
+            />
+
+            <Text style={[styles.label, labelStyle]}>Mobile number</Text>
+            <TextInput
+              value={mobileNumber}
+              onChangeText={setMobileNumber}
+              editable={isEditing}
+              keyboardType="phone-pad"
+              style={[styles.input, inputStyle, !isEditing && readOnlyStyle]}
+            />
+
+            <Text style={[styles.label, labelStyle]}>First name</Text>
+            <TextInput
+              value={firstName}
+              onChangeText={setFirstName}
+              editable={isEditing}
+              style={[styles.input, inputStyle, !isEditing && readOnlyStyle]}
+            />
+
+            <Text style={[styles.label, labelStyle]}>Surname</Text>
+            <TextInput
+              value={surname}
+              onChangeText={setSurname}
+              editable={isEditing}
+              style={[styles.input, inputStyle, !isEditing && readOnlyStyle]}
+            />
+
+            <Text style={[styles.label, labelStyle]}>Delivery address</Text>
+            <TextInput
+              value={deliveryAddress}
+              onChangeText={setDeliveryAddress}
+              editable={isEditing}
+              multiline
+              style={[
+                styles.input,
+                inputStyle,
+                styles.addressInput,
+                !isEditing && readOnlyStyle,
+              ]}
+            />
+
+            {isEditing ? (
+              <>
+                <Button
+                  text={saving ? "Saving..." : "Save Changes"}
+                  onPress={handleSave}
+                  loading={saving}
+                />
+                <Button
+                  text="Cancel"
+                  onPress={() => {
+                    hydrateForm();
+                    setIsEditing(false);
+                  }}
+                />
+              </>
+            ) : (
+              <Button text="Edit Profile" onPress={() => setIsEditing(true)} />
+            )}
+          </View>
         )}
+
+        <Pressable
+          style={styles.optionRow}
+          onPress={() => Alert.alert("Order History", "Coming soon.")}
+        >
+          <View style={styles.optionLeft}>
+            <View style={[styles.iconBadge, { backgroundColor: theme.background }]}>
+              <FontAwesome name="list-alt" size={15} color={theme.textPrimary} />
+            </View>
+            <Text style={[styles.optionText, { color: theme.textPrimary }]}>Order History</Text>
+          </View>
+          <FontAwesome name="angle-down" size={18} color={theme.textPrimary} />
+        </Pressable>
+
+        <Pressable
+          style={styles.optionRow}
+          onPress={() => Alert.alert("Saved Wishlist", "Coming soon.")}
+        >
+          <View style={styles.optionLeft}>
+            <View style={[styles.iconBadge, { backgroundColor: theme.background }]}>
+              <FontAwesome name="heart-o" size={15} color={theme.textPrimary} />
+            </View>
+            <Text style={[styles.optionText, { color: theme.textPrimary }]}>Saved Wishlist</Text>
+          </View>
+          <FontAwesome name="angle-down" size={18} color={theme.textPrimary} />
+        </Pressable>
       </View>
 
-      <Text style={[styles.label, labelStyle]}>Email address</Text>
-      <TextInput
-        value={email}
-        onChangeText={setEmail}
-        editable={isEditing}
-        autoCapitalize="none"
-        keyboardType="email-address"
-        style={[styles.input, inputStyle, !isEditing && readOnlyStyle]}
-      />
+      <View style={[styles.groupCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
+        <Pressable
+          style={styles.optionRow}
+          onPress={() => Alert.alert("Payment Methods", "Coming soon.")}
+        >
+          <View style={styles.optionLeft}>
+            <View style={[styles.iconBadge, { backgroundColor: theme.background }]}>
+              <FontAwesome name="credit-card" size={15} color={theme.textPrimary} />
+            </View>
+            <Text style={[styles.optionText, { color: theme.textPrimary }]}>Payment Methods</Text>
+          </View>
+          <FontAwesome name="angle-down" size={18} color={theme.textPrimary} />
+        </Pressable>
 
-      <Text style={[styles.label, labelStyle]}>Username</Text>
-      <TextInput
-        value={username}
-        onChangeText={setUsername}
-        editable={isEditing}
-        autoCapitalize="none"
-        style={[styles.input, inputStyle, !isEditing && readOnlyStyle]}
-      />
+        <Pressable
+          style={styles.optionRow}
+          onPress={() => Alert.alert("Help & Support", "Coming soon.")}
+        >
+          <View style={styles.optionLeft}>
+            <View style={[styles.iconBadge, { backgroundColor: theme.background }]}>
+              <FontAwesome name="question-circle-o" size={15} color={theme.textPrimary} />
+            </View>
+            <Text style={[styles.optionText, { color: theme.textPrimary }]}>Help & Support</Text>
+          </View>
+          <FontAwesome name="angle-down" size={18} color={theme.textPrimary} />
+        </Pressable>
+      </View>
 
-      <Text style={[styles.label, labelStyle]}>Mobile number</Text>
-      <TextInput
-        value={mobileNumber}
-        onChangeText={setMobileNumber}
-        editable={isEditing}
-        keyboardType="phone-pad"
-        style={[styles.input, inputStyle, !isEditing && readOnlyStyle]}
-      />
-
-      <Text style={[styles.label, labelStyle]}>First name</Text>
-      <TextInput
-        value={firstName}
-        onChangeText={setFirstName}
-        editable={isEditing}
-        style={[styles.input, inputStyle, !isEditing && readOnlyStyle]}
-      />
-
-      <Text style={[styles.label, labelStyle]}>Surname</Text>
-      <TextInput
-        value={surname}
-        onChangeText={setSurname}
-        editable={isEditing}
-        style={[styles.input, inputStyle, !isEditing && readOnlyStyle]}
-      />
-
-      <Text style={[styles.label, labelStyle]}>Delivery address</Text>
-      <TextInput
-        value={deliveryAddress}
-        onChangeText={setDeliveryAddress}
-        editable={isEditing}
-        multiline
-        style={[
-          styles.input,
-          inputStyle,
-          styles.addressInput,
-          !isEditing && readOnlyStyle,
-        ]}
-      />
-
-      {isEditing ? (
-        <>
-          <Button
-            text={saving ? "Saving..." : "Save Changes"}
-            onPress={handleSave}
-            loading={saving}
-          />
-          <Button
-            text="Cancel"
-            onPress={() => {
-              hydrateForm();
-              setIsEditing(false);
-            }}
-          />
-        </>
-      ) : (
-        <Button text="Edit Profile" onPress={() => setIsEditing(true)} />
-      )}
-      <Button text="Log out" onPress={handleLogOut} />
+      <View style={[styles.groupCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
+        <Pressable style={styles.optionRow} onPress={handleLogOut}>
+          <View style={styles.optionLeft}>
+            <View
+              style={[
+                styles.iconBadge,
+                styles.logoutBadge,
+                { backgroundColor: theme.placeholder },
+              ]}
+            >
+              <FontAwesome name="sign-out" size={15} color={theme.error} />
+            </View>
+            <Text style={[styles.logoutText, { color: theme.error }]}>Logout Option</Text>
+          </View>
+          <FontAwesome name="angle-down" size={18} color={theme.textPrimary} />
+        </Pressable>
+      </View>
     </ScrollView>
   );
 }
@@ -356,58 +466,106 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
-    padding: 20,
-    paddingBottom: 40,
+    paddingHorizontal: 18,
+    paddingBottom: 28,
   },
-  title: {
-    fontSize: 28,
+  headerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  headerIconButton: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  pageTitle: {
+    fontSize: 32,
     fontWeight: "700",
-    marginBottom: 16,
   },
   avatarWrap: {
     alignItems: "center",
-    marginBottom: 16,
+    marginTop: 18,
+    marginBottom: 22,
   },
   avatarContainer: {
     position: "relative",
   },
   avatar: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-    borderWidth: 1,
+    width: 110,
+    height: 110,
+    borderRadius: 55,
+    borderWidth: 0,
   },
   avatarEditButton: {
     position: "absolute",
-    right: -2,
-    bottom: -2,
-    width: 30,
-    height: 30,
-    borderRadius: 15,
+    right: 0,
+    bottom: 2,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 2,
   },
-  changeImage: {
-    marginTop: 10,
-    fontSize: 14,
+  groupCard: {
+    borderRadius: 16,
+    borderWidth: 1,
+    paddingVertical: 4,
+    marginBottom: 14,
+  },
+  optionRow: {
+    minHeight: 60,
+    paddingHorizontal: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  optionLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  iconBadge: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  optionText: {
+    fontSize: 17,
     fontWeight: "500",
+  },
+  profileFormWrap: {
+    paddingHorizontal: 16,
+    paddingBottom: 10,
+    borderTopWidth: 1,
   },
   label: {
     fontSize: 12,
     fontWeight: "600",
-    marginTop: 8,
+    marginTop: 10,
     marginBottom: 4,
   },
   input: {
     borderWidth: 1,
-    borderRadius: 10,
+    borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    fontSize: 16,
+    fontSize: 14,
   },
   addressInput: {
     minHeight: 84,
     textAlignVertical: "top",
+  },
+  logoutBadge: {
+  },
+  logoutText: {
+    fontSize: 16,
+    fontWeight: "600",
   },
 });

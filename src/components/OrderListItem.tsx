@@ -1,20 +1,16 @@
-import { View, Text, StyleSheet, Pressable } from 'react-native';
-import React from 'react';
-import { Order, Tables } from '../types';
-import relativeTime from 'dayjs/plugin/relativeTime';
-import dayjs from 'dayjs';
-import { Link } from 'expo-router';
+import { View, Text, StyleSheet, Pressable, useColorScheme } from "react-native";
+import React from "react";
+import { Tables } from "../types";
+import relativeTime from "dayjs/plugin/relativeTime";
+import dayjs from "dayjs";
+import { Link } from "expo-router";
+import Colors from "@/src/constants/Colors";
 
 dayjs.extend(relativeTime);
 
 type OrderListItemProps = {
   order: Tables<"orders">;
-  /**
-   * Explicitly control which route group to use for details navigation.
-   * This is more defensive than inferring from segments because it won't
-   * silently break if screens are moved or nested differently.
-   */
-  routeGroup?: 'admin' | 'user';
+  routeGroup?: "admin" | "user";
   statusSubtext?: string;
   customerEmail?: string;
   customerMobile?: string;
@@ -22,16 +18,15 @@ type OrderListItemProps = {
 
 const OrderListItem = ({
   order,
-  routeGroup = 'user',
+  routeGroup = "user",
   statusSubtext,
   customerEmail,
   customerMobile,
 }: OrderListItemProps) => {
-  // Use the caller's explicit intent rather than deriving from navigation state.
+  const scheme = useColorScheme() ?? "light";
+  const theme = Colors[scheme];
   const href: `/(admin)/orders/${number}` | `/(user)/orders/${number}` =
-    routeGroup === 'admin'
-      ? `/(admin)/orders/${order.id}`
-      : `/(user)/orders/${order.id}`;
+    routeGroup === "admin" ? `/(admin)/orders/${order.id}` : `/(user)/orders/${order.id}`;
   const createdAtDate = new Date(order.created_at);
   const createdAtRelative = dayjs(order.created_at).fromNow();
   const createdAtSouthAfrica = Number.isNaN(createdAtDate.getTime())
@@ -46,26 +41,44 @@ const OrderListItem = ({
         second: "2-digit",
         hour12: false,
       }).format(createdAtDate);
-  const fulfillmentLabel =
-    order.delivery_option === "No" ? "Self collect" : "Delivery";
+  const fulfillmentLabel = order.delivery_option === "No" ? "Self collect" : "Delivery";
 
   return (
     <Link href={href} asChild>
-      <Pressable style={styles.container}>
+      <Pressable
+        style={[
+          styles.container,
+          { backgroundColor: theme.card, borderColor: theme.border },
+        ]}
+      >
         <View>
-          <Text style={styles.title}>Order #{order.id}</Text>
-          <Text style={styles.time}>{createdAtRelative}</Text>
-          <Text style={styles.timeExact}>{createdAtSouthAfrica} SAST</Text>
-          {customerEmail ? <Text style={styles.contactText}>Email: {customerEmail}</Text> : null}
-          {customerMobile ? <Text style={styles.contactText}>Mobile: {customerMobile}</Text> : null}
+          <Text style={[styles.title, { color: theme.textPrimary }]}>Order #{order.id}</Text>
+          <Text style={[styles.time, { color: theme.textSecondary }]}>{createdAtRelative}</Text>
+          <Text style={[styles.timeExact, { color: theme.textSecondary }]}>
+            {createdAtSouthAfrica} SAST
+          </Text>
+          {customerEmail ? (
+            <Text style={[styles.contactText, { color: theme.textSecondary }]}>
+              Email: {customerEmail}
+            </Text>
+          ) : null}
+          {customerMobile ? (
+            <Text style={[styles.contactText, { color: theme.textSecondary }]}>
+              Mobile: {customerMobile}
+            </Text>
+          ) : null}
           {routeGroup === "admin" ? (
-            <Text style={styles.fulfillmentText}>Fulfilment: {fulfillmentLabel}</Text>
+            <Text style={[styles.fulfillmentText, { color: theme.tint }]}>
+              Fulfilment: {fulfillmentLabel}
+            </Text>
           ) : null}
         </View>
 
         <View style={styles.statusContainer}>
-          <Text style={styles.status}>{order.status}</Text>
-          {statusSubtext ? <Text style={styles.statusSubtext}>{statusSubtext}</Text> : null}
+          <Text style={[styles.status, { color: theme.textPrimary }]}>{order.status}</Text>
+          {statusSubtext ? (
+            <Text style={[styles.statusSubtext, { color: theme.tint }]}>{statusSubtext}</Text>
+          ) : null}
         </View>
       </Pressable>
     </Link>
@@ -74,46 +87,40 @@ const OrderListItem = ({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: 'white',
     padding: 10,
     borderRadius: 10,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    borderWidth: 1,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
   title: {
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginVertical: 5,
   },
-  time: {
-    color: 'gray',
-  },
+  time: {},
   timeExact: {
-    color: 'gray',
     fontSize: 12,
     marginTop: 2,
   },
   status: {
-    fontWeight: '500',
+    fontWeight: "500",
   },
   statusContainer: {
-    alignItems: 'flex-end',
+    alignItems: "flex-end",
     gap: 4,
   },
   statusSubtext: {
-    color: '#2f80ed',
-    fontWeight: '700',
+    fontWeight: "700",
   },
   contactText: {
-    color: 'gray',
     fontSize: 12,
     marginTop: 2,
   },
   fulfillmentText: {
-    color: '#1f5fbf',
     fontSize: 12,
     marginTop: 4,
-    fontWeight: '600',
+    fontWeight: "600",
   },
 });
 

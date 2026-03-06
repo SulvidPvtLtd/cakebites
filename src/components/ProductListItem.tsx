@@ -81,10 +81,19 @@ const ProductListItem = ({
                 </Text>
 
                 {showAdminStockState && isOutOfStock && (
-                  <Text style={styles.stockBadge}>Out of stock</Text>
+                  <Text
+                    style={[
+                      styles.stockBadge,
+                      { backgroundColor: theme.error, color: theme.card },
+                    ]}
+                  >
+                    Out of stock
+                  </Text>
                 )}
 
-                <Text style={styles.linkText}>Go to details</Text>
+                <Text style={[styles.linkText, { color: theme.warning }]}>
+                  Go to details
+                </Text>
               </View>
             </View>
           </View>
@@ -150,7 +159,6 @@ const styles = StyleSheet.create({
 
   linkText: {
     fontSize: 14,
-    color: 'orange',
     textDecorationLine: 'underline',
   },
 
@@ -160,8 +168,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 999,
-    backgroundColor: '#D32F2F',
-    color: '#FFFFFF',
     fontSize: 12,
     fontWeight: '700',
     textTransform: 'uppercase',
