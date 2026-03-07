@@ -156,7 +156,7 @@ export default function DeliveryTermsScreen() {
         </Pressable>
       </ScrollView>
 
-      <View style={styles.footer}>
+      <View style={[styles.footer, { backgroundColor: theme.card }]}>
         <Button
           onPress={onAcceptTerms}
           text={saving ? "Saving..." : "Accept and Continue"}
@@ -209,6 +209,5 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     padding: 16,
-    backgroundColor: "#FFFFFF",
   },
 });

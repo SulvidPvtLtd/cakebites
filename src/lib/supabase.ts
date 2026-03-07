@@ -44,9 +44,13 @@ if (!supabaseUrl || !supabaseAnonKey) {
   );
 }
 
-const supabaseProjectRef =
-  supabaseUrl.split("//")[1]?.split(".")[0] ?? "unknown";
-export const SUPABASE_AUTH_STORAGE_KEY = `sb-${supabaseProjectRef}-auth-token`;
+const supabaseHostIdentifier =
+  supabaseUrl
+    .replace(/^https?:\/\//i, "")
+    .replace(/[^a-zA-Z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .toLowerCase() || "unknown";
+export const SUPABASE_AUTH_STORAGE_KEY = `sb-${supabaseHostIdentifier}-auth-token`;
 
 // Assign <Database> so that the Supabase client
 // is aware of the database schema and types to use. Currently without it, it will use `any` types.

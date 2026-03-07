@@ -180,7 +180,7 @@ export default function CartScreen() {
             { backgroundColor: theme.tint },
           ]}
         >
-          <Text style={styles.checkoutText}>
+          <Text style={[styles.checkoutText, { color: theme.card }]}>
             Proceed to checkout
           </Text>
         </Pressable>
@@ -242,7 +242,6 @@ const styles = StyleSheet.create({
   },
 
   checkoutText: {
-    color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
   },

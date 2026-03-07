@@ -101,7 +101,7 @@ export default function CartList() {
                     { backgroundColor: theme.tint },
                   ]}
                 >
-                  <Text style={styles.stepText}>-</Text>
+                  <Text style={[styles.stepText, { color: theme.card }]}>-</Text>
                 </Pressable>
 
                 <Text
@@ -126,7 +126,7 @@ export default function CartList() {
                     { backgroundColor: theme.tint },
                   ]}
                 >
-                  <Text style={styles.stepText}>+</Text>
+                  <Text style={[styles.stepText, { color: theme.card }]}>+</Text>
                 </Pressable>
               </View>
             </View>
@@ -171,7 +171,6 @@ const styles = StyleSheet.create({
     height: IMAGE_SIZE,
     borderRadius: IMAGE_SIZE / 2,
     marginRight: 12,
-    backgroundColor: "#EAEAEA",
   },
 
   image: {
@@ -209,7 +208,6 @@ const styles = StyleSheet.create({
   },
 
   stepText: {
-    color: "#FFFFFF",
     fontSize: 18,
     fontWeight: "700",
   },
@@ -227,4 +225,3 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
 });
-
