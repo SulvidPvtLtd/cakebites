@@ -1,5 +1,6 @@
 import { Stack } from "expo-router";
 import { useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { ActivityIndicator, FlatList, Text } from "react-native";
 import OrderListItem from "@components/OrderListItem";
 import { useMyOrders } from "@/src/api/orders";
@@ -10,6 +11,7 @@ import { supabase } from "@/src/lib/supabase";
 type UserOrder = Tables<"orders">;
 
 export default function OrdersScreen() {
+  const queryClient = useQueryClient();
   const { session } = useAuth();
   const userId = session?.user.id;
 
@@ -20,7 +22,20 @@ export default function OrdersScreen() {
     if (!userId) return;
 
     const ordersChannel = supabase
-      .channel("user-orders-list-channel")
+      .channel(`user-orders-list-${userId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "orders",
+          filter: `user_id=eq.${userId}`,
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["orders"] });
+          refetch();
+        },
+      )
       .on(
         "postgres_changes",
         {
@@ -30,15 +45,33 @@ export default function OrdersScreen() {
           filter: `user_id=eq.${userId}`,
         },
         () => {
+          queryClient.invalidateQueries({ queryKey: ["orders"] });
           refetch();
         },
       )
-      .subscribe();
+      .on(
+        "postgres_changes",
+        {
+          event: "DELETE",
+          schema: "public",
+          table: "orders",
+          filter: `user_id=eq.${userId}`,
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["orders"] });
+          refetch();
+        },
+      )
+      .subscribe((status) => {
+        if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+          refetch();
+        }
+      });
 
     return () => {
       ordersChannel.unsubscribe();
     };
-  }, [userId, refetch]);
+  }, [queryClient, userId, refetch]);
 
     if (isLoading) {
       return <ActivityIndicator />;

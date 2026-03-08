@@ -163,6 +163,7 @@ export default function AuthProvider({ children }: PropsWithChildren) {
       }
 
       setSession(session);
+      await supabase.realtime.setAuth(session?.access_token ?? "");
       if (!session) {
         lastUserIdRef.current = null;
         setActiveGroup(null);
@@ -188,6 +189,7 @@ export default function AuthProvider({ children }: PropsWithChildren) {
     } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setLoading(true);
       setSession(session);
+      await supabase.realtime.setAuth(session?.access_token ?? "");
       if (!session) {
         lastUserIdRef.current = null;
         setActiveGroup(null);

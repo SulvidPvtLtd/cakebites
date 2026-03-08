@@ -1,7 +1,8 @@
 import { useAdminProductList } from '@/src/api/products';
 import ProductListItem from '@components/ProductListItem';
-import { ActivityIndicator, FlatList, Text } from 'react-native';
+import { FlatList, Text } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import LoadingState from '@/src/components/LoadingState';
 
 const GAP = 16;
 const NUM_COLUMNS = 2;
@@ -19,7 +20,12 @@ export default function MenuScreen() {
   });
   
     if(isLoading) {
-      return <ActivityIndicator size="large" color="midnightblue" />;  
+      return (
+        <LoadingState
+          title="Loading products"
+          message="Preparing the catalog for the admin view."
+        />
+      );
     }
   
     if(error) {

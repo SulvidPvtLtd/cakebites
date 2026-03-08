@@ -1,6 +1,6 @@
 import Colors from '@constants/Colors';
 import { Link } from 'expo-router';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Image,
   Pressable,
@@ -9,6 +9,7 @@ import {
   useColorScheme,
   View,
 } from 'react-native';
+import LoadingState from '@/src/components/LoadingState';
 // import { Product } from '../types'; - we used this because we had not exported the Tables type from database.types,
 import { Tables } from '../database.types';
 
@@ -46,6 +47,12 @@ const ProductListItem = ({
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme ?? 'light'];
   const isOutOfStock = !product.is_active || !product.in_stock;
+  const imageUri = getSafeImageUrl(product.image);
+  const [imageLoaded, setImageLoaded] = useState(false);
+
+  useEffect(() => {
+    setImageLoaded(false);
+  }, [imageUri]);
 
   return (
     <View style={[styles.itemWrapper, { width: `${100 / numColumns}%` }]}>
@@ -60,10 +67,20 @@ const ProductListItem = ({
         <Pressable style={styles.shadowWrapper}>
           <View style={[styles.card, { backgroundColor: theme.card }]}>
             <View style={styles.imageContainer}>
+              {!imageLoaded && (
+                <View
+                  style={[styles.imageLoader, { backgroundColor: theme.placeholder }]}
+                  pointerEvents="none"
+                >
+                  <LoadingState compact />
+                </View>
+              )}
               <Image
-                source={{ uri: getSafeImageUrl(product.image) }}
+                source={{ uri: imageUri }}
                 style={styles.image}
                 resizeMode="contain"
+                onLoadEnd={() => setImageLoaded(true)}
+                onError={() => setImageLoaded(true)}
               />
             </View>
 
@@ -128,11 +145,20 @@ const styles = StyleSheet.create({
 
   imageContainer: {
     padding: 8,
+    position: 'relative',
   },
 
   image: {
     width: '100%',
     aspectRatio: IMAGE_RATIO,
+  },
+
+  imageLoader: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 14,
+    margin: 8,
   },
 
   textContainer: {

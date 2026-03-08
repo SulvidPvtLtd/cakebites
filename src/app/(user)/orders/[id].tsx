@@ -1,5 +1,6 @@
 import { Stack, router, useLocalSearchParams } from "expo-router";
 import { useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   ActivityIndicator,
   FlatList,
@@ -22,6 +23,7 @@ type OrderDetailsParams = {
 };
 
 export default function OrderDetailScreen() {
+  const queryClient = useQueryClient();
   const scheme = useColorScheme() ?? "light";
   const theme = Colors[scheme];
   const { id: idParam } = useLocalSearchParams<OrderDetailsParams>();
@@ -37,27 +39,35 @@ export default function OrderDetailScreen() {
 
   useEffect(() => {
     if (!idString) return;
+    const numericId = Number(idString);
+    if (!Number.isFinite(numericId) || numericId <= 0) return;
 
     const orders = supabase
-      .channel("custom-filter-channel")
+      .channel(`user-order-detail-${numericId}`)
       .on(
         "postgres_changes",
         {
           event: "UPDATE",
           schema: "public",
           table: "orders",
-          filter: `id=eq.${idString}`,
+          filter: `id=eq.${numericId}`,
         },
         () => {
+          queryClient.invalidateQueries({ queryKey: ["orders"] });
+          queryClient.invalidateQueries({ queryKey: ["order", numericId] });
           refetch();
         },
       )
-      .subscribe();
+      .subscribe((status) => {
+        if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+          refetch();
+        }
+      });
 
     return () => {
       orders.unsubscribe();
     };
-  }, [idString, refetch]);
+  }, [idString, queryClient, refetch]);
 
   
   if (!idString) {

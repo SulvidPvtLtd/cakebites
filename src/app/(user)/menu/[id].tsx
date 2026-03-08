@@ -1,7 +1,6 @@
 import { Redirect, Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  ActivityIndicator,
   Alert,
   Animated,
   Pressable,
@@ -15,6 +14,7 @@ import {
 
 import { useProduct } from "@/src/api/products";
 import Button from "@/src/components/Button";
+import LoadingState from "@/src/components/LoadingState";
 import { getSafeImageUrl } from "@/src/components/ProductListItem";
 import Colors from "@/src/constants/Colors";
 import {
@@ -46,7 +46,7 @@ export default function ProductDetailsScreen() {
     return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
   }, [idString]);
 
-  const { data: product } = useProduct(productId ?? -1);
+  const { data: product, isLoading } = useProduct(productId ?? -1);
 
   const [selectedSize, setSelectedSize] = useState<ProductSize | null>(null);
   const [expanded, setExpanded] = useState(false);
@@ -63,6 +63,11 @@ export default function ProductDetailsScreen() {
       useNativeDriver: true,
     }).start();
   }, [imageLoaded, imageOpacity]);
+
+  useEffect(() => {
+    setImageLoaded(false);
+    imageOpacity.setValue(0);
+  }, [imageOpacity, product?.image]);
 
   const sizePriceMap = useMemo(
     () => (product ? getProductSizePriceMap(product) : null),
@@ -91,12 +96,8 @@ export default function ProductDetailsScreen() {
     return <Redirect href="/(user)/menu" />;
   }
 
-  if (!product || !sizePriceMap) {
-    return (
-      <View style={[styles.center, { backgroundColor: theme.background }]}>
-        <ActivityIndicator size="large" color={theme.tint} />
-      </View>
-    );
+  if (isLoading || !product || !sizePriceMap) {
+    return <LoadingState title="Loading product" message="Getting the latest product details..." />;
   }
 
   const imageSource = { uri: getSafeImageUrl(product.image) };
@@ -193,13 +194,16 @@ export default function ProductDetailsScreen() {
       >
         <View style={styles.imageWrapper}>
           {!imageLoaded && (
-            <View style={[styles.imagePlaceholder, { backgroundColor: theme.border }]} />
+            <View style={[styles.imagePlaceholder, { backgroundColor: theme.border }]}>
+              <LoadingState compact />
+            </View>
           )}
 
           <Animated.Image
             source={imageSource}
             resizeMode="contain"
-            onLoad={() => setImageLoaded(true)}
+            onLoadEnd={() => setImageLoaded(true)}
+            onError={() => setImageLoaded(true)}
             style={[
               styles.image,
               {
@@ -313,6 +317,8 @@ const styles = StyleSheet.create({
     height: 240,
     borderRadius: 120,
     opacity: 0.15,
+    alignItems: "center",
+    justifyContent: "center",
   },
   image: {
     aspectRatio: 1,

@@ -7,7 +7,6 @@ import {
   useState,
 } from 'react';
 import {
-  ActivityIndicator,
   Alert,
   Animated,
   Pressable,
@@ -21,6 +20,7 @@ import {
 
 import { useProduct } from '@/src/api/products';
 import Button from '@/src/components/Button';
+import LoadingState from '@/src/components/LoadingState';
 import { useCart } from '@/src/providers/CartProvider';
 import { ProductSize } from '@/src/types';
 import { getSafeImageUrl } from '@components/ProductListItem';
@@ -50,7 +50,7 @@ export default function ProductDetailsScreen() {
   }, [idString]);
 
   /* ---------------- Data ---------------- */
-  const { data: product } = useProduct(productId ?? -1);
+  const { data: product, isLoading } = useProduct(productId ?? -1);
 
   const { width } = useWindowDimensions();
   const colorScheme = useColorScheme() ?? 'light';
@@ -85,18 +85,19 @@ export default function ProductDetailsScreen() {
     }
   }, [imageLoaded, imageOpacity]);
 
+  useEffect(() => {
+    setImageLoaded(false);
+    imageOpacity.setValue(0);
+  }, [imageOpacity, product?.image]);
+
   /* ---------------- Guards ---------------- */
 
   if (!productId) {
     return <Redirect href="/(admin)/menu" />;
   }
 
-  if (!product) {
-    return (
-      <View style={[styles.center, { backgroundColor: theme.background }]}>
-        <ActivityIndicator size="large" color={theme.tint} />
-      </View>
-    );
+  if (isLoading || !product) {
+    return <LoadingState title="Loading product" message="Getting the latest product details..." />;
   }
 
   const imageSource = { uri: getSafeImageUrl(product.image) };
@@ -209,13 +210,16 @@ export default function ProductDetailsScreen() {
                 styles.imagePlaceholder,
                 { backgroundColor: theme.border },
               ]}
-            />
+            >
+              <LoadingState compact />
+            </View>
           )}
 
           <Animated.Image
             source={imageSource}
             resizeMode="contain"
-            onLoad={() => setImageLoaded(true)}
+            onLoadEnd={() => setImageLoaded(true)}
+            onError={() => setImageLoaded(true)}
             style={[
               styles.image,
               {
@@ -281,6 +285,8 @@ const styles = StyleSheet.create({
     height: 240,
     borderRadius: 120,
     opacity: 0.15,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 
   image: {

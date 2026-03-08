@@ -1,9 +1,10 @@
 import ProductListItem from '@components/ProductListItem';
 import React from 'react';
-import { ActivityIndicator, FlatList , Text} from 'react-native';
+import { FlatList , Text} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useProductList } from '@/src/api/products';
 import { useProductSubscription } from "@/src/lib/subscriptions/userProductSubscriptions";
+import LoadingState from '@/src/components/LoadingState';
 
 
 const GAP = 16;
@@ -16,7 +17,12 @@ export default function MenuScreen() {
   useProductSubscription();
 
   if(isLoading) {
-    return <ActivityIndicator size="large" color="midnightblue" />;  
+    return (
+      <LoadingState
+        title="Loading menu"
+        message="Products are being pulled in. Realtime updates stay separate from this initial screen state."
+      />
+    );
   }
 
   if(error) {

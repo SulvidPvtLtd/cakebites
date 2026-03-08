@@ -9,7 +9,12 @@
     "android": "set \"EXPO_NO_DEPENDENCY_VALIDATION=1\" && expo start --lan --android",
     "android:tunnel": "set \"EXPO_NO_DEPENDENCY_VALIDATION=1\" && expo start --tunnel --android",
     "ios": "set \"EXPO_NO_DEPENDENCY_VALIDATION=1\" && expo start --ios",
-    "web": "set \"EXPO_NO_DEPENDENCY_VALIDATION=1\" && expo start --web"
+    "web": "set \"EXPO_NO_DEPENDENCY_VALIDATION=1\" && expo start --web",
+    "supabase:start": "npx supabase start",
+    "supabase:stop": "npx supabase stop --no-backup",
+    "supabase:status": "npx supabase status",
+    "supabase:link": "npx supabase link --project-ref ctfirvzwlecmpwhfgvyy",
+    "supabase:reset": "npx supabase db reset"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
@@ -45,7 +50,7 @@
   "devDependencies": {
     "@types/react": "~19.1.0",
     "react-test-renderer": "19.1.0",
-    "supabase": "^2.76.16",
+    "supabase": "2.75.0",
     "typescript": "~5.9.2"
   },
   "private": true

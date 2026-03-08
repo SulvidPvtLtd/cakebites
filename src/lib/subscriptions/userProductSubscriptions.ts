@@ -1,38 +1,43 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { supabase } from "@/src/lib/supabase";
+import { useAuth } from "@/src/providers/AuthProvider";
 
 export const useProductSubscription = () => {
   const queryClient = useQueryClient();
+  const { session } = useAuth();
 
   useEffect(() => {
+    if (session?.access_token) {
+      // Ensure realtime channel uses the current JWT for RLS-protected changes.
+      supabase.realtime.setAuth(session.access_token);
+    }
+
+    const refreshProducts = async () => {
+      await queryClient.invalidateQueries({ queryKey: ["products"] });
+      await queryClient.refetchQueries({ queryKey: ["products"], type: "active" });
+    };
+
     const productsChannel = supabase
-      .channel("user-products-channel")
+      .channel(`user-products-channel-${session?.user?.id ?? "anon"}`)
       .on(
         "postgres_changes",
-        { event: "INSERT", schema: "public", table: "products" },
+        { event: "*", schema: "public", table: "products" },
         () => {
-          queryClient.invalidateQueries({ queryKey: ["products"] });
+          void refreshProducts();
         }
       )
-      .on(
-        "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "products" },
-        () => {
-          queryClient.invalidateQueries({ queryKey: ["products"] });
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED") {
+          void refreshProducts();
         }
-      )
-      .on(
-        "postgres_changes",
-        { event: "DELETE", schema: "public", table: "products" },
-        () => {
-          queryClient.invalidateQueries({ queryKey: ["products"] });
+        if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+          void refreshProducts();
         }
-      )
-      .subscribe();
+      });
 
     return () => {
-      productsChannel.unsubscribe();
+      void supabase.removeChannel(productsChannel);
     };
-  }, [queryClient]);
+  }, [queryClient, session?.access_token, session?.user?.id]);
 };
