@@ -1364,3 +1364,22 @@ create trigger on_auth_user_created
 after insert on auth.users
 for each row execute function public.handle_new_user_profile();
 ```
+# Payments
+
+Payments on mobile are a bit more tricky compared to the web. 
+Apple and Google have strict guidelines when it comes to processing payments. 
+
+There are 2 ways to process payments on mobile:
+
+- In-app purchases
+    - processed through AppStore or Google
+    - 30% platform fees
+    - Mandatory when selling additional features or content in the app
+
+- External payment gateways
+    - Integrate with any third-party payment processor
+    - Low platform fees
+    - It can only be used when selling physical goods.
+
+
+    

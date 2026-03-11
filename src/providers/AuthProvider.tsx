@@ -1,6 +1,4 @@
-import { SUPABASE_AUTH_STORAGE_KEY, supabase } from "@/src/lib/supabase"; // supabase client
-// project-defined profile type import (replaced by Supabase generated table type)
-// import type { Profile } from "@/src/types";
+import { SUPABASE_AUTH_STORAGE_KEY, supabase } from "@/src/lib/supabase";
 import type { Tables } from "@/src/database.types";
 import { Session } from "@supabase/supabase-js";
 import * as SecureStore from "expo-secure-store";
@@ -13,7 +11,6 @@ import {
   useState,
 } from "react";
 
-// Declare type for the auth data
 type AuthData = {
   session: Session | null;
   loading: boolean;
@@ -21,6 +18,7 @@ type AuthData = {
   isAdmin: boolean;
   activeGroup: "ADMIN" | "USER" | null;
   setActiveGroup: (group: "ADMIN" | "USER" | null) => void;
+  signOut: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthData>({
@@ -30,10 +28,12 @@ const AuthContext = createContext<AuthData>({
   isAdmin: false,
   activeGroup: null,
   setActiveGroup: () => {},
+  signOut: async () => {},
 });
 
 const PROFILE_REQUEST_TIMEOUT_MS = 3500;
 const AUTH_REQUEST_TIMEOUT_MS = 3500;
+const REALTIME_AUTH_TIMEOUT_MS = 1500;
 const normalizeGroup = (group: string | null | undefined): string | null =>
   typeof group === "string" ? group.trim().toLowerCase() : null;
 
@@ -57,15 +57,24 @@ const withTimeout = async <T,>(promise: PromiseLike<T>, timeoutMs: number) => {
 
 export default function AuthProvider({ children }: PropsWithChildren) {
   const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true); // Track loading state
-  const [profile, setProfile] = useState<Tables<"profiles"> | null>(null); // Track user profile data
+  const [loading, setLoading] = useState(true);
+  const [profile, setProfile] = useState<Tables<"profiles"> | null>(null);
   const [activeGroup, setActiveGroup] = useState<"ADMIN" | "USER" | null>(null);
   const lastUserIdRef = useRef<string | null>(null);
 
-  // Query the session to check if the user is logged in and set the user state accordingly
+  const setRealtimeAuth = async (token: string | null | undefined) => {
+    try {
+      await withTimeout(
+        supabase.realtime.setAuth(token ?? ""),
+        REALTIME_AUTH_TIMEOUT_MS
+      );
+    } catch {
+      // Keep auth transitions responsive even if realtime is slow/offline.
+    }
+  };
+
   useEffect(() => {
     const clearLocalSession = async () => {
-      // Ensure persisted auth payload is removed even when Supabase encounters stale refresh tokens.
       await SecureStore.deleteItemAsync(SUPABASE_AUTH_STORAGE_KEY);
       await supabase.auth.signOut({ scope: "local" });
       setSession(null);
@@ -136,8 +145,7 @@ export default function AuthProvider({ children }: PropsWithChildren) {
       return createdProfile ?? null;
     };
 
-    // UseEffect expects nothing or a cleanup function and can not be async, so we define an async function inside it and call it immediately.
-    const fecthSession = async () => {
+    const fetchSession = async () => {
       let session: Session | null = null;
       try {
         const {
@@ -149,7 +157,6 @@ export default function AuthProvider({ children }: PropsWithChildren) {
         );
 
         if (error) {
-          // Clear stale local credentials for any session bootstrap error.
           await clearLocalSession();
           setLoading(false);
           return;
@@ -163,7 +170,7 @@ export default function AuthProvider({ children }: PropsWithChildren) {
       }
 
       setSession(session);
-      await supabase.realtime.setAuth(session?.access_token ?? "");
+      await setRealtimeAuth(session?.access_token);
       if (!session) {
         lastUserIdRef.current = null;
         setActiveGroup(null);
@@ -182,28 +189,42 @@ export default function AuthProvider({ children }: PropsWithChildren) {
       setLoading(false);
     };
 
-    fecthSession();
+    fetchSession();
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setLoading(true);
-      setSession(session);
-      await supabase.realtime.setAuth(session?.access_token ?? "");
-      if (!session) {
-        lastUserIdRef.current = null;
-        setActiveGroup(null);
-      } else if (lastUserIdRef.current !== session.user.id) {
-        lastUserIdRef.current = session.user.id;
-        setActiveGroup(null);
-      }
-      if (session) {
+      try {
+        setSession(session);
+        await setRealtimeAuth(session?.access_token);
+
+        if (!session) {
+          lastUserIdRef.current = null;
+          setActiveGroup(null);
+          setProfile(null);
+          return;
+        }
+
+        if (lastUserIdRef.current !== session.user.id) {
+          lastUserIdRef.current = session.user.id;
+          setActiveGroup(null);
+        }
+
         const data = await fetchOrCreateProfile(session);
         setProfile(data);
-      } else {
-        setProfile(null);
+      } catch (err) {
+        console.log(
+          "Auth state change handling failed:",
+          err instanceof Error ? err.message : err
+        );
+
+        if (!session) {
+          setProfile(null);
+        }
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     });
 
     return () => {
@@ -227,9 +248,6 @@ export default function AuthProvider({ children }: PropsWithChildren) {
     }
   }, [session, profile?.group, activeGroup]);
 
-  // console.log("AuthProvider session:", session); console.log(profile);
-  // console.log(profile);
-
   return (
     <AuthContext.Provider
       value={{
@@ -239,6 +257,27 @@ export default function AuthProvider({ children }: PropsWithChildren) {
         isAdmin: normalizeGroup(profile?.group) === "admin",
         activeGroup,
         setActiveGroup,
+        signOut: async () => {
+          const startedAt = Date.now();
+          setSession(null);
+          setProfile(null);
+          setActiveGroup(null);
+          lastUserIdRef.current = null;
+          setRealtimeAuth(null);
+
+          try {
+            await supabase.auth.signOut({ scope: "local" });
+            const elapsedMs = Date.now() - startedAt;
+            if (elapsedMs > 1000) {
+              console.log(`Sign out finished in ${elapsedMs}ms`);
+            }
+          } catch (err) {
+            console.log(
+              "Sign out failed:",
+              err instanceof Error ? err.message : err
+            );
+          }
+        },
       }}
     >
       {children}

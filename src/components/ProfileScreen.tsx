@@ -50,7 +50,7 @@ const getFileExt = (asset: PickedImageAsset) => {
 export default function ProfileScreen({ title }: ProfileScreenProps) {
   const colorScheme = useColorScheme() ?? "light";
   const theme = Colors[colorScheme];
-  const { session, profile } = useAuth();
+  const { session, profile, signOut } = useAuth();
   const insets = useSafeAreaInsets();
 
   const [email, setEmail] = useState("");
@@ -227,10 +227,8 @@ export default function ProfileScreen({ title }: ProfileScreenProps) {
         text: "Log out",
         style: "destructive",
         onPress: async () => {
-          const { error } = await supabase.auth.signOut();
-          if (error) {
-            await supabase.auth.signOut({ scope: "local" });
-          }
+          // Use local scope so logout is immediate even on slow/offline networks.
+          await signOut();
         },
       },
     ]);
