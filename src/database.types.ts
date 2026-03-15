@@ -61,6 +61,8 @@ export type Database = {
           created_at: string
           delivery_option: string
           id: number
+          payment_gateway: string | null
+          payment_transaction_id: string | null
           status: string
           total: number
           user_id: string | null
@@ -69,6 +71,8 @@ export type Database = {
           created_at?: string
           delivery_option?: string
           id?: number
+          payment_gateway?: string | null
+          payment_transaction_id?: string | null
           status?: string
           total?: number
           user_id?: string | null
@@ -77,6 +81,8 @@ export type Database = {
           created_at?: string
           delivery_option?: string
           id?: number
+          payment_gateway?: string | null
+          payment_transaction_id?: string | null
           status?: string
           total?: number
           user_id?: string | null
@@ -87,6 +93,60 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_payment_transaction_id_fkey"
+            columns: ["payment_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "payment_transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payment_transactions: {
+        Row: {
+          amount: number
+          created_at: string
+          currency: string
+          gateway: string
+          gateway_transaction_id: string | null
+          id: string
+          metadata: Json | null
+          order_id: number
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          currency?: string
+          gateway: string
+          gateway_transaction_id?: string | null
+          id?: string
+          metadata?: Json | null
+          order_id: number
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          currency?: string
+          gateway?: string
+          gateway_transaction_id?: string | null
+          id?: string
+          metadata?: Json | null
+          order_id?: number
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_transactions_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
             referencedColumns: ["id"]
           },
         ]

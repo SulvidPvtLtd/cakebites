@@ -846,7 +846,7 @@ The folder `api` will contain all helper functions for our React Query requests.
 
 In api folder in fthe index.ts file, instead of destructuring the useQuery above, we can return the data directly.
 
-`````tsx
+``````tsx
 return useQuery<Product[]>({
   queryKey: ['products'],
   queryFn: async () => {
@@ -985,7 +985,7 @@ export const useMyOrders = () => {
     },
   });
 };
-`````
+
 
 Use it in `app/(user)/orders/index.tsx`
 
@@ -1366,8 +1366,8 @@ for each row execute function public.handle_new_user_profile();
 ```
 # Payments
 
-Payments on mobile are a bit more tricky compared to the web. 
-Apple and Google have strict guidelines when it comes to processing payments. 
+Payments on mobile are a bit more tricky compared to the web.
+Apple and Google have strict guidelines when it comes to processing payments.
 
 There are 2 ways to process payments on mobile:
 
@@ -1382,4 +1382,177 @@ There are 2 ways to process payments on mobile:
     - It can only be used when selling physical goods.
 
 
-    
+The app we are currently building is a food delivery app that sells physical goods. That’s why, we can use an External payment gateway, and benefit from lower fees.
+
+
+# AI tool Payment Prompt
+
+You are an expert full-stack React Native + Supabase developer specializing in multi-payment-gateway integrations for Expo e-commerce apps in South Africa.
+
+I am building this e-commerce mobile app with Expo (SDK 51+ or 52+), TypeScript, expo-router, and Supabase (auth + PostgreSQL + Edge Functions).
+Customers create an order from the cart and pay using external payment gateways. Analyse this project and implement the following features:
+
+Future requirement (must be baked in now):
+Support multiple gateways (Yoco today, Payfast and Ozow coming soon).
+- Customer must be able to choose any available gateway at checkout.
+- If one gateway is down/slow, they can instantly switch to another.
+- All transactions must be clearly **separated by gateway** in the database (easy querying, reporting, refunds per gateway).
+
+Current scope:
+- Only implement Yoco. All other gateways must be implemented as clean `// TODO:` placeholders with the same structure so I can add them in <30 minutes later.
+
+Core Architecture (Production-Ready & Extensible)
+- Never expose any secret keys on the client.
+- All gateway API calls happen exclusively in Supabase Edge Functions (Deno + TypeScript).
+- Use the 'hosted checkout / payment page' pattern for every gateway (Yoco Checkout API, Payfast, Ozow Redirect — all work the same way).
+- Exactly two main actions per gateway:
+  1. Create payment intent / checkout (server-side)
+  2. Collect payment (client-side via WebView + deep link return)
+
+Database Design (Must Separate Transactions by Gateway)
+Create:
+- `payment_transactions` table (this separates every transaction by gateway):
+  - id (uuid)
+  - order_id (references orders.id)
+  - gateway (text / enum: 'yoco' | 'payfast' | 'ozow')
+  - gateway_transaction_id (text) — e.g. Yoco checkoutId
+  - status (text)
+  - amount (integer — cents)
+  - currency (text)
+  - metadata (jsonb)
+  - created_at, updated_at
+- Add to existing `orders` table:
+  - payment_gateway (text) — the chosen gateway for this order
+  - payment_transaction_id (uuid references payment_transactions.id)
+
+Payment Flow (Customer Can Switch Gateways)
+1. User reaches payment screen → sees selectable gateway buttons (Yoco, Payfast, Ozow). For now only Yoco is active.
+2. User selects gateway → frontend creates/updates order (status = 'pending').
+3. Frontend calls Supabase Edge Function `create-payment-checkout` with `{ orderId, gateway: 'yoco' }`.
+4. Edge Function:
+   - Validates order & amount
+   - Routes via switch(gateway)
+   - For 'yoco': calls Yoco Checkout API
+   - Creates record in `payment_transactions`
+   - Returns `{ redirectUrl, transactionId }`
+5. Client opens `redirectUrl` in full-screen **react-native-webview**.
+6. On success/cancel/failure → deep link back to app (`myapp://payment-return?status=success&transactionId=xxx`).
+7. Webhook Edge Function updates `payment_transactions` and `orders` reliably.
+
+What I Need You to Generate (Complete & Ready to Copy-Paste)
+
+1. Database Schema
+   Full SQL (new `payment_transactions` table + alterations to `orders`).
+
+2. Supabase Edge Function 1: create-payment-checkout
+   - Full Deno/TypeScript code
+   - Accepts `{ orderId: string, gateway: 'yoco' | 'payfast' | 'ozow' }`
+   - switch statement with full implementation for 'yoco' and clear `// TODO: implement payfast` and `// TODO: implement ozow` blocks
+   - Uses secret keys from Supabase secrets (YOCO_SECRET_KEY, etc.)
+   - Input validation, error handling, returns `{ redirectUrl, transactionId }`
+
+3. Supabase Edge Function 2: handle-payment-webhook
+   - Single flexible webhook that can handle all gateways (detects gateway from payload structure or header)
+   - Full implementation for Yoco webhook signature verification and status update
+   - `// TODO:` placeholders for Payfast & Ozow
+   - Updates both `payment_transactions` and `orders` tables
+
+4. Frontend Code
+   - Custom hook: `usePaymentGateway.ts` (generic, supports any gateway)
+   - PaymentMethodSelector component (shows Yoco now, ready for others)
+   - PaymentWebViewScreen.tsx using `react-native-webview` + `expo-linking` deep links
+   - Example usage in Cart → Payment screen
+   - Success/error states, loading, Toast notifications
+   - Fallback manual status check after deep-link return
+
+5. Setup & Configuration Instructions
+   - How to add secret keys in Supabase Dashboard
+   - Deep link configuration in app.json / expo-linking
+   - Webhook URLs to register in Yoco dashboard (and future gateways)
+   - Test mode / live mode switching per gateway
+   - How to add Payfast or Ozow later (step-by-step)
+   - Security & best practices
+
+Tech Stack & Preferences
+- TypeScript everywhere
+- `fetch` in Edge Functions
+- `react-native-webview` (preferred over expo-web-browser)
+- `expo-linking` for deep links (scheme: yourapp://)
+- Use Zod for validation where possible
+- Clean, heavily commented, production-ready code (same quality as top-tier multi-gateway Expo apps)
+
+Please output in this exact order:
+1. Database Schema
+2. Edge Function: create-payment-checkout
+3. Edge Function: handle-payment-webhook
+4. Frontend code (hook + screens)
+5. Setup instructions
+
+Only implement the Yoco path fully. Keep Payfast and Ozow as obvious TODO blocks so I can extend instantly. Do not use any third-party npm packages for Yoco (official API only).
+
+If you need my exact existing `orders` table columns or cart structure, ask to go through my project structure — otherwise use standard names and I’ll adjust.
+
+Begin.
+
+**Payment Gateway Implementation**
+1. Verify existing `orders` table columns and cart checkout flow.
+2. Add `payment_transactions` table migration with gateway/status constraints and indexes.
+3. Alter `orders` table for `payment_gateway` and `payment_transaction_id`.
+4. Add `updated_at` trigger and baseline RLS policy for `payment_transactions`.
+5. Update `src/database.types.ts` for new table/columns.
+6. Add shared payment types in `src/types.ts`.
+7. Implement `supabase/functions/create-payment-checkout` with Zod validation.
+8. Validate order state, amount, and currency before checkout creation.
+9. Call Yoco Checkout API and persist transaction records.
+10. Add TODO stubs for Payfast and Ozow paths.
+11. Implement `supabase/functions/handle-payment-webhook`.
+12. Verify Yoco webhook signature and timestamp window.
+13. Map webhook event types to internal statuses and update `orders`.
+14. Add TODO stubs for Payfast and Ozow webhooks.
+15. Add `usePaymentGateway` hook for checkout + status lookup.
+16. Add `PaymentMethodSelector` with Yoco enabled and others disabled.
+17. Add `/payment` screen to launch the flow.
+18. Add `/payment-webview` screen to handle redirect + deep-link return.
+19. Add toast notifications and fallback status checks after return.
+20. Route cart checkout to `/payment` after order creation.
+21. Document secrets, webhook URLs, and deep-link scheme setup.
+
+
+# Summary:
+
+Implemented the multi-gateway payment flow with Yoco fully wired (edge functions, DB schema, client flow, and UI), added toast notifications, and updated the cart to route into the payment flow. Updated ReadMe.md with the required pseudo steps after Begin..
+
+Files changed/added:
+
+supabase/migrations/20260312120000_add_payment_transactions.sql
+supabase/functions/create-payment-checkout/index.ts
+supabase/functions/handle-payment-webhook/index.ts
+src/database.types.ts
+src/types.ts
+src/api/payments.ts
+src/components/PaymentMethodSelector.tsx
+src/providers/ToastProvider.tsx
+src/app/_layout.tsx
+src/app/cart.tsx
+src/app/payment.tsx
+src/app/payment-webview.tsx
+ReadMe.md
+Notes:
+
+I did not run tests.
+react-native-webview is referenced but not installed yet.
+Next steps:
+
+Install WebView dependency:
+npx expo install react-native-webview
+Apply migrations locally:
+npx supabase db reset
+Set Supabase secrets for edge functions:
+npx supabase secrets set YOCO_SECRET_KEY=YOUR_KEY
+npx supabase secrets set YOCO_WEBHOOK_SECRET=YOUR_WEBHOOK_SECRET
+npx supabase secrets set PAYMENT_RETURN_URL=cakebites://payment-return
+Register webhook URL in Yoco dashboard:
+https://<project-ref>.functions.supabase.co/handle-payment-webhook
+Local testing:
+http://127.0.0.1:54321/functions/v1/handle-payment-webhook
+If you want me to add Payfast/Ozow stubs in the UI selector text or wire payment status into the order details screen, say the word.

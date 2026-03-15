@@ -53,7 +53,6 @@ const sanitizeQuantity = (qty: number) =>
   Number.isFinite(qty) ? Math.max(1, Math.floor(qty)) : 1;
 const sanitizeUnitPrice = (price: number) =>
   Number.isFinite(price) ? Math.max(0, price) : 0;
-
 /* ---------------- Provider ---------------- */
 
 export default function CartProvider({ children }: PropsWithChildren) {
@@ -183,6 +182,7 @@ export default function CartProvider({ children }: PropsWithChildren) {
     const newOrder = await insertOrder({
       total: finalTotal,
       delivery_option: fulfillmentOption === "DELIVERY" ? "Yes" : "No",
+      status: "Pending Payment",
     });
     if (!newOrder?.id) {
       throw new Error("Failed to create order.");
@@ -205,9 +205,9 @@ export default function CartProvider({ children }: PropsWithChildren) {
       }
       throw error;
     }
-    clearCart();
+
     return newOrder.id;
-  }, [items, total, fulfillmentOption, insertOrder, insertOrderItems, deleteOrder, clearCart]);
+  }, [items, total, fulfillmentOption, insertOrder, insertOrderItems, deleteOrder]);
 
   /* ---------- Value ---------- */
 

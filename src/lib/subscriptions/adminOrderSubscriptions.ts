@@ -15,6 +15,13 @@ export const useInsertOrderSubscription = () => {
           queryClient.invalidateQueries({ queryKey: ["orders"] });
         }
       )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "orders" },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["orders"] });
+        }
+      )
       .subscribe();
 
     return () => {

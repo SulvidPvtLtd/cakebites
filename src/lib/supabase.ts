@@ -10,15 +10,59 @@ import { Platform } from "react-native";
 import "react-native-url-polyfill/auto";
 import { Database } from "../database.types";
 
+const SECURE_STORE_CHUNK_SIZE = 1800;
+const chunkCountKey = (key: string) => `${key}__chunk_count`;
+const chunkKey = (key: string, index: number) => `${key}__chunk_${index}`;
+
 const ExpoSecureStoreAdapter = {
-  getItem: (key: string) => {
+  getItem: async (key: string) => {
+    const countRaw = await SecureStore.getItemAsync(chunkCountKey(key));
+    const chunkCount = countRaw ? Number(countRaw) : 0;
+    if (Number.isFinite(chunkCount) && chunkCount > 0) {
+      let value = "";
+      for (let i = 0; i < chunkCount; i += 1) {
+        const part = await SecureStore.getItemAsync(chunkKey(key, i));
+        if (typeof part !== "string") {
+          return null;
+        }
+        value += part;
+      }
+      return value;
+    }
+
     return SecureStore.getItemAsync(key);
   },
-  setItem: (key: string, value: string) => {
-    return SecureStore.setItemAsync(key, value);
+  setItem: async (key: string, value: string) => {
+    const countRaw = await SecureStore.getItemAsync(chunkCountKey(key));
+    const existingCount = countRaw ? Number(countRaw) : 0;
+    if (Number.isFinite(existingCount) && existingCount > 0) {
+      for (let i = 0; i < existingCount; i += 1) {
+        await SecureStore.deleteItemAsync(chunkKey(key, i));
+      }
+    }
+    await SecureStore.deleteItemAsync(chunkCountKey(key));
+    await SecureStore.deleteItemAsync(key);
+
+    const chunks: string[] = [];
+    for (let i = 0; i < value.length; i += SECURE_STORE_CHUNK_SIZE) {
+      chunks.push(value.slice(i, i + SECURE_STORE_CHUNK_SIZE));
+    }
+
+    await SecureStore.setItemAsync(chunkCountKey(key), String(chunks.length));
+    for (let i = 0; i < chunks.length; i += 1) {
+      await SecureStore.setItemAsync(chunkKey(key, i), chunks[i]);
+    }
   },
-  removeItem: (key: string) => {
-    return SecureStore.deleteItemAsync(key);
+  removeItem: async (key: string) => {
+    const countRaw = await SecureStore.getItemAsync(chunkCountKey(key));
+    const chunkCount = countRaw ? Number(countRaw) : 0;
+    if (Number.isFinite(chunkCount) && chunkCount > 0) {
+      for (let i = 0; i < chunkCount; i += 1) {
+        await SecureStore.deleteItemAsync(chunkKey(key, i));
+      }
+    }
+    await SecureStore.deleteItemAsync(chunkCountKey(key));
+    await SecureStore.deleteItemAsync(key);
   },
 };
 

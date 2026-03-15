@@ -12,6 +12,7 @@ type OrderListItemProps = {
   order: Tables<"orders">;
   routeGroup?: "admin" | "user";
   statusSubtext?: string;
+  paymentStatusLabel?: string;
   customerEmail?: string;
   customerMobile?: string;
 };
@@ -20,6 +21,7 @@ const OrderListItem = ({
   order,
   routeGroup = "user",
   statusSubtext,
+  paymentStatusLabel,
   customerEmail,
   customerMobile,
 }: OrderListItemProps) => {
@@ -78,6 +80,11 @@ const OrderListItem = ({
           <Text style={[styles.status, { color: theme.textPrimary }]}>{order.status}</Text>
           {statusSubtext ? (
             <Text style={[styles.statusSubtext, { color: theme.tint }]}>{statusSubtext}</Text>
+          ) : null}
+          {paymentStatusLabel ? (
+            <Text style={[styles.statusSubtext, { color: theme.tint }]}>
+              {paymentStatusLabel}
+            </Text>
           ) : null}
         </View>
       </Pressable>

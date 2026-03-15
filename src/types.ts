@@ -43,6 +43,8 @@ export type InsertTables<T extends keyof Database["public"]["Tables"]> = Databas
 
 
 export type ProductSize = "S" | "M" | "L" | "XL";
+export type PaymentGateway = "yoco" | "payfast" | "ozow";
+export type PaymentStatus = "created" | "pending" | "succeeded" | "failed" | "cancelled";
 
 export type CartItem = {
   id: string;
@@ -55,6 +57,7 @@ export type CartItem = {
 };
 
 export type OrderStatus =
+  | "Pending Payment"
   | "New"
   | "Cooking"
   | "Delivering"
@@ -62,6 +65,7 @@ export type OrderStatus =
   | "Cancelled";
 
 export const OrderStatusList: OrderStatus[] = [
+  "Pending Payment",
   "New",
   "Cooking",
   "Delivering",
@@ -81,6 +85,8 @@ export const OrderStatusList: OrderStatus[] = [
 export type Order = SupabaseTables<"orders"> & {
   order_items?: OrderItem[];
 };
+
+export type PaymentTransaction = SupabaseTables<"payment_transactions">;
 
 export type OrderItem = {
   id: number;

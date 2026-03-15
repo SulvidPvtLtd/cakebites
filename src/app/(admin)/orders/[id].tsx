@@ -1,5 +1,6 @@
 import { Stack, router, useLocalSearchParams } from "expo-router";
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   ActivityIndicator,
   Alert,
@@ -16,11 +17,13 @@ import OrderListItem from "@/src/components/OrderListItem";
 import PlacedOrderListItems from "@/src/components/PlacedOrderListItems";
 import Colors from "@/src/constants/Colors";
 import { OrderItem, OrderStatusList } from "@/src/types";
+import { supabase } from "@/src/lib/supabase";
 
 export default function OrderDetailScreen() {
   const scheme = useColorScheme() ?? "light";
   const theme = Colors[scheme];
   const { id } = useLocalSearchParams<{ id?: string }>();
+  const queryClient = useQueryClient();
   const { data: orderFetched, isLoading, error } = useOrderDetails(id);
   const { mutateAsync: updateOrderStatus, isPending: isUpdatingStatus } =
     useUpdateOrderStatus();
@@ -30,6 +33,8 @@ export default function OrderDetailScreen() {
   ): (typeof OrderStatusList)[number] | null => {
     const normalized = status.trim().toLowerCase();
     switch (normalized) {
+      case "pending payment":
+        return "Pending Payment";
       case "new":
         return "New";
       case "cooking":
@@ -56,6 +61,7 @@ export default function OrderDetailScreen() {
     return (nextStatus: (typeof OrderStatusList)[number]) => {
       const currentStatus = normalizeOrderStatus(orderFetched.status);
       if (!currentStatus) return false;
+      if (currentStatus === "Pending Payment") return false;
       if (currentStatus === nextStatus) return false;
       if (currentStatus === "Delivered" || currentStatus === "Cancelled") return false;
 
@@ -68,6 +74,33 @@ export default function OrderDetailScreen() {
       return currentIndex >= 0 && nextIndex === currentIndex + 1;
     };
   }, [orderFetched]);
+
+  useEffect(() => {
+    if (!id) return;
+    const numericId = Number(id);
+    if (!Number.isFinite(numericId) || numericId <= 0) return;
+
+    const orders = supabase
+      .channel(`admin-order-detail-${numericId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "orders",
+          filter: `id=eq.${numericId}`,
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["orders"] });
+          queryClient.invalidateQueries({ queryKey: ["order", numericId] });
+        },
+      )
+      .subscribe();
+
+    return () => {
+      orders.unsubscribe();
+    };
+  }, [id, queryClient]);
 
   if (!id) {
     return (

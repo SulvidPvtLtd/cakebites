@@ -3,12 +3,12 @@ import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { ActivityIndicator, FlatList, Text } from "react-native";
 import OrderListItem from "@components/OrderListItem";
-import { useMyOrders } from "@/src/api/orders";
+import { useMyOrders, type UserOrderRow } from "@/src/api/orders";
 import type { Tables } from "@/src/database.types";
 import { useAuth } from "@/src/providers/AuthProvider";
 import { supabase } from "@/src/lib/supabase";
 
-type UserOrder = Tables<"orders">;
+type UserOrder = UserOrderRow;
 
 export default function OrdersScreen() {
   const queryClient = useQueryClient();
@@ -86,9 +86,19 @@ export default function OrdersScreen() {
       <FlatList<UserOrder>
         data={safeOrders}
         contentContainerStyle={{ gap: 10, padding: 10 }}
-        renderItem={({ item }) => (
-          <OrderListItem order={item} />
-        )}
+        renderItem={({ item }) => {
+          const paymentStatus = item.payment_transactions?.status;
+          const normalizedStatus =
+            typeof paymentStatus === "string" ? paymentStatus.trim().toLowerCase() : "";
+          const isPaid =
+            normalizedStatus === "succeeded" || normalizedStatus === "success";
+          return (
+            <OrderListItem
+              order={item}
+              paymentStatusLabel={isPaid ? "Paid" : "Unpaid"}
+            />
+          );
+        }}
       />
     </>
   );

@@ -169,7 +169,10 @@ export default function CartScreen() {
 
             try {
               const orderId = await checkout(deliveryFee);
-              router.push(`/(user)/orders/${orderId}`);
+              router.push({
+                pathname: "/payment",
+                params: { orderId: String(orderId) },
+              });
             } catch (error) {
               const message = error instanceof Error ? error.message : 'Checkout failed';
               Alert.alert('Checkout failed', message);

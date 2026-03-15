@@ -10,6 +10,11 @@ import { useAuth } from "@/src/providers/AuthProvider";
 type OrderRow = Tables<'orders'>;
 type OrderItemRow = Tables<'order_items'>;
 type ProductRow = Tables<'products'>;
+type PaymentTransactionRow = Tables<"payment_transactions">;
+
+export type UserOrderRow = OrderRow & {
+    payment_transactions?: Pick<PaymentTransactionRow, "status"> | null;
+};
 
 export type OrderDetailsRow = OrderRow & {
     profiles: Pick<Tables<'profiles'>, 'id' | 'email' | 'mobile_number'> | null;
@@ -24,26 +29,26 @@ export const useMyOrders = () => {
     const { session } = useAuth();
     const userId = session?.user.id;
 
-    return useQuery<OrderRow[]>({
+    return useQuery<UserOrderRow[]>({
         queryKey: ['orders', { userId }],
         enabled: !!userId,
         queryFn: async () => {
             if (!userId) return [];
             const { data, error } = await supabase
                 .from('orders')
-                .select('*')
+                .select('*, payment_transactions!orders_payment_transaction_id_fkey(status)')
                 .eq('user_id', userId)
                 .order('created_at', { ascending: false });
             if (error) {
                 throw new Error(error.message);
             }
-            return data ?? [];
+            return (data ?? []) as UserOrderRow[];
         }
     });
 };
 
 export const useOrderList = ({ archived = false }: { archived: boolean }) => {
-    const statuses = archived ? ['Delivered'] : ['New', 'Cooking', 'Delivering'];
+    const statuses = archived ? ["Delivered", "Cancelled"] : ["Pending Payment", "New", "Cooking", "Delivering"];
 
     return useQuery<OrderRow[]>({
         queryKey: ['orders', { archived }],
@@ -83,6 +88,7 @@ export const useOrderDetails = (id?: number | string | null) => {
 };
 
 const VALID_ORDER_STATUSES = new Set([
+    "Pending Payment",
     "New",
     "Cooking",
     "Delivering",
@@ -100,6 +106,7 @@ type InsertOrderItemsInput = Array<
 type OrderStatus = AppOrderStatus;
 
 const ORDER_STATUS_FLOW: readonly OrderStatus[] = [
+    "Pending Payment",
     "New",
     "Cooking",
     "Delivering",
@@ -114,6 +121,8 @@ const normalizeOrderStatus = (status: unknown): OrderStatus | null => {
     const normalized = status.trim().toLowerCase();
 
     switch (normalized) {
+        case "pending payment":
+            return "Pending Payment";
         case "new":
             return "New";
         case "cooking":
@@ -134,6 +143,7 @@ const canTransitionOrderStatus = (
     nextStatus: OrderStatus,
 ) => {
     if (currentStatus === nextStatus) return false;
+    if (currentStatus === "Pending Payment") return false;
     if (TERMINAL_STATUSES.has(currentStatus)) return false;
 
     if (nextStatus === "Cancelled") {
@@ -171,7 +181,7 @@ export const useInsertOrder = () =>{
             const status =
                 typeof input.status === "string" && VALID_ORDER_STATUSES.has(input.status)
                     ? input.status
-                    : "New";
+                    : "Pending Payment";
 
             const payload: TablesInsert<"orders"> = {
                 total,
