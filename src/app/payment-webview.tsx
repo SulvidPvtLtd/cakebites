@@ -40,40 +40,55 @@ export default function PaymentWebViewScreen() {
       let handledNavigation = false;
 
       try {
+        // console.log("[payment] return url", url);
         const parsed = new URL(url);
         const statusParam = parsed.searchParams.get("status");
         const transactionParam = parsed.searchParams.get("transactionId");
+        // console.log("[payment] return params", {
+        //   status: statusParam,
+        //   transactionId: transactionParam ?? transactionId ?? null,
+        // });
         const resolvedTransactionId = transactionParam || transactionId;
 
-        let resolvedStatus = normalizePaymentStatus(statusParam);
+        const statusFromReturn = normalizePaymentStatus(statusParam);
+        let resolvedStatus = statusFromReturn;
 
+        let dbStatus: ReturnType<typeof normalizePaymentStatus> = null;
         if (resolvedTransactionId) {
           const record = await fetchPaymentTransaction(resolvedTransactionId);
-          const dbStatus = normalizePaymentStatus(record?.status);
-          resolvedStatus = dbStatus ?? resolvedStatus;
+          dbStatus = normalizePaymentStatus(record?.status);
         }
 
         if (resolvedTransactionId) {
           try {
-            const { data } = await supabase.functions.invoke(
-              "create-payment-checkout",
-              {
-                method: "GET",
-                query: {
-                  transactionId: resolvedTransactionId,
-                  status: resolvedStatus ?? undefined,
-                },
-              },
+            const queryParams = new URLSearchParams({
+              transactionId: resolvedTransactionId,
+              ...(statusFromReturn ? { status: statusFromReturn } : {}),
+            });
+            const { data, error } = await supabase.functions.invoke(
+              `create-payment-checkout?${queryParams.toString()}`,
+              { method: "GET" },
             );
-            if (data?.status) {
-              resolvedStatus = normalizePaymentStatus(data.status) ?? resolvedStatus;
+            // if (error) {
+            //   console.log("[payment] return verify error", error);
+            // }
+            // console.log("[payment] return verify", data);
+            if (data) {
+              resolvedStatus =
+                normalizePaymentStatus(data.resolvedStatus) ??
+                normalizePaymentStatus(data.status) ??
+                dbStatus ??
+                resolvedStatus;
             }
           } catch {
             // ignore; fallback to current status
           }
         }
 
-        if (resolvedStatus === "succeeded") {
+        if (statusFromReturn === "succeeded") {
+          clearCart();
+          showToast("Payment successful.", "success");
+        } else if (resolvedStatus === "succeeded") {
           clearCart();
           showToast("Payment successful.", "success");
         } else if (resolvedStatus === "cancelled") {

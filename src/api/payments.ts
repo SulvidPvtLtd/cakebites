@@ -98,10 +98,10 @@ export const usePaymentGateway = () => {
         throw new Error("Invalid order id.");
       }
 
-      console.log("[payments] createCheckout start", {
-        orderId,
-        gateway,
-      });
+      // console.log("[payments] createCheckout start", {
+      //   orderId,
+      //   gateway,
+      // });
 
       const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
       if (sessionError) {
@@ -121,24 +121,24 @@ export const usePaymentGateway = () => {
       }
 
       const accessToken = session?.access_token;
-      console.log("[payments] access token present", Boolean(accessToken));
+      // console.log("[payments] access token present", Boolean(accessToken));
       if (!accessToken) {
         throw new Error("Please sign in to continue.");
       }
       const jwtHeader = readJwtHeader(accessToken);
       if (jwtHeader) {
-        console.log("[payments] access token header", jwtHeader);
+        // console.log("[payments] access token header", jwtHeader);
       }
       const jwtPayload = readJwtPayload(accessToken);
       if (jwtPayload?.iss) {
-        console.log("[payments] access token issuer", jwtPayload.iss);
+        // console.log("[payments] access token issuer", jwtPayload.iss);
       }
       if (jwtPayload?.exp) {
         const secondsLeft = jwtPayload.exp - Math.floor(Date.now() / 1000);
-        console.log("[payments] access token expires in (s)", secondsLeft);
+        // console.log("[payments] access token expires in (s)", secondsLeft);
       }
       if (jwtPayload?.aud) {
-        console.log("[payments] access token audience", jwtPayload.aud);
+        // console.log("[payments] access token audience", jwtPayload.aud);
       }
 
       const { data: userData, error: userError } = await supabase.auth.getUser();
@@ -147,16 +147,16 @@ export const usePaymentGateway = () => {
         await supabase.auth.signOut({ scope: "local" });
         throw new Error("Session is invalid. Please sign in again.");
       }
-      console.log("[payments] getUser ok", { id: userData.user.id });
+      // console.log("[payments] getUser ok", { id: userData.user.id });
 
       try {
         const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
         const anonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
         if (supabaseUrl) {
-          console.log("[payments] direct fetch headers", {
-            hasAuthorization: true,
-            hasApikey: Boolean(anonKey),
-          });
+          // console.log("[payments] direct fetch headers", {
+          //   hasAuthorization: true,
+          //   hasApikey: Boolean(anonKey),
+          // });
           const response = await fetch(
             `${supabaseUrl}/functions/v1/create-payment-checkout`,
             {
@@ -170,15 +170,15 @@ export const usePaymentGateway = () => {
             },
           );
           const responseText = await response.text();
-          console.log("[payments] direct fetch status", response.status);
+          // console.log("[payments] direct fetch status", response.status);
           if (responseText) {
             try {
-              console.log(
-                "[payments] direct fetch body",
-                JSON.parse(responseText),
-              );
+              // console.log(
+              //   "[payments] direct fetch body",
+              //   JSON.parse(responseText),
+              // );
             } catch {
-              console.log("[payments] direct fetch body", responseText);
+              // console.log("[payments] direct fetch body", responseText);
             }
           }
         }
@@ -265,7 +265,7 @@ export const usePaymentGateway = () => {
         throw new Error("Payment gateway response was invalid.");
       }
 
-      console.log("[payments] createCheckout success", data);
+      // console.log("[payments] createCheckout success", data);
       return data as CreateCheckoutResponse;
     },
   });

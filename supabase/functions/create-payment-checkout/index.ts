@@ -97,20 +97,35 @@ Deno.serve(async (req) => {
         return jsonResponse(404, { error: "Transaction not found." });
       }
 
-      const nextOrderStatus = resolveOrderStatus(
-        transaction.status ?? statusParam,
-      );
+      const statusFromReturn = resolveOrderStatus(statusParam);
+      const statusFromTransaction = resolveOrderStatus(transaction.status);
+      const nextOrderStatus = statusFromReturn ?? statusFromTransaction;
       const orderId = (transaction.order_id as number | null) ?? null;
+      // console.log("checkout-return", {
+      //   transactionId,
+      //   statusParam,
+      //   transactionStatus: transaction.status ?? null,
+      //   statusFromReturn,
+      //   statusFromTransaction,
+      //   orderId,
+      //   nextOrderStatus,
+      // });
 
       if (nextOrderStatus && orderId) {
-        await supabase
+        const { data: updatedOrders, error: updateError } = await supabase
           .from("orders")
           .update({ status: nextOrderStatus })
           .eq("id", orderId)
           .eq("status", "Pending Payment");
+        // console.log("checkout-return-update", {
+        //   orderId,
+        //   nextOrderStatus,
+        //   matched: Array.isArray(updatedOrders) ? updatedOrders.length : updatedOrders ? 1 : 0,
+        //   error: updateError?.message ?? null,
+        // });
       }
 
-      if (nextOrderStatus === "New" && orderId) {
+      if (nextOrderStatus === "New") {
         await supabase
           .from("payment_transactions")
           .update({ status: "succeeded" })
@@ -124,7 +139,12 @@ Deno.serve(async (req) => {
           .eq("id", transaction.id);
       }
 
-      return jsonResponse(200, { ok: true, status: transaction.status, orderId });
+      return jsonResponse(200, {
+        ok: true,
+        status: transaction.status,
+        resolvedStatus: nextOrderStatus,
+        orderId,
+      });
     }
 
     const authHeader = req.headers.get("Authorization");

@@ -53,40 +53,52 @@ const OrderListItem = ({
           { backgroundColor: theme.card, borderColor: theme.border },
         ]}
       >
-        <View>
-          <Text style={[styles.title, { color: theme.textPrimary }]}>Order #{order.id}</Text>
-          <Text style={[styles.time, { color: theme.textSecondary }]}>{createdAtRelative}</Text>
+        <View style={styles.headerRow}>
+          <Text style={[styles.title, { color: theme.textPrimary }]}>
+            Order #{order.id}
+          </Text>
+          <View style={styles.headerStatus}>
+            <Text style={[styles.status, { color: theme.textPrimary }]}>
+              {order.status}
+            </Text>
+            {paymentStatusLabel ? (
+              <Text style={[styles.statusPaid, { color: theme.tint }]}>
+                {paymentStatusLabel}
+              </Text>
+            ) : null}
+            {statusSubtext ? null : null}
+          </View>
+        </View>
+
+        <Text style={[styles.time, { color: theme.textSecondary }]}>
+          {createdAtRelative}
+        </Text>
+        <View style={styles.timeRow}>
           <Text style={[styles.timeExact, { color: theme.textSecondary }]}>
             {createdAtSouthAfrica} SAST
           </Text>
-          {customerEmail ? (
-            <Text style={[styles.contactText, { color: theme.textSecondary }]}>
-              Email: {customerEmail}
-            </Text>
-          ) : null}
-          {customerMobile ? (
-            <Text style={[styles.contactText, { color: theme.textSecondary }]}>
-              Mobile: {customerMobile}
-            </Text>
-          ) : null}
-          {routeGroup === "admin" ? (
-            <Text style={[styles.fulfillmentText, { color: theme.tint }]}>
-              Fulfilment: {fulfillmentLabel}
-            </Text>
-          ) : null}
-        </View>
-
-        <View style={styles.statusContainer}>
-          <Text style={[styles.status, { color: theme.textPrimary }]}>{order.status}</Text>
           {statusSubtext ? (
-            <Text style={[styles.statusSubtext, { color: theme.tint }]}>{statusSubtext}</Text>
-          ) : null}
-          {paymentStatusLabel ? (
-            <Text style={[styles.statusSubtext, { color: theme.tint }]}>
-              {paymentStatusLabel}
+            <Text style={[styles.priceText, { color: theme.textSecondary }]}>
+              {statusSubtext}
             </Text>
           ) : null}
         </View>
+        {customerEmail ? (
+          <Text style={[styles.contactText, { color: theme.textSecondary }]}>
+            Email: {customerEmail}
+          </Text>
+        ) : null}
+        {customerMobile ? (
+          <Text style={[styles.contactText, { color: theme.textSecondary }]}>
+            Mobile: {customerMobile}
+          </Text>
+        ) : null}
+        {routeGroup === "admin" ? (
+          <Text style={[styles.fulfillmentText, { color: theme.tint }]}>
+            Fulfilment: {fulfillmentLabel}
+          </Text>
+        ) : null}
+        {statusSubtext ? null : null}
       </Pressable>
     </Link>
   );
@@ -97,9 +109,13 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 10,
     borderWidth: 1,
+    gap: 4,
+  },
+  headerRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+    gap: 12,
   },
   title: {
     fontWeight: "bold",
@@ -113,11 +129,27 @@ const styles = StyleSheet.create({
   status: {
     fontWeight: "500",
   },
-  statusContainer: {
+  headerStatus: {
     alignItems: "flex-end",
-    gap: 4,
+    gap: 2,
+  },
+  priceRow: {
+    alignItems: "flex-end",
+  },
+  timeRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
   statusSubtext: {
+    fontWeight: "700",
+    alignSelf: "flex-end",
+  },
+  priceText: {
+    fontWeight: "600",
+    fontSize: 12,
+  },
+  statusPaid: {
     fontWeight: "700",
   },
   contactText: {
