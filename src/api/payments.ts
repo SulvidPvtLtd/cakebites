@@ -1,4 +1,5 @@
 import { supabase } from "@/src/lib/supabase";
+import type { CheckoutDraft } from "@/src/providers/CartProvider";
 import type { PaymentGateway, PaymentStatus, PaymentTransaction } from "@/src/types";
 import { useMutation } from "@tanstack/react-query";
 
@@ -42,13 +43,29 @@ const readJwtHeader = (
 };
 
 export type CreateCheckoutInput = {
-  orderId: number;
   gateway: PaymentGateway;
+  draftOrder: CheckoutDraft;
 };
 
 export type CreateCheckoutResponse = {
   redirectUrl: string;
   transactionId: string;
+};
+
+export type RefundPaymentInput = {
+  transactionId: string;
+  amount?: number;
+  reason: string;
+};
+
+export type RefundPaymentResponse = {
+  ok: boolean;
+  transactionId: string;
+  amount: number;
+  idempotencyKey: string;
+  refundableAmount: number;
+  refundStatus: string;
+  gatewayResponse: unknown;
 };
 
 export const fetchPaymentTransaction = async (
@@ -93,9 +110,13 @@ export const normalizePaymentStatus = (status: unknown): PaymentStatus | null =>
 
 export const usePaymentGateway = () => {
   const createCheckout = useMutation<CreateCheckoutResponse, Error, CreateCheckoutInput>({
-    async mutationFn({ orderId, gateway }) {
-      if (!Number.isFinite(orderId) || orderId <= 0) {
-        throw new Error("Invalid order id.");
+    async mutationFn({ gateway, draftOrder }) {
+      if (!draftOrder || !Array.isArray(draftOrder.items) || draftOrder.items.length === 0) {
+        throw new Error("Cart is empty.");
+      }
+
+      if (!Number.isFinite(draftOrder.total) || draftOrder.total <= 0) {
+        throw new Error("Invalid checkout total.");
       }
 
       // console.log("[payments] createCheckout start", {
@@ -166,7 +187,7 @@ export const usePaymentGateway = () => {
                 "Content-Type": "application/json",
                 ...(anonKey ? { apikey: anonKey } : {}),
               },
-              body: JSON.stringify({ orderId: String(orderId), gateway }),
+              body: JSON.stringify({ gateway, draftOrder }),
             },
           );
           const responseText = await response.text();
@@ -189,7 +210,7 @@ export const usePaymentGateway = () => {
       const { data, error } = await supabase.functions.invoke(
         "create-payment-checkout",
         {
-          body: { orderId: String(orderId), gateway },
+          body: { gateway, draftOrder },
         },
       );
 
@@ -276,8 +297,63 @@ export const usePaymentGateway = () => {
     },
   });
 
+  const refundPayment = useMutation<
+    RefundPaymentResponse,
+    Error,
+    RefundPaymentInput
+  >({
+    async mutationFn({ transactionId, amount, reason }) {
+      if (!transactionId) {
+        throw new Error("Transaction id is required.");
+      }
+
+      if (amount !== undefined && (!Number.isFinite(amount) || amount <= 0)) {
+        throw new Error("Refund amount must be a positive number.");
+      }
+
+      if (!reason.trim()) {
+        throw new Error("Refund reason is required.");
+      }
+
+      const { data, error } = await supabase.functions.invoke("refund-payment", {
+        body: {
+          transactionId,
+          ...(amount !== undefined ? { amount: Math.round(amount) } : {}),
+          reason: reason.trim(),
+        },
+      });
+
+      if (error) {
+        const response = (error as { context?: Response })?.context;
+        if (response && typeof response.text === "function") {
+          try {
+            const responseText = await (response.clone?.() ?? response).text();
+            if (responseText) {
+              try {
+                const parsed = JSON.parse(responseText) as {
+                  error?: string;
+                  details?: string;
+                };
+                throw new Error(parsed.error ?? parsed.details ?? error.message);
+              } catch {
+                throw new Error(responseText);
+              }
+            }
+          } catch {
+            // fall through to generic message
+          }
+        }
+
+        throw new Error(error.message);
+      }
+
+      return data as RefundPaymentResponse;
+    },
+  });
+
   return {
     createCheckout,
     checkStatus,
+    refundPayment,
   };
 };

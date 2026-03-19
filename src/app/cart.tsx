@@ -17,7 +17,7 @@ import { useCart } from '@providers/CartProvider';
 import CartList from '@components/CartList';
 
 export default function CartScreen() {
-  const { items, total, checkout, fulfillmentOption } = useCart();
+  const { items, total, getCheckoutDraft, fulfillmentOption } = useCart();
   const router = useRouter();
   const DELIVERY_FEE = 5;
 
@@ -168,11 +168,8 @@ export default function CartScreen() {
             }
 
             try {
-              const orderId = await checkout(deliveryFee);
-              router.push({
-                pathname: "/payment",
-                params: { orderId: String(orderId) },
-              });
+              getCheckoutDraft(deliveryFee);
+              router.push("/payment");
             } catch (error) {
               const message = error instanceof Error ? error.message : 'Checkout failed';
               Alert.alert('Checkout failed', message);

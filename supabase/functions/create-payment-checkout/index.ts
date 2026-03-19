@@ -7,8 +7,19 @@ const corsHeaders = {
 };
 
 const BodySchema = z.object({
-  orderId: z.string().min(1),
   gateway: z.enum(["yoco", "payfast", "ozow"]),
+  draftOrder: z.object({
+    total: z.number().positive(),
+    delivery_option: z.enum(["Yes", "No"]),
+    items: z.array(
+      z.object({
+        product_id: z.number().int().positive(),
+        quantity: z.number().int().positive(),
+        size: z.string().min(1),
+        unitPrice: z.number().nonnegative(),
+      }),
+    ).min(1),
+  }),
 });
 
 type CheckoutResponse = {
@@ -16,16 +27,24 @@ type CheckoutResponse = {
   transactionId: string;
 };
 
-// Note: touch to force redeploy after config/runtime updates.
-const resolveOrderStatus = (
+const normalizePaymentStatus = (
   status: string | null,
-): "New" | "Cancelled" | null => {
+): "created" | "pending" | "succeeded" | "failed" | "cancelled" | null => {
   if (!status) return null;
-  const normalized = status.toLowerCase();
-  if (normalized === "succeeded" || normalized === "success") return "New";
-  if (normalized === "failed" || normalized === "cancelled" || normalized === "canceled") {
-    return "Cancelled";
-  }
+  const normalized = status.trim().toLowerCase();
+  if (normalized === "created") return "created";
+  if (normalized === "pending") return "pending";
+  if (normalized === "succeeded" || normalized === "success") return "succeeded";
+  if (normalized === "failed") return "failed";
+  if (normalized === "cancelled" || normalized === "canceled") return "cancelled";
+  return null;
+};
+
+const resolveOrderStatus = (
+  status: "created" | "pending" | "succeeded" | "failed" | "cancelled" | null,
+): "New" | "Cancelled" | null => {
+  if (status === "succeeded") return "New";
+  if (status === "failed" || status === "cancelled") return "Cancelled";
   return null;
 };
 
@@ -72,6 +91,107 @@ const buildReturnUrl = (base: string, status: string, transactionId?: string) =>
   return url.toString();
 };
 
+const getObject = (value: unknown): Record<string, unknown> | null =>
+  value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
+
+const ensureOrderFromTransaction = async (
+  supabase: ReturnType<typeof getSupabaseAdmin>,
+  transaction: {
+    id: string;
+    order_id: number | null;
+    metadata: unknown;
+  },
+  userId?: string | null,
+) => {
+  if (transaction.order_id) {
+    return transaction.order_id;
+  }
+
+  const metadata = getObject(transaction.metadata);
+  const draftOrder = getObject(metadata?.draftOrder);
+  const draftItems = Array.isArray(draftOrder?.items) ? draftOrder.items : [];
+  const total = Number(draftOrder?.total ?? 0);
+  const deliveryOption = draftOrder?.delivery_option === "No" ? "No" : "Yes";
+  const draftUserId =
+    typeof metadata?.user_id === "string" ? metadata.user_id : userId ?? null;
+
+  if (!draftUserId || !Number.isFinite(total) || total <= 0 || draftItems.length === 0) {
+    throw new Error("Missing draft order metadata for successful payment.");
+  }
+
+  const { data: existingOrder } = await supabase
+    .from("orders")
+    .select("id")
+    .eq("payment_transaction_id", transaction.id)
+    .maybeSingle();
+
+  if (existingOrder?.id) {
+    return existingOrder.id;
+  }
+
+  const { data: newOrder, error: orderError } = await supabase
+    .from("orders")
+    .insert({
+      total,
+      status: "New",
+      user_id: draftUserId,
+      delivery_option: deliveryOption,
+      payment_gateway: "yoco",
+      payment_transaction_id: transaction.id,
+    })
+    .select("*")
+    .single();
+
+  if (orderError || !newOrder) {
+    throw new Error(orderError?.message ?? "Failed to create order after payment.");
+  }
+
+  const orderItemsPayload = draftItems
+    .map((item) => {
+      const row = getObject(item);
+      return {
+        order_id: newOrder.id,
+        product_id: Number(row?.product_id ?? 0),
+        quantity: Number(row?.quantity ?? 0),
+        size: typeof row?.size === "string" ? row.size : "",
+      };
+    })
+    .filter(
+      (item) =>
+        Number.isFinite(item.product_id) &&
+        item.product_id > 0 &&
+        Number.isFinite(item.quantity) &&
+        item.quantity > 0 &&
+        item.size.length > 0,
+    );
+
+  if (orderItemsPayload.length === 0) {
+    throw new Error("Draft order items were invalid.");
+  }
+
+  const { error: orderItemsError } = await supabase
+    .from("order_items")
+    .insert(orderItemsPayload);
+
+  if (orderItemsError) {
+    throw new Error(orderItemsError.message);
+  }
+
+  const { error: transactionUpdateError } = await supabase
+    .from("payment_transactions")
+    .update({ order_id: newOrder.id })
+    .eq("id", transaction.id)
+    .is("order_id", null);
+
+  if (transactionUpdateError) {
+    throw new Error(transactionUpdateError.message);
+  }
+
+  return newOrder.id;
+};
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -80,8 +200,8 @@ Deno.serve(async (req) => {
   try {
     if (req.method === "GET") {
       const url = new URL(req.url);
-      const statusParam = url.searchParams.get("status");
       const transactionId = url.searchParams.get("transactionId");
+      const statusHint = normalizePaymentStatus(url.searchParams.get("status"));
       if (!transactionId) {
         return jsonResponse(400, { error: "Missing transactionId." });
       }
@@ -97,53 +217,64 @@ Deno.serve(async (req) => {
         return jsonResponse(404, { error: "Transaction not found." });
       }
 
-      const statusFromReturn = resolveOrderStatus(statusParam);
-      const statusFromTransaction = resolveOrderStatus(transaction.status);
-      const nextOrderStatus = statusFromReturn ?? statusFromTransaction;
-      const orderId = (transaction.order_id as number | null) ?? null;
-      // console.log("checkout-return", {
-      //   transactionId,
-      //   statusParam,
-      //   transactionStatus: transaction.status ?? null,
-      //   statusFromReturn,
-      //   statusFromTransaction,
-      //   orderId,
-      //   nextOrderStatus,
-      // });
+      let resolvedTransactionStatus = normalizePaymentStatus(transaction.status);
+      const transactionIsPending =
+        resolvedTransactionStatus === "created" ||
+        resolvedTransactionStatus === "pending";
+      let resolvedOrderId =
+        typeof transaction.order_id === "number" ? transaction.order_id : null;
 
-      if (nextOrderStatus && orderId) {
-        const { data: updatedOrders, error: updateError } = await supabase
-          .from("orders")
-          .update({ status: nextOrderStatus })
-          .eq("id", orderId)
-          .eq("status", "Pending Payment");
-        // console.log("checkout-return-update", {
-        //   orderId,
-        //   nextOrderStatus,
-        //   matched: Array.isArray(updatedOrders) ? updatedOrders.length : updatedOrders ? 1 : 0,
-        //   error: updateError?.message ?? null,
-        // });
-      }
+      if (statusHint && transactionIsPending) {
+        const nextOrderStatus = resolveOrderStatus(statusHint);
+        const nextMetadata =
+          transaction.metadata &&
+          typeof transaction.metadata === "object" &&
+          !Array.isArray(transaction.metadata)
+            ? {
+                ...(transaction.metadata as Record<string, unknown>),
+                lastRedirectStatusHint: statusHint,
+                lastRedirectHandledAt: new Date().toISOString(),
+              }
+            : {
+                lastRedirectStatusHint: statusHint,
+                lastRedirectHandledAt: new Date().toISOString(),
+              };
 
-      if (nextOrderStatus === "New") {
-        await supabase
+        const { error: updateTransactionError } = await supabase
           .from("payment_transactions")
-          .update({ status: "succeeded" })
-          .eq("id", transaction.id);
-      }
+          .update({
+            status: statusHint,
+            metadata: nextMetadata,
+          })
+          .eq("id", transaction.id)
+          .in("status", ["created", "pending"]);
 
-      if (nextOrderStatus && nextOrderStatus !== "New") {
-        await supabase
-          .from("payment_transactions")
-          .update({ status: nextOrderStatus === "Cancelled" ? "cancelled" : "failed" })
-          .eq("id", transaction.id);
+        if (!updateTransactionError) {
+          resolvedTransactionStatus = statusHint;
+        }
+
+        if (!updateTransactionError && nextOrderStatus === "New") {
+          resolvedOrderId = await ensureOrderFromTransaction(supabase, transaction);
+        }
+
+        if (!updateTransactionError && nextOrderStatus && resolvedOrderId) {
+          const orderUpdate = supabase
+            .from("orders")
+            .update({ status: nextOrderStatus, payment_transaction_id: transaction.id })
+            .eq("id", resolvedOrderId);
+
+          if (nextOrderStatus === "New") {
+            await orderUpdate.in("status", ["Pending Payment", "New"]);
+          } else {
+            await orderUpdate.in("status", ["Pending Payment", "New"]);
+          }
+        }
       }
 
       return jsonResponse(200, {
         ok: true,
-        status: transaction.status,
-        resolvedStatus: nextOrderStatus,
-        orderId,
+        status: resolvedTransactionStatus ?? transaction.status,
+        orderId: resolvedOrderId,
       });
     }
 
@@ -159,34 +290,11 @@ Deno.serve(async (req) => {
     }
 
     const body = BodySchema.parse(await req.json());
-    const orderId = Number(body.orderId);
 
     const supabase = getSupabaseAdmin();
-    if (!Number.isFinite(orderId) || orderId <= 0) {
-      return jsonResponse(400, { error: "Invalid orderId." });
-    }
-
-    const { data: order, error: orderError } = await supabase
-      .from("orders")
-      .select("*")
-      .eq("id", orderId)
-      .single();
-
-    if (orderError || !order) {
-      return jsonResponse(404, { error: "Order not found." });
-    }
-
-    if (!order.user_id || order.user_id !== authData.user.id) {
-      return jsonResponse(403, { error: "Not authorized to pay for this order." });
-    }
-
-    const total = Number(order.total);
+    const total = Number(body.draftOrder.total);
     if (!Number.isFinite(total) || total <= 0) {
-      return jsonResponse(400, { error: "Order total is invalid." });
-    }
-
-    if (order.status?.toLowerCase?.() === "cancelled") {
-      return jsonResponse(400, { error: "Order is cancelled." });
+      return jsonResponse(400, { error: "Draft order total is invalid." });
     }
 
     const amount = Math.round(total * 100);
@@ -194,17 +302,16 @@ Deno.serve(async (req) => {
     const returnBaseUrl =
       Deno.env.get("PAYMENT_RETURN_URL") ?? "cakebites://payment-return";
 
-    const { data: existing } = orderId
-      ? await supabase
-          .from("payment_transactions")
-          .select("*")
-          .eq("order_id", orderId)
-          .eq("gateway", body.gateway)
-          .in("status", ["created", "pending"])
-          .order("created_at", { ascending: false })
-          .limit(1)
-          .maybeSingle()
-      : { data: null };
+    const { data: existing } = await supabase
+      .from("payment_transactions")
+      .select("*")
+      .eq("gateway", body.gateway)
+      .is("order_id", null)
+      .in("status", ["created", "pending"])
+      .contains("metadata", { user_id: authData.user.id })
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
 
     if (existing?.metadata && typeof existing.metadata === "object") {
       const existingRedirectUrl = (existing.metadata as Record<string, unknown>)
@@ -220,7 +327,7 @@ Deno.serve(async (req) => {
     const { data: transactionSeed, error: seedError } = await supabase
       .from("payment_transactions")
       .insert({
-        order_id: orderId,
+        order_id: null,
         gateway: body.gateway,
         status: "created",
         amount,
@@ -228,6 +335,7 @@ Deno.serve(async (req) => {
         metadata: {
           stage: "initiated",
           user_id: authData.user.id,
+          draftOrder: body.draftOrder,
         },
       })
       .select("*")
@@ -251,7 +359,6 @@ Deno.serve(async (req) => {
           successUrl: buildReturnUrl(returnBaseUrl, "success", transactionSeed.id),
           failureUrl: buildReturnUrl(returnBaseUrl, "failed", transactionSeed.id),
           metadata: {
-            orderId: orderId ?? null,
             transactionId: transactionSeed.id,
             userId: authData.user.id,
           },
@@ -260,6 +367,7 @@ Deno.serve(async (req) => {
         const response = await fetch("https://payments.yoco.com/api/checkouts", {
           method: "POST",
           headers: {
+            "Idempotency-Key": transactionSeed.id,
             "Content-Type": "application/json",
             Authorization: `Bearer ${yocoSecretKey}`,
           },
@@ -271,17 +379,18 @@ Deno.serve(async (req) => {
           console.error("Yoco checkout error", {
             status: response.status,
             body: errorBody,
-            orderId,
             transactionId: transactionSeed.id,
           });
           await supabase
             .from("payment_transactions")
             .update({
-              status: "failed",
-              metadata: {
-                error: errorBody,
-              },
-            })
+            status: "failed",
+            metadata: {
+              error: errorBody,
+              draftOrder: body.draftOrder,
+              user_id: authData.user.id,
+            },
+          })
             .eq("id", transactionSeed.id);
           return jsonResponse(502, {
             error: "Failed to create Yoco checkout.",
@@ -295,7 +404,6 @@ Deno.serve(async (req) => {
 
         if (!redirectUrl || !gatewayTransactionId) {
           console.error("Yoco checkout missing fields", {
-            orderId,
             transactionId: transactionSeed.id,
             response: yocoCheckout,
           });
@@ -305,6 +413,8 @@ Deno.serve(async (req) => {
               status: "failed",
               metadata: {
                 error: "Invalid Yoco response.",
+                draftOrder: body.draftOrder,
+                user_id: authData.user.id,
               },
             })
             .eq("id", transactionSeed.id);
@@ -316,7 +426,9 @@ Deno.serve(async (req) => {
           .update({
             gateway_transaction_id: gatewayTransactionId,
             metadata: {
+              draftOrder: body.draftOrder,
               redirectUrl,
+              user_id: authData.user.id,
               yocoResponse: yocoCheckout,
             },
           })
@@ -326,16 +438,6 @@ Deno.serve(async (req) => {
 
         if (insertError || !transaction) {
           return jsonResponse(500, { error: insertError?.message ?? "Failed to save transaction." });
-        }
-
-        if (orderId) {
-          await supabase
-            .from("orders")
-            .update({
-              payment_gateway: "yoco",
-              payment_transaction_id: transaction.id,
-            })
-            .eq("id", orderId);
         }
 
         return jsonResponse(200, {

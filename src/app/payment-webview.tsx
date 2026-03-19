@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import * as Linking from "expo-linking";
@@ -12,15 +12,18 @@ import { useAuth } from "@/src/providers/AuthProvider";
 import { useCart } from "@/src/providers/CartProvider";
 import { supabase } from "@/src/lib/supabase";
 
+const wait = (ms: number) =>
+  new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+
 export default function PaymentWebViewScreen() {
   const params = useLocalSearchParams<{
-    orderId?: string;
     transactionId?: string;
     redirectUrl?: string;
     gateway?: string;
   }>();
 
-  const orderId = useMemo(() => Number(params.orderId), [params.orderId]);
   const transactionId = params.transactionId ?? "";
   const redirectUrl = params.redirectUrl ?? "";
   const router = useRouter();
@@ -38,6 +41,8 @@ export default function PaymentWebViewScreen() {
       if (isHandlingReturn) return;
       setIsHandlingReturn(true);
       let handledNavigation = false;
+      let resolvedOrderId: number | null = null;
+      let resolvedTransactionId = transactionId;
 
       try {
         // console.log("[payment] return url", url);
@@ -48,16 +53,10 @@ export default function PaymentWebViewScreen() {
         //   status: statusParam,
         //   transactionId: transactionParam ?? transactionId ?? null,
         // });
-        const resolvedTransactionId = transactionParam || transactionId;
+        resolvedTransactionId = transactionParam || transactionId;
 
         const statusFromReturn = normalizePaymentStatus(statusParam);
-        let resolvedStatus = statusFromReturn;
-
-        let dbStatus: ReturnType<typeof normalizePaymentStatus> = null;
-        if (resolvedTransactionId) {
-          const record = await fetchPaymentTransaction(resolvedTransactionId);
-          dbStatus = normalizePaymentStatus(record?.status);
-        }
+        let resolvedStatus: ReturnType<typeof normalizePaymentStatus> = null;
 
         if (resolvedTransactionId) {
           try {
@@ -65,38 +64,47 @@ export default function PaymentWebViewScreen() {
               transactionId: resolvedTransactionId,
               ...(statusFromReturn ? { status: statusFromReturn } : {}),
             });
-            const { data, error } = await supabase.functions.invoke(
+            const { data } = await supabase.functions.invoke(
               `create-payment-checkout?${queryParams.toString()}`,
               { method: "GET" },
             );
-            // if (error) {
-            //   console.log("[payment] return verify error", error);
-            // }
-            // console.log("[payment] return verify", data);
             if (data) {
               resolvedStatus =
-                normalizePaymentStatus(data.resolvedStatus) ??
-                normalizePaymentStatus(data.status) ??
-                dbStatus ??
-                resolvedStatus;
+                normalizePaymentStatus(data.status) ?? resolvedStatus;
+              resolvedOrderId =
+                typeof data.orderId === "number" && Number.isFinite(data.orderId)
+                  ? data.orderId
+                  : resolvedOrderId;
             }
           } catch {
             // ignore; fallback to current status
           }
         }
 
-        if (statusFromReturn === "succeeded") {
-          clearCart();
-          showToast("Payment successful.", "success");
-        } else if (resolvedStatus === "succeeded") {
+        if (!resolvedStatus && resolvedTransactionId) {
+          for (let attempt = 0; attempt < 4; attempt += 1) {
+            await wait(1500);
+            const record = await fetchPaymentTransaction(resolvedTransactionId);
+            resolvedStatus = normalizePaymentStatus(record?.status);
+            if (resolvedStatus && resolvedStatus !== "created" && resolvedStatus !== "pending") {
+              break;
+            }
+          }
+        }
+
+        if (resolvedStatus === "succeeded") {
           clearCart();
           showToast("Payment successful.", "success");
         } else if (resolvedStatus === "cancelled") {
           showToast("Payment cancelled.", "info");
         } else if (resolvedStatus === "failed") {
           showToast("Payment failed.", "error");
+        } else if (statusFromReturn === "cancelled") {
+          showToast("Payment cancellation is pending confirmation.", "info");
+        } else if (statusFromReturn === "failed") {
+          showToast("Payment failure is pending confirmation.", "info");
         } else {
-          showToast("Payment status pending.", "info");
+          showToast("Payment confirmation is still pending.", "info");
         }
       } catch (error) {
         showToast("Failed to verify payment.", "error");
@@ -105,14 +113,25 @@ export default function PaymentWebViewScreen() {
           setIsHandlingReturn(false);
           return;
         }
-        if (Number.isFinite(orderId) && orderId > 0) {
-          router.replace(`/(user)/orders/${orderId}`);
+        if (resolvedTransactionId && !resolvedOrderId) {
+          try {
+            const record = await fetchPaymentTransaction(resolvedTransactionId);
+            resolvedOrderId =
+              typeof record?.order_id === "number" && Number.isFinite(record.order_id)
+                ? record.order_id
+                : null;
+          } catch {
+            // ignore
+          }
+        }
+        if (resolvedOrderId && Number.isFinite(resolvedOrderId) && resolvedOrderId > 0) {
+          router.replace(`/(user)/orders/${resolvedOrderId}`);
         } else {
           router.replace("/(user)/orders");
         }
       }
     },
-    [isHandlingReturn, orderId, router, showToast, transactionId],
+    [isHandlingReturn, router, showToast, transactionId, clearCart],
   );
 
   const shouldStartLoad = useCallback(

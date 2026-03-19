@@ -99,14 +99,163 @@ const verifyYocoSignature = async (
   return matched ? { ok: true } : { ok: false, reason: "Invalid webhook signature." };
 };
 
-const mapYocoStatus = (eventType: string | undefined) => {
-  if (!eventType) return "pending";
-  const normalized = eventType.toLowerCase();
+const normalizeEventType = (value: unknown) =>
+  typeof value === "string" ? value.trim().toLowerCase() : "";
 
-  if (normalized.includes("succeeded")) return "succeeded";
-  if (normalized.includes("failed")) return "failed";
-  if (normalized.includes("canceled") || normalized.includes("cancelled")) return "cancelled";
-  return "pending";
+const normalizePaymentStatus = (value: unknown) => {
+  if (typeof value !== "string") return null;
+  const normalized = value.trim().toLowerCase();
+  if (normalized === "created") return "created" as const;
+  if (normalized === "pending") return "pending" as const;
+  if (normalized === "succeeded" || normalized === "success") {
+    return "succeeded" as const;
+  }
+  if (normalized === "failed") return "failed" as const;
+  if (normalized === "cancelled" || normalized === "canceled") {
+    return "cancelled" as const;
+  }
+  return null;
+};
+
+const getObject = (value: unknown): Record<string, unknown> | null =>
+  value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
+
+const mapYocoStatus = (eventType: string) => {
+  if (!eventType) return "pending" as const;
+  if (eventType.includes("succeeded")) return "succeeded" as const;
+  if (eventType.includes("failed")) return "failed" as const;
+  if (eventType.includes("canceled") || eventType.includes("cancelled")) {
+    return "cancelled" as const;
+  }
+  return "pending" as const;
+};
+
+const getStatusRank = (status: string | null | undefined) => {
+  switch ((status ?? "").toLowerCase()) {
+    case "created":
+      return 0;
+    case "pending":
+      return 1;
+    case "failed":
+    case "cancelled":
+      return 2;
+    case "succeeded":
+      return 3;
+    default:
+      return -1;
+  }
+};
+
+const mergeMetadata = (
+  current: unknown,
+  patch: Record<string, unknown>,
+): Record<string, unknown> => {
+  const base =
+    current && typeof current === "object" && !Array.isArray(current)
+      ? { ...(current as Record<string, unknown>) }
+      : {};
+
+  return {
+    ...base,
+    ...patch,
+  };
+};
+
+const ensureOrderFromTransaction = async (
+  supabase: ReturnType<typeof getSupabaseAdmin>,
+  transaction: {
+    id: string;
+    order_id: number | null;
+    amount: number;
+    metadata: unknown;
+  },
+) => {
+  if (transaction.order_id) {
+    return transaction.order_id;
+  }
+
+  const metadata = getObject(transaction.metadata);
+  const draftOrder = getObject(metadata?.draftOrder);
+  const draftItems = Array.isArray(draftOrder?.items) ? draftOrder.items : [];
+  const total = Number(draftOrder?.total ?? transaction.amount / 100);
+  const deliveryOption = draftOrder?.delivery_option === "No" ? "No" : "Yes";
+  const userId = typeof metadata?.user_id === "string" ? metadata.user_id : null;
+
+  if (!userId || !Number.isFinite(total) || total <= 0 || draftItems.length === 0) {
+    throw new Error("Missing draft order metadata for successful payment.");
+  }
+
+  const { data: existingOrder } = await supabase
+    .from("orders")
+    .select("id")
+    .eq("payment_transaction_id", transaction.id)
+    .maybeSingle();
+
+  if (existingOrder?.id) {
+    return existingOrder.id;
+  }
+
+  const { data: newOrder, error: orderError } = await supabase
+    .from("orders")
+    .insert({
+      total,
+      status: "New",
+      user_id: userId,
+      delivery_option: deliveryOption,
+      payment_gateway: "yoco",
+      payment_transaction_id: transaction.id,
+    })
+    .select("*")
+    .single();
+
+  if (orderError || !newOrder) {
+    throw new Error(orderError?.message ?? "Failed to create order after payment.");
+  }
+
+  const orderItemsPayload = draftItems
+    .map((item) => {
+      const row = getObject(item);
+      return {
+        order_id: newOrder.id,
+        product_id: Number(row?.product_id ?? 0),
+        quantity: Number(row?.quantity ?? 0),
+        size: typeof row?.size === "string" ? row.size : "",
+      };
+    })
+    .filter(
+      (item) =>
+        Number.isFinite(item.product_id) &&
+        item.product_id > 0 &&
+        Number.isFinite(item.quantity) &&
+        item.quantity > 0 &&
+        item.size.length > 0,
+    );
+
+  if (orderItemsPayload.length === 0) {
+    throw new Error("Draft order items were invalid.");
+  }
+
+  const { error: itemsError } = await supabase
+    .from("order_items")
+    .insert(orderItemsPayload);
+
+  if (itemsError) {
+    throw new Error(itemsError.message);
+  }
+
+  const { error: updateTransactionError } = await supabase
+    .from("payment_transactions")
+    .update({ order_id: newOrder.id })
+    .eq("id", transaction.id)
+    .is("order_id", null);
+
+  if (updateTransactionError) {
+    throw new Error(updateTransactionError.message);
+  }
+
+  return newOrder.id;
 };
 
 Deno.serve(async (req) => {
@@ -129,55 +278,194 @@ Deno.serve(async (req) => {
         return jsonResponse(400, { error: verification.reason });
       }
 
-      const payload = JSON.parse(rawBody);
-      const eventType = payload?.type as string | undefined;
-      const status = mapYocoStatus(eventType);
-      const checkoutId =
-        payload?.metadata?.checkoutId ??
-        payload?.payment?.id ??
-        payload?.data?.id ??
-        null;
+      const payload = JSON.parse(rawBody) as Record<string, unknown>;
+      const eventPayload = getObject(payload?.payload);
+      const metadata = getObject(eventPayload?.metadata);
+      const eventType = normalizeEventType(payload?.type);
+      const resourceType = normalizeEventType(eventPayload?.type);
+      const status =
+        normalizePaymentStatus(eventPayload?.status) ??
+        mapYocoStatus(eventType);
+      const refundableAmount =
+        typeof eventPayload?.refundableAmount === "number" &&
+        Number.isFinite(eventPayload.refundableAmount)
+          ? eventPayload.refundableAmount
+          : null;
+      const failureReason =
+        typeof eventPayload?.failureReason === "string"
+          ? eventPayload.failureReason
+          : null;
+      const webhookEventId = headers.get("webhook-id");
+      const gatewayCheckoutId =
+        (typeof metadata?.checkoutId === "string" ? metadata.checkoutId : null) ??
+        (typeof eventPayload?.checkoutId === "string" ? eventPayload.checkoutId : null);
+      const localTransactionId =
+        typeof metadata?.transactionId === "string" ? metadata.transactionId : null;
 
-      if (!checkoutId) {
-        return jsonResponse(400, { error: "Missing checkoutId in webhook payload." });
+      if (!webhookEventId) {
+        return jsonResponse(400, { error: "Missing webhook event id." });
+      }
+
+      if (!gatewayCheckoutId && !localTransactionId) {
+        return jsonResponse(400, {
+          error: "Missing payment identifiers in webhook payload.",
+        });
       }
 
       const supabase = getSupabaseAdmin();
-      const { data: transaction, error: updateError } = await supabase
-        .from("payment_transactions")
-        .update({
-          status,
-          metadata: payload,
-        })
-        .eq("gateway", "yoco")
-        .eq("gateway_transaction_id", checkoutId)
-        .select("*")
-        .single();
+      let transaction = null;
+      let transactionError = null;
 
-      if (updateError || !transaction) {
-        return jsonResponse(404, { error: updateError?.message ?? "Transaction not found." });
+      if (localTransactionId) {
+        const response = await supabase
+          .from("payment_transactions")
+          .select("*")
+          .eq("id", localTransactionId)
+          .eq("gateway", "yoco")
+          .maybeSingle();
+        transaction = response.data;
+        transactionError = response.error;
       }
 
+      if (!transaction && gatewayCheckoutId) {
+        const response = await supabase
+          .from("payment_transactions")
+          .select("*")
+          .eq("gateway", "yoco")
+          .eq("gateway_transaction_id", gatewayCheckoutId)
+          .maybeSingle();
+        transaction = response.data;
+        transactionError = response.error;
+      }
+
+      if (transactionError) {
+        return jsonResponse(500, {
+          error:
+            transactionError instanceof Error
+              ? transactionError.message
+              : String(transactionError),
+        });
+      }
+
+      if (!transaction) {
+        return jsonResponse(404, { error: "Transaction not found." });
+      }
+
+      const { data: insertedEvent, error: eventInsertError } = await supabase
+        .from("payment_webhook_events")
+        .insert({
+          gateway: "yoco",
+          gateway_event_id: webhookEventId,
+          event_type: eventType || null,
+          payment_transaction_id: transaction.id,
+          payload,
+        })
+        .select("*")
+        .maybeSingle();
+
+      if (eventInsertError) {
+        const duplicate =
+          eventInsertError.code === "23505" ||
+          eventInsertError.message.toLowerCase().includes("duplicate");
+        if (duplicate) {
+          return jsonResponse(200, { received: true, duplicate: true });
+        }
+        return jsonResponse(500, { error: eventInsertError.message });
+      }
+
+      const currentRank = getStatusRank(transaction.status);
+      const nextRank = getStatusRank(status);
+      const resolvedStatus =
+        nextRank >= currentRank ? status : transaction.status;
+
       const nextOrderStatus =
-        status === "succeeded"
+        resourceType === "payment" && resolvedStatus === "succeeded"
           ? "New"
-          : status === "failed" || status === "cancelled"
+          : resourceType === "payment" &&
+              (resolvedStatus === "failed" || resolvedStatus === "cancelled")
             ? "Cancelled"
             : null;
 
-      const orderId = (transaction.order_id as number | null) ?? null;
-      if (orderId) {
+      const nextMetadata = mergeMetadata(transaction.metadata, {
+        lastWebhookEventId: webhookEventId,
+        lastWebhookEventType: eventType || null,
+        lastWebhookResourceType: resourceType || null,
+        lastWebhookStatus: status,
+        lastWebhookReceivedAt: new Date().toISOString(),
+        gatewayCheckoutId: gatewayCheckoutId ?? transaction.gateway_transaction_id,
+        lastWebhookPayload: eventPayload ?? payload,
+        ...(resourceType === "refund"
+          ? {
+              refundStatus: status,
+              lastRefundWebhookAt: new Date().toISOString(),
+              lastRefundFailureReason: failureReason,
+              ...(refundableAmount !== null
+                ? {
+                    refundableAmount,
+                    refundedAmountTotal: Math.max(
+                      0,
+                      transaction.amount - refundableAmount,
+                    ),
+                  }
+                : {}),
+            }
+          : {}),
+      });
+
+      const { error: updateTransactionError } = await supabase
+        .from("payment_transactions")
+        .update({
+          status: resolvedStatus,
+          metadata: nextMetadata,
+        })
+        .eq("id", transaction.id);
+
+      if (updateTransactionError) {
         await supabase
+          .from("payment_webhook_events")
+          .update({
+            processing_error: updateTransactionError.message,
+          })
+          .eq("id", insertedEvent?.id ?? 0);
+        return jsonResponse(500, { error: updateTransactionError.message });
+      }
+
+      let resolvedOrderId =
+        typeof transaction.order_id === "number" ? transaction.order_id : null;
+      if (nextOrderStatus === "New") {
+        resolvedOrderId = await ensureOrderFromTransaction(supabase, transaction);
+      }
+
+      if (resolvedOrderId && nextOrderStatus) {
+        const orderUpdate = supabase
           .from("orders")
           .update({
             payment_gateway: "yoco",
             payment_transaction_id: transaction.id,
-            ...(nextOrderStatus ? { status: nextOrderStatus } : {}),
+            status: nextOrderStatus,
           })
-          .eq("id", orderId);
+          .eq("id", resolvedOrderId);
+
+        if (nextOrderStatus === "Cancelled") {
+          await orderUpdate.in("status", ["Pending Payment", "New"]);
+        } else {
+          await orderUpdate.eq("status", "Pending Payment");
+        }
       }
 
-      return jsonResponse(200, { received: true });
+      await supabase
+        .from("payment_webhook_events")
+        .update({
+          processed_at: new Date().toISOString(),
+          processing_error: null,
+        })
+        .eq("id", insertedEvent?.id ?? 0);
+
+      return jsonResponse(200, {
+        received: true,
+        transactionId: transaction.id,
+        status: resolvedStatus,
+      });
     }
 
     // TODO: Implement Payfast webhook verification and processing.

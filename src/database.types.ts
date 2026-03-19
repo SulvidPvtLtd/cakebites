@@ -113,7 +113,7 @@ export type Database = {
           gateway_transaction_id: string | null
           id: string
           metadata: Json | null
-          order_id: number
+          order_id: number | null
           status: string
           updated_at: string
         }
@@ -125,7 +125,7 @@ export type Database = {
           gateway_transaction_id?: string | null
           id?: string
           metadata?: Json | null
-          order_id: number
+          order_id?: number | null
           status?: string
           updated_at?: string
         }
@@ -137,7 +137,7 @@ export type Database = {
           gateway_transaction_id?: string | null
           id?: string
           metadata?: Json | null
-          order_id?: number
+          order_id?: number | null
           status?: string
           updated_at?: string
         }

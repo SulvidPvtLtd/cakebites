@@ -1,6 +1,6 @@
 import { Stack, router, useLocalSearchParams } from "expo-router";
 import { useEffect, useMemo } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ActivityIndicator,
   Alert,
@@ -18,6 +18,7 @@ import PlacedOrderListItems from "@/src/components/PlacedOrderListItems";
 import Colors from "@/src/constants/Colors";
 import { OrderItem, OrderStatusList } from "@/src/types";
 import { supabase } from "@/src/lib/supabase";
+import { fetchPaymentTransaction } from "@/src/api/payments";
 
 export default function OrderDetailScreen() {
   const scheme = useColorScheme() ?? "light";
@@ -25,6 +26,12 @@ export default function OrderDetailScreen() {
   const { id } = useLocalSearchParams<{ id?: string }>();
   const queryClient = useQueryClient();
   const { data: orderFetched, isLoading, error } = useOrderDetails(id);
+  const { data: paymentTransaction } = useQuery({
+    queryKey: ["payment-transaction", orderFetched?.payment_transaction_id ?? null],
+    enabled: Boolean(orderFetched?.payment_transaction_id),
+    queryFn: async () =>
+      fetchPaymentTransaction(orderFetched?.payment_transaction_id ?? ""),
+  });
   const { mutateAsync: updateOrderStatus, isPending: isUpdatingStatus } =
     useUpdateOrderStatus();
 
@@ -152,6 +159,20 @@ export default function OrderDetailScreen() {
   const orderTotal = Number(orderFetched.total ?? 0);
   const customerEmail = orderFetched.profiles?.email ?? "Not available";
   const customerMobile = orderFetched.profiles?.mobile_number ?? "+27 XX XXX XXXX";
+  const paymentMetadata =
+    paymentTransaction?.metadata &&
+    typeof paymentTransaction.metadata === "object" &&
+    !Array.isArray(paymentTransaction.metadata)
+      ? (paymentTransaction.metadata as Record<string, unknown>)
+      : null;
+  const refundedAmountTotal =
+    typeof paymentMetadata?.refundedAmountTotal === "number"
+      ? paymentMetadata.refundedAmountTotal
+      : 0;
+  const refundStatus =
+    typeof paymentMetadata?.refundStatus === "string"
+      ? paymentMetadata.refundStatus
+      : null;
 
   return (
     <View style={{ padding: 10, gap: 10, backgroundColor: theme.background, flex: 1 }}>
@@ -176,6 +197,48 @@ export default function OrderDetailScreen() {
         customerEmail={customerEmail}
         customerMobile={customerMobile}
       />
+
+      {orderFetched.payment_gateway === "yoco" && orderFetched.payment_transaction_id ? (
+        <View
+          style={{
+            borderWidth: 1,
+            borderColor: theme.border,
+            borderRadius: 10,
+            padding: 14,
+            gap: 10,
+            backgroundColor: theme.card,
+          }}
+        >
+          <Text style={{ color: theme.textPrimary, fontWeight: "700" }}>
+            Refund Summary
+          </Text>
+          <Text style={{ color: theme.textSecondary, fontSize: 13 }}>
+            Refunded so far: R{(refundedAmountTotal / 100).toFixed(2)}
+          </Text>
+          {refundStatus ? (
+            <Text style={{ color: theme.tint, fontSize: 13, fontWeight: "600" }}>
+              Refund status: {refundStatus}
+            </Text>
+          ) : null}
+          <Pressable
+            onPress={() =>
+              router.push(`/(admin)/orders/${orderFetched.id}/refund` as never)
+            }
+            style={{
+              borderWidth: 1,
+              borderColor: theme.tint,
+              borderRadius: 10,
+              paddingVertical: 12,
+              paddingHorizontal: 14,
+              backgroundColor: theme.card,
+            }}
+          >
+            <Text style={{ color: theme.tint, fontWeight: "700", textAlign: "center" }}>
+              Open Refund Flow
+            </Text>
+          </Pressable>
+        </View>
+      ) : null}
 
       {/* Items in the order */}
       <FlatList<OrderItem>

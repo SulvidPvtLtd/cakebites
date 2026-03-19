@@ -1,25 +1,19 @@
-import React, { useMemo, useState } from "react";
+import React, { useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 
 import Colors from "@constants/Colors";
 import { useColorScheme } from "@components/useColorScheme";
 import PaymentMethodSelector from "@components/PaymentMethodSelector";
-import { useOrderDetails } from "@/src/api/orders";
 import { usePaymentGateway } from "@/src/api/payments";
 import type { PaymentGateway } from "@/src/types";
 import { useToast } from "@/src/providers/ToastProvider";
 import { useAuth } from "@/src/providers/AuthProvider";
+import { useCart } from "@/src/providers/CartProvider";
 
 export default function PaymentScreen() {
-  const params = useLocalSearchParams<{ orderId?: string }>();
-  const orderId = useMemo(() => Number(params.orderId), [params.orderId]);
-  const isValidOrderId = Number.isFinite(orderId) && orderId > 0;
-
-  const { data: order, isLoading, error } = useOrderDetails(
-    isValidOrderId ? orderId : null,
-  );
+  const { items, total, fulfillmentOption, getCheckoutDraft } = useCart();
   const { createCheckout } = usePaymentGateway();
   const { session, loading: authLoading } = useAuth();
   const [selectedGateway, setSelectedGateway] = useState<PaymentGateway | null>("yoco");
@@ -30,33 +24,26 @@ export default function PaymentScreen() {
   const theme = Colors[colorScheme ?? "light"];
   const insets = useSafeAreaInsets();
 
-  const total = Number(order?.total ?? 0);
+  const deliveryFee = fulfillmentOption === "DELIVERY" ? 5 : 0;
+  const finalTotal = total + deliveryFee;
+  const hasItems = Array.isArray(items) && items.length > 0;
 
-  if (!isValidOrderId) {
+  if (!hasItems) {
     return (
       <View style={[styles.container, { backgroundColor: theme.background }]}>
-        <Text style={[styles.title, { color: theme.textPrimary }]}>Invalid order</Text>
+        <Text style={[styles.title, { color: theme.textPrimary }]}>Cart is empty</Text>
         <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
-          We could not load payment for this order.
+          Add items to your cart before payment.
         </Text>
       </View>
     );
   }
-
-  if (isLoading) {
+  if (!fulfillmentOption) {
     return (
       <View style={[styles.container, { backgroundColor: theme.background }]}>
-        <ActivityIndicator />
-      </View>
-    );
-  }
-
-  if (error || !order) {
-    return (
-      <View style={[styles.container, { backgroundColor: theme.background }]}>
-        <Text style={[styles.title, { color: theme.textPrimary }]}>Payment unavailable</Text>
+        <Text style={[styles.title, { color: theme.textPrimary }]}>Fulfilment required</Text>
         <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
-          Please try again later.
+          Choose delivery or self collect before payment.
         </Text>
       </View>
     );
@@ -80,20 +67,19 @@ export default function PaymentScreen() {
     }
 
     try {
+      const draftOrder = getCheckoutDraft(deliveryFee);
       console.log("[payment] Pay now pressed", {
-        orderId,
         selectedGateway,
       });
       const response = await createCheckout.mutateAsync({
-        orderId,
         gateway: selectedGateway,
+        draftOrder,
       });
 
       console.log("[payment] Checkout response", response);
       router.push({
         pathname: "/payment-webview",
         params: {
-          orderId: String(orderId),
           transactionId: response.transactionId,
           redirectUrl: response.redirectUrl,
           gateway: selectedGateway,
@@ -130,7 +116,7 @@ export default function PaymentScreen() {
       <View style={[styles.summaryCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
         <Text style={[styles.summaryLabel, { color: theme.textSecondary }]}>Order total</Text>
         <Text style={[styles.summaryValue, { color: theme.tint }]}>
-          {Number.isFinite(total) ? `R${total.toFixed(2)}` : "R0.00"}
+          {Number.isFinite(finalTotal) ? `R${finalTotal.toFixed(2)}` : "R0.00"}
         </Text>
       </View>
 

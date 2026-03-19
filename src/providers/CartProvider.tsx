@@ -9,15 +9,22 @@ import {
   useMemo,
   useState,
 } from "react";
-import {
-  useDeleteOrder,
-  useInsertOrder,
-  useInsertOrderItems,
-} from "../api/orders";
 import { Tables } from "../database.types";
 
 type Product = Tables<"products">;
 type FulfillmentOption = "DELIVERY" | "COLLECTION";
+export type CheckoutDraftItem = {
+  product_id: number;
+  size: ProductSize;
+  quantity: number;
+  unitPrice: number;
+};
+
+export type CheckoutDraft = {
+  items: CheckoutDraftItem[];
+  total: number;
+  delivery_option: "Yes" | "No";
+};
 
 type CartType = {
   items: CartItem[];
@@ -26,7 +33,7 @@ type CartType = {
   removeItem: (productId: number, size: ProductSize) => void;
   clearCart: () => void;
   total: number;
-  checkout: (deliveryFee?: number) => Promise<number>;
+  getCheckoutDraft: (deliveryFee?: number) => CheckoutDraft;
   fulfillmentOption: FulfillmentOption | null;
   hasAcceptedDeliveryTerms: boolean;
   setFulfillmentOption: (option: FulfillmentOption | null) => void;
@@ -59,9 +66,6 @@ export default function CartProvider({ children }: PropsWithChildren) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [fulfillmentOption, setFulfillmentOption] = useState<FulfillmentOption | null>(null);
   const [hasAcceptedDeliveryTerms, setHasAcceptedDeliveryTerms] = useState(false);
-  const { mutateAsync: insertOrder } = useInsertOrder();
-  const { mutateAsync: insertOrderItems } = useInsertOrderItems();
-  const { mutateAsync: deleteOrder } = useDeleteOrder();
 
   /* ---------- Derived (defensive) ---------- */
 
@@ -159,7 +163,7 @@ export default function CartProvider({ children }: PropsWithChildren) {
     setHasAcceptedDeliveryTerms(true);
   }, []);
 
-  const checkout = useCallback(async (deliveryFee = 0) => {
+  const getCheckoutDraft = useCallback((deliveryFee = 0) => {
     if (!Array.isArray(items) || items.length === 0) {
       throw new Error("Cart is empty.");
     }
@@ -176,38 +180,17 @@ export default function CartProvider({ children }: PropsWithChildren) {
       fulfillmentOption === "DELIVERY" && Number.isFinite(deliveryFee) && deliveryFee > 0
         ? deliveryFee
         : 0;
-
-    const finalTotal = total + safeDeliveryFee;
-
-    const newOrder = await insertOrder({
-      total: finalTotal,
-      delivery_option: fulfillmentOption === "DELIVERY" ? "Yes" : "No",
-      status: "Pending Payment",
-    });
-    if (!newOrder?.id) {
-      throw new Error("Failed to create order.");
-    }
-
-    const orderItemsPayload = items.map((item) => ({
-      order_id: newOrder.id,
-      product_id: item.product_id,
-      quantity: sanitizeQuantity(item.quantity),
-      size: item.size,
-    }));
-
-    try {
-      await insertOrderItems(orderItemsPayload);
-    } catch (error) {
-      try {
-        await deleteOrder(newOrder.id);
-      } catch {
-        // Keep original checkout failure as the surfaced error.
-      }
-      throw error;
-    }
-
-    return newOrder.id;
-  }, [items, total, fulfillmentOption, insertOrder, insertOrderItems, deleteOrder]);
+    return {
+      total: total + safeDeliveryFee,
+      delivery_option: (fulfillmentOption === "DELIVERY" ? "Yes" : "No") as "Yes" | "No",
+      items: items.map((item) => ({
+        product_id: item.product_id,
+        quantity: sanitizeQuantity(item.quantity),
+        size: item.size,
+        unitPrice: sanitizeUnitPrice(item.unitPrice),
+      })),
+    };
+  }, [items, total, fulfillmentOption]);
 
   /* ---------- Value ---------- */
 
@@ -219,7 +202,7 @@ export default function CartProvider({ children }: PropsWithChildren) {
       removeItem,
       clearCart,
       total,
-      checkout,
+      getCheckoutDraft,
       fulfillmentOption,
       hasAcceptedDeliveryTerms,
       setFulfillmentOption,
@@ -232,7 +215,7 @@ export default function CartProvider({ children }: PropsWithChildren) {
       removeItem,
       clearCart,
       total,
-      checkout,
+      getCheckoutDraft,
       fulfillmentOption,
       hasAcceptedDeliveryTerms,
       setFulfillmentOption,
