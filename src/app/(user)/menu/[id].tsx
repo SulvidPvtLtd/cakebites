@@ -11,8 +11,10 @@ import {
   useWindowDimensions,
   View,
 } from "react-native";
+import FontAwesome from "@expo/vector-icons/FontAwesome";
 
 import { useProduct } from "@/src/api/products";
+import { useWishlist, useWishlistActions } from "@/src/api/wishlist";
 import Button from "@/src/components/Button";
 import LoadingState from "@/src/components/LoadingState";
 import { getSafeImageUrl } from "@/src/components/ProductListItem";
@@ -39,6 +41,8 @@ export default function ProductDetailsScreen() {
   const router = useRouter();
 
   const { addItem, fulfillmentOption, hasAcceptedDeliveryTerms, setFulfillmentOption } = useCart();
+  const { data: wishlist } = useWishlist();
+  const { toggleWishlist } = useWishlistActions();
 
   const productId = useMemo(() => {
     if (!idString) return null;
@@ -104,6 +108,7 @@ export default function ProductDetailsScreen() {
   const selectedPrice =
     selectedSize && sizePriceMap[selectedSize] > 0 ? sizePriceMap[selectedSize] : null;
   const visibleDescription = getVisibleProductDescription(product.description);
+  const isWishlisted = (wishlist ?? []).some((item) => item.product_id === product.id);
 
   const handleAddToCart = () => {
     if (adding) return;
@@ -178,6 +183,20 @@ export default function ProductDetailsScreen() {
     }
   };
 
+  const handleToggleWishlist = async () => {
+    try {
+      await toggleWishlist.mutateAsync({
+        productId: product.id,
+        isSaved: isWishlisted,
+      });
+    } catch (error) {
+      Alert.alert(
+        "Wishlist unavailable",
+        error instanceof Error ? error.message : "Please try again.",
+      );
+    }
+  };
+
   return (
     <View style={[styles.page, { backgroundColor: theme.background }]}>
       <Stack.Screen
@@ -217,7 +236,27 @@ export default function ProductDetailsScreen() {
         </View>
 
         <View style={[styles.content, { backgroundColor: theme.card }]}>
-          <Text style={[styles.name, { color: theme.textPrimary }]}>{product.name}</Text>
+          <View style={styles.titleRow}>
+            <Text style={[styles.name, { color: theme.textPrimary }]}>{product.name}</Text>
+            <Pressable
+              onPress={handleToggleWishlist}
+              disabled={toggleWishlist.isPending}
+              style={[
+                styles.wishlistButton,
+                {
+                  borderColor: isWishlisted ? theme.tint : theme.border,
+                  backgroundColor: theme.background,
+                  opacity: toggleWishlist.isPending ? 0.6 : 1,
+                },
+              ]}
+            >
+              <FontAwesome
+                name={isWishlisted ? "heart" : "heart-o"}
+                size={18}
+                color={isWishlisted ? theme.tint : theme.textPrimary}
+              />
+            </Pressable>
+          </View>
 
           {selectedPrice !== null ? (
             <Text style={[styles.price, { color: theme.tint }]}>${selectedPrice.toFixed(2)}</Text>
@@ -328,10 +367,25 @@ const styles = StyleSheet.create({
     maxWidth: 520,
     paddingHorizontal: 16,
   },
+  titleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+  },
   name: {
     fontSize: 22,
     fontWeight: "600",
     marginBottom: 4,
+    flex: 1,
+  },
+  wishlistButton: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
   },
   price: {
     fontSize: 18,

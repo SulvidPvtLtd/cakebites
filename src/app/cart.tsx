@@ -10,7 +10,6 @@ import {
   useColorScheme,
   Alert,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import Colors from '@constants/Colors';
 import { useCart } from '@providers/CartProvider';
@@ -23,7 +22,6 @@ export default function CartScreen() {
 
   const scheme = useColorScheme() ?? 'light';
   const theme = Colors[scheme];
-  const insets = useSafeAreaInsets();
   const deliveryFee = fulfillmentOption === "DELIVERY" ? DELIVERY_FEE : 0;
   const finalTotal = total + deliveryFee;
 
@@ -64,7 +62,7 @@ export default function CartScreen() {
           {
             backgroundColor: theme.card,
             borderColor: theme.border,
-            paddingBottom: insets.bottom + 16,
+            paddingBottom: 16,
           },
         ]}
       >

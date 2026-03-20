@@ -69,6 +69,34 @@ const appendRefundEntry = (
   return [...existingEntries, entry];
 };
 
+const cancelLinkedOrder = async (
+  supabase: ReturnType<typeof getSupabaseAdmin>,
+  transaction: {
+    id: string;
+    order_id: number | null;
+  },
+) => {
+  if (!transaction.order_id) return null;
+
+  const { data, error } = await supabase
+    .from("orders")
+    .update({
+      status: "Cancelled",
+      payment_gateway: "yoco",
+      payment_transaction_id: transaction.id,
+    })
+    .eq("id", transaction.order_id)
+    .in("status", ["Pending Payment", "New", "Cooking", "Delivering"])
+    .select("id, status")
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return data;
+};
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -237,6 +265,8 @@ Deno.serve(async (req) => {
       return jsonResponse(500, { error: updateError.message });
     }
 
+    const archivedOrder = await cancelLinkedOrder(supabase, transaction);
+
     return jsonResponse(200, {
       ok: true,
       transactionId: transaction.id,
@@ -244,6 +274,7 @@ Deno.serve(async (req) => {
       idempotencyKey,
       refundableAmount,
       refundStatus: nextMetadata.refundStatus,
+      archivedOrderId: archivedOrder?.id ?? transaction.order_id ?? null,
       gatewayResponse: responseBody,
     });
   } catch (error) {

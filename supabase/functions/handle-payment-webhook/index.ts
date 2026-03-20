@@ -258,6 +258,34 @@ const ensureOrderFromTransaction = async (
   return newOrder.id;
 };
 
+const cancelLinkedOrder = async (
+  supabase: ReturnType<typeof getSupabaseAdmin>,
+  transaction: {
+    id: string;
+    order_id: number | null;
+  },
+) => {
+  if (!transaction.order_id) return null;
+
+  const { data, error } = await supabase
+    .from("orders")
+    .update({
+      status: "Cancelled",
+      payment_gateway: "yoco",
+      payment_transaction_id: transaction.id,
+    })
+    .eq("id", transaction.order_id)
+    .in("status", ["Pending Payment", "New", "Cooking", "Delivering"])
+    .select("id")
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return data?.id ?? transaction.order_id;
+};
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -381,9 +409,11 @@ Deno.serve(async (req) => {
       const nextOrderStatus =
         resourceType === "payment" && resolvedStatus === "succeeded"
           ? "New"
-          : resourceType === "payment" &&
+        : resourceType === "payment" &&
               (resolvedStatus === "failed" || resolvedStatus === "cancelled")
             ? "Cancelled"
+        : resourceType === "refund" && status === "succeeded"
+          ? "Cancelled"
             : null;
 
       const nextMetadata = mergeMetadata(transaction.metadata, {
@@ -434,6 +464,8 @@ Deno.serve(async (req) => {
         typeof transaction.order_id === "number" ? transaction.order_id : null;
       if (nextOrderStatus === "New") {
         resolvedOrderId = await ensureOrderFromTransaction(supabase, transaction);
+      } else if (nextOrderStatus === "Cancelled" && resourceType === "refund") {
+        resolvedOrderId = await cancelLinkedOrder(supabase, transaction);
       }
 
       if (resolvedOrderId && nextOrderStatus) {

@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 
 import Colors from "@constants/Colors";
@@ -22,7 +21,6 @@ export default function PaymentScreen() {
 
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme ?? "light"];
-  const insets = useSafeAreaInsets();
 
   const deliveryFee = fulfillmentOption === "DELIVERY" ? 5 : 0;
   const finalTotal = total + deliveryFee;
@@ -97,7 +95,7 @@ export default function PaymentScreen() {
         styles.container,
         {
           backgroundColor: theme.background,
-          paddingBottom: insets.bottom + 20,
+          paddingBottom: 20,
         },
       ]}
     >

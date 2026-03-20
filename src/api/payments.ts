@@ -1,7 +1,7 @@
 import { supabase } from "@/src/lib/supabase";
 import type { CheckoutDraft } from "@/src/providers/CartProvider";
 import type { PaymentGateway, PaymentStatus, PaymentTransaction } from "@/src/types";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 const readJwtPayload = (
   token: string,
@@ -109,6 +109,8 @@ export const normalizePaymentStatus = (status: unknown): PaymentStatus | null =>
 };
 
 export const usePaymentGateway = () => {
+  const queryClient = useQueryClient();
+
   const createCheckout = useMutation<CreateCheckoutResponse, Error, CreateCheckoutInput>({
     async mutationFn({ gateway, draftOrder }) {
       if (!draftOrder || !Array.isArray(draftOrder.items) || draftOrder.items.length === 0) {
@@ -348,6 +350,15 @@ export const usePaymentGateway = () => {
       }
 
       return data as RefundPaymentResponse;
+    },
+    onSuccess: async (_data, variables) => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["orders"] }),
+        queryClient.invalidateQueries({ queryKey: ["order"] }),
+        queryClient.invalidateQueries({
+          queryKey: ["payment-transaction", variables.transactionId],
+        }),
+      ]);
     },
   });
 

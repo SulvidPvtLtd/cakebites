@@ -9,6 +9,7 @@ import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
 import "react-native-reanimated";
+import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 
 import { useColorScheme } from "@components/useColorScheme";
 import Colors from "@constants/Colors";
@@ -76,31 +77,38 @@ function RootLayoutNav() {
   };
 
   return (
-    <ThemeProvider value={appNavigationTheme}>
-      <AuthProvider>
-        <QueryProvider>
-          <ToastProvider>
-            {/*Its below AuthProvider becasue it needs to know all the details of authentication*/}
-            <CartProvider>
-              {/*Everthing in here is the Chidren of the CartProvider*/}
-              <Stack>
-                <Stack.Screen name="index" options={{ headerShown: false }} />
+    <SafeAreaProvider>
+      <ThemeProvider value={appNavigationTheme}>
+        <AuthProvider>
+          <QueryProvider>
+            <ToastProvider>
+              {/*Its below AuthProvider becasue it needs to know all the details of authentication*/}
+              <CartProvider>
+                {/*Everthing in here is the Chidren of the CartProvider*/}
+                <SafeAreaView
+                  style={{ flex: 1, backgroundColor: appColors.background }}
+                  edges={["top", "left", "right", "bottom"]}
+                >
+                  <Stack>
+                    <Stack.Screen name="index" options={{ headerShown: false }} />
 
-                <Stack.Screen name="(admin)" options={{ headerShown: false }} />
-                <Stack.Screen name="(user)" options={{ headerShown: false }} />
-                <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-                <Stack.Screen name="cart" options={{ presentation: "modal" }} />
-                <Stack.Screen name="payment" options={{ presentation: "modal", title: "Payment" }} />
-                <Stack.Screen
-                  name="payment-webview"
-                  options={{ presentation: "fullScreenModal", title: "Secure checkout" }}
-                />
-                <Stack.Screen name="delivery-terms" options={{ presentation: "modal" }} />
-              </Stack>
-            </CartProvider>
-          </ToastProvider>
-        </QueryProvider> 
-      </AuthProvider>
-    </ThemeProvider>
+                    <Stack.Screen name="(admin)" options={{ headerShown: false }} />
+                    <Stack.Screen name="(user)" options={{ headerShown: false }} />
+                    <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+                    <Stack.Screen name="cart" options={{ presentation: "modal" }} />
+                    <Stack.Screen name="payment" options={{ presentation: "modal", title: "Payment" }} />
+                    <Stack.Screen
+                      name="payment-webview"
+                      options={{ presentation: "fullScreenModal", title: "Secure checkout" }}
+                    />
+                    <Stack.Screen name="delivery-terms" options={{ presentation: "modal" }} />
+                  </Stack>
+                </SafeAreaView>
+              </CartProvider>
+            </ToastProvider>
+          </QueryProvider> 
+        </AuthProvider>
+      </ThemeProvider>
+    </SafeAreaProvider>
   );
 }

@@ -1,4 +1,6 @@
 import { supabase } from "@/src/lib/supabase";
+import { useMyOrders } from "@/src/api/orders";
+import { useWishlist, useWishlistActions } from "@/src/api/wishlist";
 import { useAuth } from "@/src/providers/AuthProvider";
 import Colors from "@/src/constants/Colors";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
@@ -16,7 +18,6 @@ import {
   View,
   useColorScheme,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Button from "./Button";
 
 type ProfileScreenProps = {
@@ -51,7 +52,7 @@ export default function ProfileScreen({ title }: ProfileScreenProps) {
   const colorScheme = useColorScheme() ?? "light";
   const theme = Colors[colorScheme];
   const { session, profile, signOut } = useAuth();
-  const insets = useSafeAreaInsets();
+  const isAdminProfile = (profile?.group ?? "").trim().toLowerCase() === "admin";
 
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
@@ -65,7 +66,16 @@ export default function ProfileScreen({ title }: ProfileScreenProps) {
   );
   const [isEditing, setIsEditing] = useState(false);
   const [profileExpanded, setProfileExpanded] = useState(false);
+  const [orderHistoryExpanded, setOrderHistoryExpanded] = useState(false);
+  const [wishlistExpanded, setWishlistExpanded] = useState(false);
+  const [paymentMethodsExpanded, setPaymentMethodsExpanded] = useState(false);
+  const [supportExpanded, setSupportExpanded] = useState(false);
   const [saving, setSaving] = useState(false);
+  const { data: myOrders } = useMyOrders();
+  const { data: wishlistItems, isLoading: isWishlistLoading } = useWishlist();
+  const { removeFromWishlist } = useWishlistActions();
+  const recentOrders = (myOrders ?? []).slice(0, 5);
+  const savedWishlistItems = wishlistItems?.filter((item) => item.products) ?? [];
 
   const hydrateForm = () => {
     setEmail(profile?.email ?? session?.user?.email ?? "");
@@ -234,10 +244,24 @@ export default function ProfileScreen({ title }: ProfileScreenProps) {
     ]);
   };
 
+  const handleRemoveWishlistItem = async (productId: number) => {
+    try {
+      await removeFromWishlist.mutateAsync(productId);
+    } catch (error) {
+      Alert.alert(
+        "Wishlist unavailable",
+        error instanceof Error ? error.message : "Please try again.",
+      );
+    }
+  };
+
   return (
-    <ScrollView
-      style={[styles.container, { backgroundColor: theme.background }]}
-      contentContainerStyle={[styles.content, { paddingTop: insets.top + 16 }]}
+    <View
+      style={[
+        styles.container,
+        styles.content,
+        { backgroundColor: theme.background, paddingTop: 16 },
+      ]}
     >
       <View style={styles.headerRow}>
         <Pressable
@@ -250,7 +274,7 @@ export default function ProfileScreen({ title }: ProfileScreenProps) {
           <FontAwesome name="angle-left" size={20} color={theme.textPrimary} />
         </Pressable>
 
-        <Text style={[styles.pageTitle, { color: theme.textPrimary }]}>Profile</Text>
+        <Text style={[styles.pageTitle, { color: theme.textPrimary }]}>{title ?? "Profile"}</Text>
 
         <Pressable
           onPress={() => Alert.alert("Notifications", "No new notifications.")}
@@ -385,7 +409,7 @@ export default function ProfileScreen({ title }: ProfileScreenProps) {
 
         <Pressable
           style={styles.optionRow}
-          onPress={() => Alert.alert("Order History", "Coming soon.")}
+          onPress={() => setOrderHistoryExpanded((prev) => !prev)}
         >
           <View style={styles.optionLeft}>
             <View style={[styles.iconBadge, { backgroundColor: theme.background }]}>
@@ -393,12 +417,63 @@ export default function ProfileScreen({ title }: ProfileScreenProps) {
             </View>
             <Text style={[styles.optionText, { color: theme.textPrimary }]}>Order History</Text>
           </View>
-          <FontAwesome name="angle-down" size={18} color={theme.textPrimary} />
+          <FontAwesome
+            name={orderHistoryExpanded ? "angle-up" : "angle-down"}
+            size={18}
+            color={theme.textPrimary}
+          />
         </Pressable>
+        {orderHistoryExpanded && (
+          <ScrollView
+            nestedScrollEnabled
+            style={[styles.sectionBodyScroll, { borderTopColor: theme.border }]}
+            contentContainerStyle={styles.sectionBody}
+          >
+            {recentOrders.length === 0 ? (
+              <Text style={[styles.sectionHelper, { color: theme.textSecondary }]}>
+                No orders yet. Your completed and in-progress orders will appear here.
+              </Text>
+            ) : (
+              recentOrders.map((order) => (
+                <Pressable
+                  key={order.id}
+                  onPress={() =>
+                    router.push(
+                      `${
+                        isAdminProfile ? "/(admin)" : "/(user)"
+                      }/orders/${order.id}` as never,
+                    )
+                  }
+                  style={[styles.inlineCard, { borderColor: theme.border, backgroundColor: theme.background }]}
+                >
+                  <Text style={[styles.inlineCardTitle, { color: theme.textPrimary }]}>
+                    Order #{order.id}
+                  </Text>
+                  <Text style={[styles.inlineCardMeta, { color: theme.textSecondary }]}>
+                    Status: {order.status}
+                  </Text>
+                  <Text style={[styles.inlineCardMeta, { color: theme.textSecondary }]}>
+                    Total: R{Number(order.total ?? 0).toFixed(2)}
+                  </Text>
+                </Pressable>
+              ))
+            )}
+            <Button
+              text="Open Full Order List"
+              onPress={() =>
+                router.push(
+                  isAdminProfile
+                    ? "/(admin)/orders/list?source=profile"
+                    : "/(user)/orders?source=profile",
+                )
+              }
+            />
+          </ScrollView>
+        )}
 
         <Pressable
           style={styles.optionRow}
-          onPress={() => Alert.alert("Saved Wishlist", "Coming soon.")}
+          onPress={() => setWishlistExpanded((prev) => !prev)}
         >
           <View style={styles.optionLeft}>
             <View style={[styles.iconBadge, { backgroundColor: theme.background }]}>
@@ -406,14 +481,89 @@ export default function ProfileScreen({ title }: ProfileScreenProps) {
             </View>
             <Text style={[styles.optionText, { color: theme.textPrimary }]}>Saved Wishlist</Text>
           </View>
-          <FontAwesome name="angle-down" size={18} color={theme.textPrimary} />
+          <FontAwesome
+            name={wishlistExpanded ? "angle-up" : "angle-down"}
+            size={18}
+            color={theme.textPrimary}
+          />
         </Pressable>
+        {wishlistExpanded && (
+          <ScrollView
+            nestedScrollEnabled
+            style={[styles.sectionBodyScroll, { borderTopColor: theme.border }]}
+            contentContainerStyle={styles.sectionBody}
+          >
+            {isWishlistLoading ? (
+              <Text style={[styles.sectionHelper, { color: theme.textSecondary }]}>
+                Loading your saved wishlist...
+              </Text>
+            ) : savedWishlistItems.length === 0 ? (
+              <Text style={[styles.sectionHelper, { color: theme.textSecondary }]}>
+                You have no saved wishlist items yet. Browse the menu and tap the heart to save products here.
+              </Text>
+            ) : (
+              savedWishlistItems.map((item) => (
+                <View
+                  key={item.id}
+                  style={[
+                    styles.inlineCard,
+                    { borderColor: theme.border, backgroundColor: theme.background },
+                  ]}
+                >
+                  <Pressable
+                    onPress={() =>
+                      router.push(
+                        `${isAdminProfile ? "/(admin)" : "/(user)"}/menu/${item.product_id}` as never,
+                      )
+                    }
+                    style={styles.wishlistRow}
+                  >
+                    <View style={styles.wishlistTextBlock}>
+                      <Text style={[styles.inlineCardTitle, { color: theme.textPrimary }]}>
+                        {item.products?.name ?? `Product #${item.product_id}`}
+                      </Text>
+                      <Text style={[styles.inlineCardMeta, { color: theme.textSecondary }]}>
+                        Added {new Date(item.created_at).toLocaleDateString()}
+                      </Text>
+                      <Text style={[styles.inlineCardMeta, { color: theme.textSecondary }]}>
+                        Price: ${Number(item.products?.price ?? 0).toFixed(2)}
+                      </Text>
+                    </View>
+                    <FontAwesome name="angle-right" size={18} color={theme.textSecondary} />
+                  </Pressable>
+                  <View style={styles.wishlistActionRow}>
+                    <Pressable
+                      onPress={() => handleRemoveWishlistItem(item.product_id)}
+                      disabled={removeFromWishlist.isPending}
+                      style={[
+                        styles.wishlistRemoveButton,
+                        {
+                          backgroundColor: theme.placeholder,
+                          borderColor: theme.border,
+                          opacity: removeFromWishlist.isPending ? 0.6 : 1,
+                        },
+                      ]}
+                    >
+                      <Text style={[styles.wishlistRemoveText, { color: theme.error }]}>
+                        {removeFromWishlist.isPending ? "Removing..." : "Remove"}
+                      </Text>
+                    </Pressable>
+                  </View>
+                </View>
+              ))
+            )}
+            <Button
+              text="Browse Menu"
+              onPress={() => router.push(isAdminProfile ? "/(admin)/menu" : "/(user)/menu")}
+            />
+          </ScrollView>
+        )}
       </View>
 
       <View style={[styles.groupCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
         <Pressable
           style={styles.optionRow}
-          onPress={() => Alert.alert("Payment Methods", "Coming soon.")}
+          onPress={() => setPaymentMethodsExpanded((prev) => !prev)}
         >
           <View style={styles.optionLeft}>
             <View style={[styles.iconBadge, { backgroundColor: theme.background }]}>
@@ -421,12 +571,32 @@ export default function ProfileScreen({ title }: ProfileScreenProps) {
             </View>
             <Text style={[styles.optionText, { color: theme.textPrimary }]}>Payment Methods</Text>
           </View>
-          <FontAwesome name="angle-down" size={18} color={theme.textPrimary} />
+          <FontAwesome
+            name={paymentMethodsExpanded ? "angle-up" : "angle-down"}
+            size={18}
+            color={theme.textPrimary}
+          />
         </Pressable>
+        {paymentMethodsExpanded && (
+          <View style={[styles.sectionBody, { borderTopColor: theme.border }]}>
+            <View style={[styles.inlineCard, { borderColor: theme.border, backgroundColor: theme.background }]}>
+              <Text style={[styles.inlineCardTitle, { color: theme.textPrimary }]}>Yoco</Text>
+              <Text style={[styles.inlineCardMeta, { color: theme.textSecondary }]}>
+                Card and EFT checkout are currently supported through Yoco.
+              </Text>
+            </View>
+            <View style={[styles.inlineCard, { borderColor: theme.border, backgroundColor: theme.background }]}>
+              <Text style={[styles.inlineCardTitle, { color: theme.textPrimary }]}>Security Note</Text>
+              <Text style={[styles.inlineCardMeta, { color: theme.textSecondary }]}>
+                Payment methods are handled on the secure gateway and are not stored directly in this app.
+              </Text>
+            </View>
+          </View>
+        )}
 
         <Pressable
           style={styles.optionRow}
-          onPress={() => Alert.alert("Help & Support", "Coming soon.")}
+          onPress={() => setSupportExpanded((prev) => !prev)}
         >
           <View style={styles.optionLeft}>
             <View style={[styles.iconBadge, { backgroundColor: theme.background }]}>
@@ -434,8 +604,24 @@ export default function ProfileScreen({ title }: ProfileScreenProps) {
             </View>
             <Text style={[styles.optionText, { color: theme.textPrimary }]}>Help & Support</Text>
           </View>
-          <FontAwesome name="angle-down" size={18} color={theme.textPrimary} />
+          <FontAwesome
+            name={supportExpanded ? "angle-up" : "angle-down"}
+            size={18}
+            color={theme.textPrimary}
+          />
         </Pressable>
+        {supportExpanded && (
+          <View style={[styles.sectionBody, { borderTopColor: theme.border }]}>
+            <Text style={[styles.sectionHelper, { color: theme.textSecondary }]}>
+              Need help with delivery terms, payment, or order progress? Review the delivery terms or go straight to your order list for the latest status.
+            </Text>
+            <Button text="View Delivery Terms" onPress={() => router.push("/delivery-terms")} />
+            <Button
+              text="Open My Orders"
+              onPress={() => router.push(isAdminProfile ? "/(admin)/orders/list" : "/(user)/orders")}
+            />
+          </View>
+        )}
       </View>
 
       <View style={[styles.groupCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
@@ -455,7 +641,7 @@ export default function ProfileScreen({ title }: ProfileScreenProps) {
           <FontAwesome name="angle-down" size={18} color={theme.textPrimary} />
         </Pressable>
       </View>
-    </ScrollView>
+    </View>
   );
 }
 
@@ -466,6 +652,7 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: 18,
     paddingBottom: 28,
+    flex: 1,
   },
   headerRow: {
     flexDirection: "row",
@@ -542,6 +729,58 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 10,
     borderTopWidth: 1,
+  },
+  sectionBody: {
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+    paddingTop: 8,
+    gap: 10,
+  },
+  sectionBodyScroll: {
+    borderTopWidth: 1,
+    maxHeight: 240,
+  },
+  sectionHelper: {
+    fontSize: 13,
+    lineHeight: 20,
+  },
+  inlineCard: {
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 12,
+    gap: 4,
+  },
+  inlineCardTitle: {
+    fontSize: 15,
+    fontWeight: "700",
+  },
+  inlineCardMeta: {
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  wishlistRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+  },
+  wishlistTextBlock: {
+    flex: 1,
+    gap: 4,
+  },
+  wishlistActionRow: {
+    alignItems: "flex-end",
+    marginTop: 6,
+  },
+  wishlistRemoveButton: {
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  wishlistRemoveText: {
+    fontSize: 12,
+    fontWeight: "600",
   },
   label: {
     fontSize: 12,

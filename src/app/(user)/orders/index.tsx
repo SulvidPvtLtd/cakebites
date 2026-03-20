@@ -1,7 +1,7 @@
-import { Stack } from "expo-router";
+import { Stack, router, useLocalSearchParams } from "expo-router";
 import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { ActivityIndicator, FlatList, Text } from "react-native";
+import { ActivityIndicator, FlatList, Pressable, Text } from "react-native";
 import OrderListItem from "@components/OrderListItem";
 import { useMyOrders, type UserOrderRow } from "@/src/api/orders";
 import type { Tables } from "@/src/database.types";
@@ -11,6 +11,7 @@ import { supabase } from "@/src/lib/supabase";
 type UserOrder = UserOrderRow;
 
 export default function OrdersScreen() {
+  const { source } = useLocalSearchParams<{ source?: string }>();
   const queryClient = useQueryClient();
   const { session } = useAuth();
   const userId = session?.user.id;
@@ -82,7 +83,19 @@ export default function OrdersScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ title: "Orders" }} />
+      <Stack.Screen
+        options={{
+          title: "Orders",
+          headerLeft:
+            source === "profile"
+              ? () => (
+                  <Pressable onPress={() => router.push("/(user)/log-out")}>
+                    <Text>Profile</Text>
+                  </Pressable>
+                )
+              : undefined,
+        }}
+      />
       <FlatList<UserOrder>
         data={safeOrders}
         contentContainerStyle={{ gap: 10, padding: 10 }}
