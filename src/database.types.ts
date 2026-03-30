@@ -14,6 +14,259 @@ export type Database = {
   }
   public: {
     Tables: {
+      delivery_settings: {
+        Row: {
+          collection_address: string | null
+          delivery_rate: number
+          fulfillment_location_id: number | null
+          id: number
+          updated_at: string
+        }
+        Insert: {
+          collection_address?: string | null
+          delivery_rate?: number
+          fulfillment_location_id?: number | null
+          id?: number
+          updated_at?: string
+        }
+        Update: {
+          collection_address?: string | null
+          delivery_rate?: number
+          fulfillment_location_id?: number | null
+          id?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      inventory_locations: {
+        Row: {
+          address: string | null
+          code: string
+          created_at: string
+          id: number
+          is_active: boolean
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          code: string
+          created_at?: string
+          id?: number
+          is_active?: boolean
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          code?: string
+          created_at?: string
+          id?: number
+          is_active?: boolean
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      inventory_levels: {
+        Row: {
+          created_at: string
+          id: number
+          location_id: number
+          on_hand: number
+          product_id: number
+          reserved: number
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: number
+          location_id: number
+          on_hand?: number
+          product_id: number
+          reserved?: number
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: number
+          location_id?: number
+          on_hand?: number
+          product_id?: number
+          reserved?: number
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_levels_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_locations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_levels_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      inventory_transactions: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          delta_on_hand: number
+          delta_reserved: number
+          id: number
+          location_id: number
+          metadata: Json | null
+          movement_type: string
+          on_hand_after: number
+          on_hand_before: number
+          order_id: number | null
+          product_id: number
+          reason: string | null
+          reserved_after: number
+          reserved_before: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          delta_on_hand?: number
+          delta_reserved?: number
+          id?: number
+          location_id: number
+          metadata?: Json | null
+          movement_type?: string
+          on_hand_after: number
+          on_hand_before: number
+          order_id?: number | null
+          product_id: number
+          reason?: string | null
+          reserved_after: number
+          reserved_before: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          delta_on_hand?: number
+          delta_reserved?: number
+          id?: number
+          location_id?: number
+          metadata?: Json | null
+          movement_type?: string
+          on_hand_after?: number
+          on_hand_before?: number
+          order_id?: number | null
+          product_id?: number
+          reason?: string | null
+          reserved_after?: number
+          reserved_before?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_transactions_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_locations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_transactions_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_transactions_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      inventory_alerts: {
+        Row: {
+          acknowledged_at: string | null
+          acknowledged_by: string | null
+          alert_type: string
+          available: number
+          created_at: string
+          id: number
+          location_id: number
+          metadata: Json | null
+          note: string | null
+          on_hand: number
+          product_id: number
+          reorder_point: number
+          reserved: number
+          resolved_at: string | null
+          safety_stock: number
+          severity: string
+          status: string
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          alert_type?: string
+          available?: number
+          created_at?: string
+          id?: number
+          location_id: number
+          metadata?: Json | null
+          note?: string | null
+          on_hand?: number
+          product_id: number
+          reorder_point?: number
+          reserved?: number
+          resolved_at?: string | null
+          safety_stock?: number
+          severity?: string
+          status?: string
+        }
+        Update: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          alert_type?: string
+          available?: number
+          created_at?: string
+          id?: number
+          location_id?: number
+          metadata?: Json | null
+          note?: string | null
+          on_hand?: number
+          product_id?: number
+          reorder_point?: number
+          reserved?: number
+          resolved_at?: string | null
+          safety_stock?: number
+          severity?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_alerts_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_locations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_alerts_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       order_items: {
         Row: {
           created_at: string
@@ -153,6 +406,7 @@ export type Database = {
       }
       products: {
         Row: {
+          barcode: string | null
           created_at: string
           description: string | null
           id: number
@@ -161,9 +415,13 @@ export type Database = {
           is_active: boolean
           name: string
           price: number
+          sku: string | null
           size_prices: Json
+          track_inventory: boolean
+          unit_cost: number
         }
         Insert: {
+          barcode?: string | null
           created_at?: string
           description?: string | null
           id?: number
@@ -172,9 +430,13 @@ export type Database = {
           is_active?: boolean
           name: string
           price: number
+          sku?: string | null
           size_prices?: Json
+          track_inventory?: boolean
+          unit_cost?: number
         }
         Update: {
+          barcode?: string | null
           created_at?: string
           description?: string | null
           id?: number
@@ -183,7 +445,10 @@ export type Database = {
           is_active?: boolean
           name?: string
           price?: number
+          sku?: string | null
           size_prices?: Json
+          track_inventory?: boolean
+          unit_cost?: number
         }
         Relationships: []
       }
@@ -229,6 +494,97 @@ export type Database = {
           updated_at?: string | null
           username?: string | null
           website?: string | null
+        }
+        Relationships: []
+      }
+      reorder_rules: {
+        Row: {
+          created_at: string
+          id: number
+          is_active: boolean
+          lead_time_days: number
+          location_id: number
+          product_id: number
+          reorder_point: number
+          safety_stock: number
+          supplier_id: number | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: number
+          is_active?: boolean
+          lead_time_days?: number
+          location_id: number
+          product_id: number
+          reorder_point?: number
+          safety_stock?: number
+          supplier_id?: number | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: number
+          is_active?: boolean
+          lead_time_days?: number
+          location_id?: number
+          product_id?: number
+          reorder_point?: number
+          safety_stock?: number
+          supplier_id?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reorder_rules_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_locations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reorder_rules_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reorder_rules_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      suppliers: {
+        Row: {
+          contact_email: string | null
+          contact_phone: string | null
+          created_at: string
+          id: number
+          is_active: boolean
+          lead_time_days: number
+          name: string
+        }
+        Insert: {
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          id?: number
+          is_active?: boolean
+          lead_time_days?: number
+          name: string
+        }
+        Update: {
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          id?: number
+          is_active?: boolean
+          lead_time_days?: number
+          name?: string
         }
         Relationships: []
       }

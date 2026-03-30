@@ -6,6 +6,7 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
 } from "react";
@@ -24,6 +25,11 @@ export type CheckoutDraft = {
   items: CheckoutDraftItem[];
   total: number;
   delivery_option: "Yes" | "No";
+  delivery_fee?: number;
+  delivery_distance_km?: number;
+  delivery_rate?: number;
+  collection_address?: string;
+  delivery_address?: string;
 };
 
 type CartType = {
@@ -33,7 +39,15 @@ type CartType = {
   removeItem: (productId: number, size: ProductSize) => void;
   clearCart: () => void;
   total: number;
-  getCheckoutDraft: (deliveryFee?: number) => CheckoutDraft;
+  getCheckoutDraft: (
+    deliveryFee?: number,
+    deliveryDetails?: {
+      distanceKm?: number;
+      deliveryRate?: number;
+      collectionAddress?: string;
+      deliveryAddress?: string;
+    },
+  ) => CheckoutDraft;
   fulfillmentOption: FulfillmentOption | null;
   hasAcceptedDeliveryTerms: boolean;
   setFulfillmentOption: (option: FulfillmentOption | null) => void;
@@ -66,6 +80,18 @@ export default function CartProvider({ children }: PropsWithChildren) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [fulfillmentOption, setFulfillmentOption] = useState<FulfillmentOption | null>(null);
   const [hasAcceptedDeliveryTerms, setHasAcceptedDeliveryTerms] = useState(false);
+
+  useEffect(() => {
+    if (items.length > 0) return;
+
+    if (fulfillmentOption !== null) {
+      setFulfillmentOption(null);
+    }
+
+    if (hasAcceptedDeliveryTerms) {
+      setHasAcceptedDeliveryTerms(false);
+    }
+  }, [items.length, fulfillmentOption, hasAcceptedDeliveryTerms]);
 
   /* ---------- Derived (defensive) ---------- */
 
@@ -163,7 +189,15 @@ export default function CartProvider({ children }: PropsWithChildren) {
     setHasAcceptedDeliveryTerms(true);
   }, []);
 
-  const getCheckoutDraft = useCallback((deliveryFee = 0) => {
+  const getCheckoutDraft = useCallback((
+    deliveryFee = 0,
+    deliveryDetails?: {
+      distanceKm?: number;
+      deliveryRate?: number;
+      collectionAddress?: string;
+      deliveryAddress?: string;
+    },
+  ) => {
     if (!Array.isArray(items) || items.length === 0) {
       throw new Error("Cart is empty.");
     }
@@ -176,13 +210,27 @@ export default function CartProvider({ children }: PropsWithChildren) {
       throw new Error("Please choose delivery or collection before checkout.");
     }
 
+    const MIN_DELIVERY_FEE = 50;
     const safeDeliveryFee =
       fulfillmentOption === "DELIVERY" && Number.isFinite(deliveryFee) && deliveryFee > 0
-        ? deliveryFee
+        ? Math.max(deliveryFee, MIN_DELIVERY_FEE)
         : 0;
     return {
       total: total + safeDeliveryFee,
       delivery_option: (fulfillmentOption === "DELIVERY" ? "Yes" : "No") as "Yes" | "No",
+      delivery_fee: safeDeliveryFee > 0 ? safeDeliveryFee : undefined,
+      delivery_distance_km:
+        fulfillmentOption === "DELIVERY" && Number.isFinite(deliveryDetails?.distanceKm)
+          ? deliveryDetails?.distanceKm
+          : undefined,
+      delivery_rate:
+        fulfillmentOption === "DELIVERY" && Number.isFinite(deliveryDetails?.deliveryRate)
+          ? deliveryDetails?.deliveryRate
+          : undefined,
+      collection_address:
+        fulfillmentOption === "DELIVERY" ? deliveryDetails?.collectionAddress : undefined,
+      delivery_address:
+        fulfillmentOption === "DELIVERY" ? deliveryDetails?.deliveryAddress : undefined,
       items: items.map((item) => ({
         product_id: item.product_id,
         quantity: sanitizeQuantity(item.quantity),

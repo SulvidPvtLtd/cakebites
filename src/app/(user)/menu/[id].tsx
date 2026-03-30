@@ -26,6 +26,7 @@ import {
 } from "@/src/lib/sizePricing";
 import { useCart } from "@/src/providers/CartProvider";
 import type { ProductSize } from "@/src/types";
+import { formatCurrencyZAR } from "@/src/lib/formatCurrency";
 
 type ProductDetailsParams = {
   id?: string;
@@ -40,7 +41,13 @@ export default function ProductDetailsScreen() {
   const theme = Colors[colorScheme];
   const router = useRouter();
 
-  const { addItem, fulfillmentOption, hasAcceptedDeliveryTerms, setFulfillmentOption } = useCart();
+  const {
+    addItem,
+    items,
+    fulfillmentOption,
+    hasAcceptedDeliveryTerms,
+    setFulfillmentOption,
+  } = useCart();
   const { data: wishlist } = useWishlist();
   const { toggleWishlist } = useWishlistActions();
 
@@ -117,16 +124,18 @@ export default function ProductDetailsScreen() {
       return;
     }
 
+    const requiresFulfillmentChoice = items.length === 0 || !fulfillmentOption;
+
     try {
       setAdding(true);
 
-      if (fulfillmentOption === "COLLECTION") {
+      if (!requiresFulfillmentChoice && fulfillmentOption === "COLLECTION") {
         addItem(product, selectedSize, selectedPrice);
         router.push("/cart");
         return;
       }
 
-      if (fulfillmentOption === "DELIVERY") {
+      if (!requiresFulfillmentChoice && fulfillmentOption === "DELIVERY") {
         if (hasAcceptedDeliveryTerms) {
           addItem(product, selectedSize, selectedPrice);
           router.push("/cart");
@@ -259,7 +268,9 @@ export default function ProductDetailsScreen() {
           </View>
 
           {selectedPrice !== null ? (
-            <Text style={[styles.price, { color: theme.tint }]}>${selectedPrice.toFixed(2)}</Text>
+            <Text style={[styles.price, { color: theme.tint }]}>
+              {formatCurrencyZAR(selectedPrice)}
+            </Text>
           ) : (
             <Text style={[styles.price, { color: theme.textSecondary }]}>
               Select a size to see price

@@ -5,16 +5,18 @@ import { useRouter } from "expo-router";
 import Colors from "@constants/Colors";
 import { useColorScheme } from "@components/useColorScheme";
 import PaymentMethodSelector from "@components/PaymentMethodSelector";
+import { useDeliveryQuote } from "@/src/api/delivery";
 import { usePaymentGateway } from "@/src/api/payments";
 import type { PaymentGateway } from "@/src/types";
 import { useToast } from "@/src/providers/ToastProvider";
 import { useAuth } from "@/src/providers/AuthProvider";
 import { useCart } from "@/src/providers/CartProvider";
+import { formatCurrencyZAR } from "@/src/lib/formatCurrency";
 
 export default function PaymentScreen() {
   const { items, total, fulfillmentOption, getCheckoutDraft } = useCart();
   const { createCheckout } = usePaymentGateway();
-  const { session, loading: authLoading } = useAuth();
+  const { session, loading: authLoading, profile } = useAuth();
   const [selectedGateway, setSelectedGateway] = useState<PaymentGateway | null>("yoco");
   const { showToast } = useToast();
   const router = useRouter();
@@ -22,7 +24,22 @@ export default function PaymentScreen() {
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme ?? "light"];
 
-  const deliveryFee = fulfillmentOption === "DELIVERY" ? 5 : 0;
+  const deliveryAddress = profile?.delivery_address?.trim() ?? "";
+  const {
+    data: deliveryQuote,
+    isLoading: isDeliveryQuoteLoading,
+    error: deliveryQuoteError,
+  } = useDeliveryQuote({
+    enabled: fulfillmentOption === "DELIVERY",
+    deliveryAddress,
+  });
+  const MIN_DELIVERY_FEE = 50;
+  const rawDeliveryFee =
+    fulfillmentOption === "DELIVERY" ? Number(deliveryQuote?.deliveryFee ?? 0) : 0;
+  const deliveryFee =
+    fulfillmentOption === "DELIVERY" && rawDeliveryFee > 0
+      ? Math.max(rawDeliveryFee, MIN_DELIVERY_FEE)
+      : rawDeliveryFee;
   const finalTotal = total + deliveryFee;
   const hasItems = Array.isArray(items) && items.length > 0;
 
@@ -64,8 +81,30 @@ export default function PaymentScreen() {
       return;
     }
 
+    if (fulfillmentOption === "DELIVERY") {
+      if (!deliveryAddress) {
+        showToast("Add your delivery address in profile before paying.", "error");
+        return;
+      }
+
+      if (!deliveryQuote || deliveryQuoteError) {
+        showToast(
+          deliveryQuoteError instanceof Error
+            ? deliveryQuoteError.message
+            : "Delivery quote is unavailable.",
+          "error",
+        );
+        return;
+      }
+    }
+
     try {
-      const draftOrder = getCheckoutDraft(deliveryFee);
+      const draftOrder = getCheckoutDraft(deliveryFee, {
+        distanceKm: deliveryQuote?.distanceKm,
+        deliveryRate: deliveryQuote?.deliveryRate,
+        collectionAddress: deliveryQuote?.collectionAddress,
+        deliveryAddress: deliveryQuote?.deliveryAddress,
+      });
       console.log("[payment] Pay now pressed", {
         selectedGateway,
       });
@@ -112,16 +151,42 @@ export default function PaymentScreen() {
       />
 
       <View style={[styles.summaryCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
-        <Text style={[styles.summaryLabel, { color: theme.textSecondary }]}>Order total</Text>
+        <Text style={[styles.summaryLabel, { color: theme.textSecondary }]}>Subtotal</Text>
+        <Text style={[styles.summaryMinorValue, { color: theme.textPrimary }]}>
+          {formatCurrencyZAR(total)}
+        </Text>
+        <Text style={[styles.summaryLabel, { color: theme.textSecondary, marginTop: 12 }]}>
+          Delivery
+        </Text>
+        <Text style={[styles.summaryMinorValue, { color: theme.textPrimary }]}>
+          {fulfillmentOption !== "DELIVERY"
+            ? formatCurrencyZAR(0)
+            : !deliveryAddress
+              ? "Add delivery address in profile"
+              : isDeliveryQuoteLoading
+                ? "Calculating..."
+                : deliveryQuoteError
+                  ? "Unavailable"
+                  : `${formatCurrencyZAR(deliveryFee)} (${deliveryQuote?.distanceKm.toFixed(2)} km)`}
+        </Text>
+        <Text style={[styles.summaryLabel, { color: theme.textSecondary, marginTop: 12 }]}>
+          Order total
+        </Text>
         <Text style={[styles.summaryValue, { color: theme.tint }]}>
-          {Number.isFinite(finalTotal) ? `R${finalTotal.toFixed(2)}` : "R0.00"}
+          {formatCurrencyZAR(finalTotal)}
         </Text>
       </View>
 
       <Pressable
         style={[styles.payButton, { backgroundColor: theme.tint }]}
         onPress={onPayPress}
-        disabled={authLoading || !session || createCheckout.isPending}
+        disabled={
+          authLoading ||
+          !session ||
+          createCheckout.isPending ||
+          (fulfillmentOption === "DELIVERY" &&
+            (!deliveryAddress || isDeliveryQuoteLoading || !deliveryQuote || Boolean(deliveryQuoteError)))
+        }
       >
         {createCheckout.isPending ? (
           <ActivityIndicator color={theme.card} />
@@ -164,6 +229,11 @@ const styles = StyleSheet.create({
     marginTop: 6,
     fontSize: 22,
     fontWeight: "700",
+  },
+  summaryMinorValue: {
+    marginTop: 4,
+    fontSize: 16,
+    fontWeight: "600",
   },
   payButton: {
     height: 54,

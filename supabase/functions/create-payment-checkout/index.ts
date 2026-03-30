@@ -11,6 +11,11 @@ const BodySchema = z.object({
   draftOrder: z.object({
     total: z.number().positive(),
     delivery_option: z.enum(["Yes", "No"]),
+    delivery_fee: z.number().nonnegative().optional(),
+    delivery_distance_km: z.number().nonnegative().optional(),
+    delivery_rate: z.number().nonnegative().optional(),
+    collection_address: z.string().min(3).optional(),
+    delivery_address: z.string().min(3).optional(),
     items: z.array(
       z.object({
         product_id: z.number().int().positive(),
@@ -73,6 +78,38 @@ const getSupabaseAdmin = () => {
   return createClient(supabaseUrl, supabaseServiceRoleKey, {
     auth: { persistSession: false },
   });
+};
+
+const getFulfillmentLocationId = async (
+  supabase: ReturnType<typeof getSupabaseAdmin>,
+): Promise<number | null> => {
+  const { data } = await supabase
+    .from("delivery_settings")
+    .select("fulfillment_location_id")
+    .eq("id", 1)
+    .maybeSingle();
+
+  return typeof data?.fulfillment_location_id === "number"
+    ? data.fulfillment_location_id
+    : null;
+};
+
+const reserveInventoryForOrder = async (
+  supabase: ReturnType<typeof getSupabaseAdmin>,
+  orderId: number,
+) => {
+  const fulfillmentLocationId = await getFulfillmentLocationId(supabase);
+  const { error } = await supabase.rpc("reserve_inventory_for_order", {
+    p_order_id: orderId,
+    p_location_id: fulfillmentLocationId,
+  });
+
+  if (error) {
+    console.error("Inventory reservation failed", {
+      orderId,
+      message: error.message,
+    });
+  }
 };
 
 const jsonResponse = (status: number, payload: unknown) =>
@@ -178,6 +215,8 @@ const ensureOrderFromTransaction = async (
   if (orderItemsError) {
     throw new Error(orderItemsError.message);
   }
+
+  await reserveInventoryForOrder(supabase, newOrder.id);
 
   const { error: transactionUpdateError } = await supabase
     .from("payment_transactions")

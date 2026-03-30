@@ -27,6 +27,7 @@ import { getSafeImageUrl } from '@components/ProductListItem';
 import Colors from '@constants/Colors';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { getVisibleProductDescription } from '@/src/lib/sizePricing';
+import { formatCurrencyZAR } from "@/src/lib/formatCurrency";
 
 type ProductDetailsParams = {
   id?: string;
@@ -58,6 +59,7 @@ export default function ProductDetailsScreen() {
 
   const {
     addItem,
+    items,
     fulfillmentOption,
     hasAcceptedDeliveryTerms,
     setFulfillmentOption,
@@ -102,6 +104,7 @@ export default function ProductDetailsScreen() {
 
   const imageSource = { uri: getSafeImageUrl(product.image) };
   const visibleDescription = getVisibleProductDescription(product.description);
+  const hasIdentifiers = !!product.sku || !!product.barcode;
 
   /* ---------------- Actions ---------------- */
 
@@ -109,16 +112,18 @@ export default function ProductDetailsScreen() {
     if (adding) return;
     if (!product) return;
 
+    const requiresFulfillmentChoice = items.length === 0 || !fulfillmentOption;
+
     try {
       setAdding(true);
 
-      if (fulfillmentOption === "COLLECTION") {
+      if (!requiresFulfillmentChoice && fulfillmentOption === "COLLECTION") {
         addItem(product, selectedSize, product.price);
         router.push("/cart");
         return;
       }
 
-      if (fulfillmentOption === "DELIVERY") {
+      if (!requiresFulfillmentChoice && fulfillmentOption === "DELIVERY") {
         if (hasAcceptedDeliveryTerms) {
           addItem(product, selectedSize, product.price);
           router.push("/cart");
@@ -239,8 +244,23 @@ export default function ProductDetailsScreen() {
           </Text>
 
           <Text style={[styles.price, { color: theme.tint }]}>
-            ${product.price.toFixed(2)}
+            {formatCurrencyZAR(product.price)}
           </Text>
+
+          {hasIdentifiers && (
+            <View style={styles.identifiers}>
+              {!!product.sku && (
+                <Text style={[styles.identifierText, { color: theme.textSecondary }]}>
+                  SKU: {product.sku}
+                </Text>
+              )}
+              {!!product.barcode && (
+                <Text style={[styles.identifierText, { color: theme.textSecondary }]}>
+                  Barcode: {product.barcode}
+                </Text>
+              )}
+            </View>
+          )}
 
           <Text
             numberOfLines={expanded ? undefined : 2}
@@ -309,6 +329,13 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     marginBottom: 16,
+  },
+  identifiers: {
+    marginBottom: 12,
+    gap: 2,
+  },
+  identifierText: {
+    fontSize: 12,
   },
 
   sectionLabel: {

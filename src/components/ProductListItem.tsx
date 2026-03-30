@@ -13,6 +13,7 @@ import {
 
 import LoadingState from "@/src/components/LoadingState";
 import { Tables } from "../database.types";
+import { formatCurrencyZAR } from "@/src/lib/formatCurrency";
 
 export const defaultPizzaImage =
   "https://notjustdev-dummy.s3.us-east-2.amazonaws.com/food/peperoni.png";
@@ -20,6 +21,7 @@ export const defaultPizzaImage =
 const GAP = 16;
 const IMAGE_RATIO = 1;
 const CARD_TEXT_HEIGHT = 84;
+const ADMIN_CARD_TEXT_HEIGHT = 110;
 
 export const getSafeImageUrl = (url?: string | null): string => {
   const normalized = typeof url === "string" ? url.trim() : "";
@@ -56,6 +58,16 @@ const ProductListItem = ({
   const isOutOfStock = !product.is_active || !product.in_stock;
   const imageUri = getSafeImageUrl(product.image);
   const [imageLoaded, setImageLoaded] = useState(false);
+  const showAdminIdentifiers =
+    showAdminStockState && (!!product.sku || !!product.barcode);
+  const adminIdentifierText = showAdminIdentifiers
+    ? [
+        product.sku ? `SKU: ${product.sku}` : null,
+        product.barcode ? `Barcode: ${product.barcode}` : null,
+      ]
+        .filter(Boolean)
+        .join(" • ")
+    : "";
 
   useEffect(() => {
     setImageLoaded(false);
@@ -115,7 +127,12 @@ const ProductListItem = ({
               />
             </View>
 
-            <View style={styles.textContainer}>
+            <View
+              style={[
+                styles.textContainer,
+                showAdminStockState && styles.adminTextContainer,
+              ]}
+            >
               <Text
                 style={[styles.title, { color: theme.textPrimary }]}
                 numberOfLines={1}
@@ -123,9 +140,18 @@ const ProductListItem = ({
                 {truncateTitle(product.name)}
               </Text>
 
+              {showAdminIdentifiers && (
+                <Text
+                  style={[styles.identifierText, { color: theme.textSecondary }]}
+                  numberOfLines={1}
+                >
+                  {adminIdentifierText}
+                </Text>
+              )}
+
               <View style={styles.bottomSection}>
                 <Text style={[styles.price, { color: theme.tint }]}>
-                  ${product.price}
+                  {formatCurrencyZAR(Number(product.price ?? 0))}
                 </Text>
 
                 {showAdminStockState && isOutOfStock && (
@@ -207,9 +233,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingBottom: 14,
   },
+  adminTextContainer: {
+    height: ADMIN_CARD_TEXT_HEIGHT,
+  },
   title: {
     fontSize: 15,
     fontWeight: "600",
+  },
+  identifierText: {
+    fontSize: 11,
+    marginTop: 2,
   },
   bottomSection: {
     marginTop: "auto",

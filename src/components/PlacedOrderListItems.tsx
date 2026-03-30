@@ -4,6 +4,7 @@ import { OrderItem } from "../types";
 import { getSafeImageUrl } from "./ProductListItem";
 import { getProductSizePriceMap } from "../lib/sizePricing";
 import Colors from "@/src/constants/Colors";
+import { formatCurrencyZAR } from "@/src/lib/formatCurrency";
 
 type OrderedItemListItemsProps = {
   item: OrderItem;
@@ -25,7 +26,9 @@ const PlacedOrderListItems = ({ item }: OrderedItemListItemsProps) => {
       <View style={{ flex: 1 }}>
         <Text style={[styles.title, { color: theme.textPrimary }]}>{item.products.name}</Text>
         <View style={styles.subtitleContainer}>
-          <Text style={[styles.price, { color: theme.tint }]}>${priceForSize.toFixed(2)}</Text>
+          <Text style={[styles.price, { color: theme.tint }]}>
+            {formatCurrencyZAR(priceForSize)}
+          </Text>
           <Text style={{ color: theme.textSecondary }}>Size: {item.size}</Text>
         </View>
       </View>

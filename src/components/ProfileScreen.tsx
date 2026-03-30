@@ -1,10 +1,12 @@
 import { supabase } from "@/src/lib/supabase";
+import { validateDeliveryAddress } from "@/src/api/delivery";
 import { useMyOrders } from "@/src/api/orders";
 import { useWishlist, useWishlistActions } from "@/src/api/wishlist";
 import { useAuth } from "@/src/providers/AuthProvider";
 import Colors from "@/src/constants/Colors";
+import { formatCurrencyZAR } from "@/src/lib/formatCurrency";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import * as ImagePicker from "expo-image-picker";
 import {
@@ -51,8 +53,16 @@ const getFileExt = (asset: PickedImageAsset) => {
 export default function ProfileScreen({ title }: ProfileScreenProps) {
   const colorScheme = useColorScheme() ?? "light";
   const theme = Colors[colorScheme];
-  const { session, profile, signOut } = useAuth();
+  const { session, profile, signOut, refreshProfile } = useAuth();
   const isAdminProfile = (profile?.group ?? "").trim().toLowerCase() === "admin";
+  const { source, returnTo } = useLocalSearchParams<{
+    source?: string | string[];
+    returnTo?: string | string[];
+  }>();
+  const normalizeParam = (value?: string | string[]) =>
+    Array.isArray(value) ? value[0] : value;
+  const cameFromCheckout = normalizeParam(source) === "checkout";
+  const returnPath = normalizeParam(returnTo) || "/cart";
 
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
@@ -177,9 +187,20 @@ export default function ProfileScreen({ title }: ProfileScreenProps) {
     const nextSurname = surname.trim();
     const nextDeliveryAddress = deliveryAddress.trim();
     const currentEmail = (profile?.email ?? session.user.email ?? "").trim();
+    const currentDeliveryAddress = (profile?.delivery_address ?? "").trim();
 
     try {
       setSaving(true);
+
+      if (nextDeliveryAddress && nextDeliveryAddress !== currentDeliveryAddress) {
+        try {
+          await validateDeliveryAddress(nextDeliveryAddress);
+        } catch (err) {
+          const message = err instanceof Error ? err.message : "Please try again.";
+          Alert.alert("Invalid delivery address", message);
+          return;
+        }
+      }
 
       if (nextEmail && nextEmail !== currentEmail) {
         const { error: authError } = await supabase.auth.updateUser({
@@ -212,16 +233,24 @@ export default function ProfileScreen({ title }: ProfileScreenProps) {
         return;
       }
 
+      await refreshProfile();
       setIsEditing(false);
       setProfileExpanded(false);
       setPickedImageAsset(null);
 
-      Alert.alert(
-        "Profile updated",
+      const successMessage =
         nextEmail !== currentEmail
           ? "If your project requires email confirmation, check your inbox to confirm the new email."
-          : "Your profile changes were saved."
-      );
+          : "Your profile changes were saved.";
+
+      if (cameFromCheckout && nextDeliveryAddress) {
+        Alert.alert("Profile updated", successMessage, [
+          { text: "Back to cart", onPress: () => router.replace(returnPath) },
+          { text: "Stay here", style: "cancel" },
+        ]);
+      } else {
+        Alert.alert("Profile updated", successMessage);
+      }
     } catch (err) {
       const message = err instanceof Error ? err.message : "Please try again.";
       Alert.alert("Unable to save profile", message);
@@ -256,58 +285,62 @@ export default function ProfileScreen({ title }: ProfileScreenProps) {
   };
 
   return (
-    <View
-      style={[
-        styles.container,
-        styles.content,
-        { backgroundColor: theme.background, paddingTop: 16 },
-      ]}
-    >
-      <View style={styles.headerRow}>
-        <Pressable
-          onPress={() => router.back()}
-          style={[
-            styles.headerIconButton,
-            { borderColor: theme.border, backgroundColor: theme.card },
-          ]}
-        >
-          <FontAwesome name="angle-left" size={20} color={theme.textPrimary} />
-        </Pressable>
-
-        <Text style={[styles.pageTitle, { color: theme.textPrimary }]}>{title ?? "Profile"}</Text>
-
-        <Pressable
-          onPress={() => Alert.alert("Notifications", "No new notifications.")}
-          style={[
-            styles.headerIconButton,
-            { borderColor: theme.border, backgroundColor: theme.card },
-          ]}
-        >
-          <FontAwesome name="bell-o" size={16} color={theme.textPrimary} />
-        </Pressable>
-      </View>
-
-      <View style={styles.avatarWrap}>
-        <View style={styles.avatarContainer}>
-          <Image
-            source={
-              avatarUrl
-                ? { uri: avatarUrl }
-                : require("@/assets/images/icon.png")
-            }
-            style={[styles.avatar, { borderColor: theme.border }]}
-          />
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
+      <View style={[styles.headerWrap, { backgroundColor: theme.background }]}>
+        <View style={styles.headerRow}>
           <Pressable
-            onPress={pickProfileImage}
+            onPress={() => router.back()}
             style={[
-              styles.avatarEditButton,
-              { backgroundColor: theme.tint, borderColor: theme.background },
+              styles.headerIconButton,
+              { borderColor: theme.border, backgroundColor: theme.card },
             ]}
           >
-            <FontAwesome name="pencil" size={13} color={theme.card} />
+            <FontAwesome name="angle-left" size={20} color={theme.textPrimary} />
+          </Pressable>
+
+          <Text style={[styles.pageTitle, { color: theme.textPrimary }]}>
+            {title ?? "Profile"}
+          </Text>
+
+          <Pressable
+            onPress={() => Alert.alert("Notifications", "No new notifications.")}
+            style={[
+              styles.headerIconButton,
+              { borderColor: theme.border, backgroundColor: theme.card },
+            ]}
+          >
+            <FontAwesome name="bell-o" size={16} color={theme.textPrimary} />
           </Pressable>
         </View>
+
+        <View style={styles.avatarWrap}>
+          <View style={styles.avatarContainer}>
+            <Image
+              source={
+                avatarUrl
+                  ? { uri: avatarUrl }
+                  : require("@/assets/images/icon.png")
+              }
+              style={[styles.avatar, { borderColor: theme.border }]}
+            />
+            <Pressable
+              onPress={pickProfileImage}
+              style={[
+                styles.avatarEditButton,
+                { backgroundColor: theme.tint, borderColor: theme.background },
+              ]}
+            >
+              <FontAwesome name="pencil" size={13} color={theme.card} />
+            </Pressable>
+          </View>
+        </View>
       </View>
+
+      <ScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
       <View style={[styles.groupCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
         <Pressable
           style={styles.optionRow}
@@ -327,7 +360,13 @@ export default function ProfileScreen({ title }: ProfileScreenProps) {
         </Pressable>
 
         {profileExpanded && (
-          <View style={[styles.profileFormWrap, { borderTopColor: theme.border }]}>
+          <View
+            style={[
+              styles.profileFormWrap,
+              styles.sectionBorderTop,
+              { borderTopColor: theme.border },
+            ]}
+          >
             <Text style={[styles.label, labelStyle]}>Email address</Text>
             <TextInput
               value={email}
@@ -406,7 +445,43 @@ export default function ProfileScreen({ title }: ProfileScreenProps) {
             )}
           </View>
         )}
+      </View>
 
+        {isAdminProfile && (
+          <View style={[styles.groupCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
+            <Pressable
+              style={styles.optionRow}
+              onPress={() => router.push("/(admin)/delivery-settings")}
+            >
+              <View style={styles.optionLeft}>
+                <View style={[styles.iconBadge, { backgroundColor: theme.background }]}>
+                  <FontAwesome name="truck" size={15} color={theme.textPrimary} />
+                </View>
+                <Text style={[styles.optionText, { color: theme.textPrimary }]}>
+                  Delivery Settings
+                </Text>
+              </View>
+              <FontAwesome name="angle-right" size={18} color={theme.textPrimary} />
+            </Pressable>
+            <View
+              style={[
+                styles.sectionBody,
+                styles.sectionBorderTop,
+                { borderTopColor: theme.border },
+              ]}
+            >
+              <Text style={[styles.sectionHelper, { color: theme.textSecondary }]}>
+                Update the collection address and per-km delivery rate used for delivery quotes.
+              </Text>
+              <Button
+                text="Open Delivery Settings"
+                onPress={() => router.push("/(admin)/delivery-settings")}
+              />
+            </View>
+          </View>
+        )}
+
+      <View style={[styles.groupCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
         <Pressable
           style={styles.optionRow}
           onPress={() => setOrderHistoryExpanded((prev) => !prev)}
@@ -424,10 +499,12 @@ export default function ProfileScreen({ title }: ProfileScreenProps) {
           />
         </Pressable>
         {orderHistoryExpanded && (
-          <ScrollView
-            nestedScrollEnabled
-            style={[styles.sectionBodyScroll, { borderTopColor: theme.border }]}
-            contentContainerStyle={styles.sectionBody}
+          <View
+            style={[
+              styles.sectionBody,
+              styles.sectionBorderTop,
+              { borderTopColor: theme.border },
+            ]}
           >
             {recentOrders.length === 0 ? (
               <Text style={[styles.sectionHelper, { color: theme.textSecondary }]}>
@@ -453,7 +530,7 @@ export default function ProfileScreen({ title }: ProfileScreenProps) {
                     Status: {order.status}
                   </Text>
                   <Text style={[styles.inlineCardMeta, { color: theme.textSecondary }]}>
-                    Total: R{Number(order.total ?? 0).toFixed(2)}
+                    Total: {formatCurrencyZAR(Number(order.total ?? 0))}
                   </Text>
                 </Pressable>
               ))
@@ -468,7 +545,7 @@ export default function ProfileScreen({ title }: ProfileScreenProps) {
                 )
               }
             />
-          </ScrollView>
+          </View>
         )}
 
         <Pressable
@@ -488,10 +565,12 @@ export default function ProfileScreen({ title }: ProfileScreenProps) {
           />
         </Pressable>
         {wishlistExpanded && (
-          <ScrollView
-            nestedScrollEnabled
-            style={[styles.sectionBodyScroll, { borderTopColor: theme.border }]}
-            contentContainerStyle={styles.sectionBody}
+          <View
+            style={[
+              styles.sectionBody,
+              styles.sectionBorderTop,
+              { borderTopColor: theme.border },
+            ]}
           >
             {isWishlistLoading ? (
               <Text style={[styles.sectionHelper, { color: theme.textSecondary }]}>
@@ -525,9 +604,9 @@ export default function ProfileScreen({ title }: ProfileScreenProps) {
                       <Text style={[styles.inlineCardMeta, { color: theme.textSecondary }]}>
                         Added {new Date(item.created_at).toLocaleDateString()}
                       </Text>
-                      <Text style={[styles.inlineCardMeta, { color: theme.textSecondary }]}>
-                        Price: ${Number(item.products?.price ?? 0).toFixed(2)}
-                      </Text>
+                        <Text style={[styles.inlineCardMeta, { color: theme.textSecondary }]}>
+                          Price: {formatCurrencyZAR(Number(item.products?.price ?? 0))}
+                        </Text>
                     </View>
                     <FontAwesome name="angle-right" size={18} color={theme.textSecondary} />
                   </Pressable>
@@ -556,7 +635,7 @@ export default function ProfileScreen({ title }: ProfileScreenProps) {
               text="Browse Menu"
               onPress={() => router.push(isAdminProfile ? "/(admin)/menu" : "/(user)/menu")}
             />
-          </ScrollView>
+          </View>
         )}
       </View>
 
@@ -578,7 +657,13 @@ export default function ProfileScreen({ title }: ProfileScreenProps) {
           />
         </Pressable>
         {paymentMethodsExpanded && (
-          <View style={[styles.sectionBody, { borderTopColor: theme.border }]}>
+          <View
+            style={[
+              styles.sectionBody,
+              styles.sectionBorderTop,
+              { borderTopColor: theme.border },
+            ]}
+          >
             <View style={[styles.inlineCard, { borderColor: theme.border, backgroundColor: theme.background }]}>
               <Text style={[styles.inlineCardTitle, { color: theme.textPrimary }]}>Yoco</Text>
               <Text style={[styles.inlineCardMeta, { color: theme.textSecondary }]}>
@@ -611,7 +696,13 @@ export default function ProfileScreen({ title }: ProfileScreenProps) {
           />
         </Pressable>
         {supportExpanded && (
-          <View style={[styles.sectionBody, { borderTopColor: theme.border }]}>
+          <View
+            style={[
+              styles.sectionBody,
+              styles.sectionBorderTop,
+              { borderTopColor: theme.border },
+            ]}
+          >
             <Text style={[styles.sectionHelper, { color: theme.textSecondary }]}>
               Need help with delivery terms, payment, or order progress? Review the delivery terms or go straight to your order list for the latest status.
             </Text>
@@ -641,6 +732,7 @@ export default function ProfileScreen({ title }: ProfileScreenProps) {
           <FontAwesome name="angle-down" size={18} color={theme.textPrimary} />
         </Pressable>
       </View>
+    </ScrollView>
     </View>
   );
 }
@@ -652,7 +744,12 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: 18,
     paddingBottom: 28,
-    flex: 1,
+    paddingTop: 6,
+  },
+  headerWrap: {
+    paddingHorizontal: 18,
+    paddingTop: 16,
+    paddingBottom: 6,
   },
   headerRow: {
     flexDirection: "row",
@@ -728,6 +825,8 @@ const styles = StyleSheet.create({
   profileFormWrap: {
     paddingHorizontal: 16,
     paddingBottom: 10,
+  },
+  sectionBorderTop: {
     borderTopWidth: 1,
   },
   sectionBody: {
@@ -735,10 +834,6 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
     paddingTop: 8,
     gap: 10,
-  },
-  sectionBodyScroll: {
-    borderTopWidth: 1,
-    maxHeight: 240,
   },
   sectionHelper: {
     fontSize: 13,

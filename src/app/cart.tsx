@@ -12,17 +12,35 @@ import {
 } from 'react-native';
 
 import Colors from '@constants/Colors';
+import { useDeliveryQuote } from '@/src/api/delivery';
 import { useCart } from '@providers/CartProvider';
+import { useAuth } from "@/src/providers/AuthProvider";
 import CartList from '@components/CartList';
+import { formatCurrencyZAR } from "@/src/lib/formatCurrency";
 
 export default function CartScreen() {
   const { items, total, getCheckoutDraft, fulfillmentOption } = useCart();
+  const { session, profile } = useAuth();
   const router = useRouter();
-  const DELIVERY_FEE = 5;
 
   const scheme = useColorScheme() ?? 'light';
   const theme = Colors[scheme];
-  const deliveryFee = fulfillmentOption === "DELIVERY" ? DELIVERY_FEE : 0;
+  const deliveryAddress = profile?.delivery_address?.trim() ?? "";
+  const {
+    data: deliveryQuote,
+    isLoading: isDeliveryQuoteLoading,
+    error: deliveryQuoteError,
+  } = useDeliveryQuote({
+    enabled: fulfillmentOption === "DELIVERY",
+    deliveryAddress,
+  });
+  const MIN_DELIVERY_FEE = 50;
+  const rawDeliveryFee =
+    fulfillmentOption === "DELIVERY" ? Number(deliveryQuote?.deliveryFee ?? 0) : 0;
+  const deliveryFee =
+    fulfillmentOption === "DELIVERY" && rawDeliveryFee > 0
+      ? Math.max(rawDeliveryFee, MIN_DELIVERY_FEE)
+      : rawDeliveryFee;
   const finalTotal = total + deliveryFee;
 
   /* ---------------- Empty State ---------------- */
@@ -83,10 +101,7 @@ export default function CartScreen() {
               { color: theme.tint }, // ✅ BLUE, ALWAYS
             ]}
           >
-            $
-            {Number.isFinite(total)
-              ? total.toFixed(2)
-              : '0.00'}
+            {formatCurrencyZAR(total)}
           </Text>
         </View>
 
@@ -130,9 +145,31 @@ export default function CartScreen() {
               { color: theme.textPrimary },
             ]}
           >
-            ${deliveryFee.toFixed(2)}
+            {fulfillmentOption !== "DELIVERY"
+              ? formatCurrencyZAR(0)
+              : !session
+                ? "Sign in required"
+                : !deliveryAddress
+                  ? "Add delivery address"
+                  : isDeliveryQuoteLoading
+                    ? "Calculating..."
+                    : deliveryQuoteError
+                      ? "Unavailable"
+                      : formatCurrencyZAR(deliveryFee)}
           </Text>
         </View>
+
+        {fulfillmentOption === "DELIVERY" && deliveryQuote && (
+          <View style={styles.summaryRow}>
+            <Text style={[styles.summaryLabel, { color: theme.textSecondary }]}>
+              Delivery distance
+            </Text>
+
+            <Text style={[styles.summaryLabel, { color: theme.textPrimary }]}>
+              {deliveryQuote.distanceKm.toFixed(2)} km
+            </Text>
+          </View>
+        )}
 
         <View style={styles.summaryRow}>
           <Text
@@ -150,7 +187,7 @@ export default function CartScreen() {
               { color: theme.tint },
             ]}
           >
-            ${finalTotal.toFixed(2)}
+            {formatCurrencyZAR(finalTotal)}
           </Text>
         </View>
 
@@ -166,7 +203,54 @@ export default function CartScreen() {
             }
 
             try {
-              getCheckoutDraft(deliveryFee);
+              if (fulfillmentOption === "DELIVERY") {
+                if (!session) {
+                  Alert.alert(
+                    "Sign in required",
+                    "Sign in and save your delivery address before checkout.",
+                  );
+                  return;
+                }
+
+                if (!deliveryAddress) {
+                  Alert.alert(
+                    "Delivery address required",
+                    "Add your delivery address in your profile before checkout.",
+                    [
+                      {
+                        text: "Cancel",
+                        style: "cancel",
+                      },
+                      {
+                        text: "OK",
+                        onPress: () =>
+                          router.push({
+                            pathname: "/(user)/log-out",
+                            params: { source: "checkout", returnTo: "/cart" },
+                          }),
+                      },
+                    ],
+                  );
+                  return;
+                }
+
+                if (!deliveryQuote || deliveryQuoteError) {
+                  Alert.alert(
+                    "Delivery quote unavailable",
+                    deliveryQuoteError instanceof Error
+                      ? deliveryQuoteError.message
+                      : "We could not calculate the delivery cost.",
+                  );
+                  return;
+                }
+              }
+
+              getCheckoutDraft(deliveryFee, {
+                distanceKm: deliveryQuote?.distanceKm,
+                deliveryRate: deliveryQuote?.deliveryRate,
+                collectionAddress: deliveryQuote?.collectionAddress,
+                deliveryAddress: deliveryQuote?.deliveryAddress,
+              });
               router.push("/payment");
             } catch (error) {
               const message = error instanceof Error ? error.message : 'Checkout failed';

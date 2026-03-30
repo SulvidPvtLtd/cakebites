@@ -19,6 +19,7 @@ import { fetchPaymentTransaction, usePaymentGateway } from "@/src/api/payments";
 import { useOrderDetails } from "@/src/api/orders";
 import { useToast } from "@/src/providers/ToastProvider";
 import { supabase } from "@/src/lib/supabase";
+import { formatCurrencyZAR } from "@/src/lib/formatCurrency";
 
 const REFUND_POLICY_SUMMARY = [
   "Delivery fees may already have been incurred and may not be refundable once dispatch-related work has started.",
@@ -27,8 +28,6 @@ const REFUND_POLICY_SUMMARY = [
 ].join(" ");
 
 const RETENTION_PRESETS = [0, 10, 15, 25, 40] as const;
-
-const formatCurrency = (amountInCents: number) => `R${(amountInCents / 100).toFixed(2)}`;
 
 const clampPercentage = (value: number) => {
   if (!Number.isFinite(value)) return 0;
@@ -208,9 +207,9 @@ export default function AdminRefundScreen() {
 
     Alert.alert(
       "Confirm refund",
-      `Refund ${formatCurrency(requestedRefundCents)} while retaining ${retainedPercentage.toFixed(
+      `Refund ${formatCurrencyZAR(requestedRefundCents, { isCents: true })} while retaining ${retainedPercentage.toFixed(
         0,
-      )}% (${formatCurrency(retainedAmountCents)}) to cover incurred costs?`,
+      )}% (${formatCurrencyZAR(retainedAmountCents, { isCents: true })}) to cover incurred costs?`,
       [
         { text: "Cancel", style: "cancel" },
         {
@@ -300,7 +299,7 @@ export default function AdminRefundScreen() {
               Original payment
             </Text>
             <Text style={[styles.metricValue, { color: theme.textPrimary }]}>
-              {formatCurrency(paidAmountCents)}
+              {formatCurrencyZAR(paidAmountCents, { isCents: true })}
             </Text>
           </View>
           <View style={styles.metricRow}>
@@ -308,7 +307,7 @@ export default function AdminRefundScreen() {
               Already refunded
             </Text>
             <Text style={[styles.metricValue, { color: theme.textPrimary }]}>
-              {formatCurrency(alreadyRefundedCents)}
+              {formatCurrencyZAR(alreadyRefundedCents, { isCents: true })}
             </Text>
           </View>
           <View style={styles.metricRow}>
@@ -316,7 +315,7 @@ export default function AdminRefundScreen() {
               Gateway refundable balance
             </Text>
             <Text style={[styles.metricValue, { color: theme.textPrimary }]}>
-              {formatCurrency(gatewayRefundableCents)}
+              {formatCurrencyZAR(gatewayRefundableCents, { isCents: true })}
             </Text>
           </View>
         </View>
@@ -384,7 +383,7 @@ export default function AdminRefundScreen() {
               Retained amount
             </Text>
             <Text style={[styles.metricValue, { color: theme.warning }]}>
-              {formatCurrency(retainedAmountCents)}
+              {formatCurrencyZAR(retainedAmountCents, { isCents: true })}
             </Text>
           </View>
           <View style={styles.metricRow}>
@@ -392,7 +391,7 @@ export default function AdminRefundScreen() {
               Policy refundable remaining
             </Text>
             <Text style={[styles.metricValue, { color: theme.textPrimary }]}>
-              {formatCurrency(policyRefundableRemainingCents)}
+              {formatCurrencyZAR(policyRefundableRemainingCents, { isCents: true })}
             </Text>
           </View>
           <View style={styles.metricRow}>
@@ -400,7 +399,7 @@ export default function AdminRefundScreen() {
               Maximum refund now
             </Text>
             <Text style={[styles.metricValue, { color: theme.success }]}>
-              {formatCurrency(maxRefundNowCents)}
+              {formatCurrencyZAR(maxRefundNowCents, { isCents: true })}
             </Text>
           </View>
         </View>
@@ -448,8 +447,8 @@ export default function AdminRefundScreen() {
             {refundAmountInput.length === 0
               ? "Enter the refund amount in rand."
               : hasValidRequestedAmount
-                ? `Refund within limit: ${formatCurrency(requestedRefundCents)}`
-                : `Refund must be between R0.01 and ${formatCurrency(maxRefundNowCents)}.`}
+                ? `Refund within limit: ${formatCurrencyZAR(requestedRefundCents, { isCents: true })}`
+                : `Refund must be between ${formatCurrencyZAR(1, { isCents: true })} and ${formatCurrencyZAR(maxRefundNowCents, { isCents: true })}.`}
           </Text>
 
           <Text style={[styles.inputLabel, { color: theme.textPrimary }]}>
@@ -521,7 +520,7 @@ export default function AdminRefundScreen() {
                   >
                     <View style={styles.metricRow}>
                       <Text style={[styles.metricValue, { color: theme.textPrimary }]}>
-                        {formatCurrency(amount)}
+                        {formatCurrencyZAR(amount, { isCents: true })}
                       </Text>
                       <Text style={[styles.historyStatus, { color: theme.tint }]}>
                         {status}

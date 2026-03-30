@@ -19,6 +19,7 @@ import Colors from "@/src/constants/Colors";
 import { OrderItem, OrderStatusList } from "@/src/types";
 import { supabase } from "@/src/lib/supabase";
 import { fetchPaymentTransaction } from "@/src/api/payments";
+import { formatCurrencyZAR } from "@/src/lib/formatCurrency";
 
 export default function OrderDetailScreen() {
   const scheme = useColorScheme() ?? "light";
@@ -193,7 +194,7 @@ export default function OrderDetailScreen() {
       <OrderListItem
         order={orderFetched}
         routeGroup="admin"
-        statusSubtext={`$${orderTotal.toFixed(2)}`}
+        statusSubtext={formatCurrencyZAR(orderTotal)}
         customerEmail={customerEmail}
         customerMobile={customerMobile}
       />
@@ -213,7 +214,7 @@ export default function OrderDetailScreen() {
             Refund Summary
           </Text>
           <Text style={{ color: theme.textSecondary, fontSize: 13 }}>
-            Refunded so far: R{(refundedAmountTotal / 100).toFixed(2)}
+            Refunded so far: {formatCurrencyZAR(refundedAmountTotal, { isCents: true })}
           </Text>
           {refundStatus ? (
             <Text style={{ color: theme.tint, fontSize: 13, fontWeight: "600" }}>

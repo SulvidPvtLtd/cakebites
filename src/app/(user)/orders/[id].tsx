@@ -17,6 +17,7 @@ import PlacedOrderListItems from "@/src/components/PlacedOrderListItems";
 import Colors from "@/src/constants/Colors";
 import { supabase } from "@/src/lib/supabase";
 import { OrderItem } from "@/src/types";
+import { formatCurrencyZAR } from "@/src/lib/formatCurrency";
 
 type OrderDetailsParams = {
   id?: string;
@@ -136,7 +137,10 @@ export default function OrderDetailScreen() {
       />
 
       {/* Order summary */}
-      <OrderListItem order={orderFetched} statusSubtext={`$${orderTotal.toFixed(2)}`} />
+      <OrderListItem
+        order={orderFetched}
+        statusSubtext={formatCurrencyZAR(orderTotal)}
+      />
 
       {/* Items in the order */}
       <FlatList<OrderItem>

@@ -2,6 +2,7 @@ import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { Redirect, Tabs } from "expo-router";
 import React from "react";
 import { ActivityIndicator, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useClientOnlyValue } from "../../components/useClientOnlyValue";
 import { useColorScheme } from "../../components/useColorScheme";
@@ -13,13 +14,23 @@ function TabBarIcon(props: {
   name: React.ComponentProps<typeof FontAwesome>["name"];
   color: string;
 }) {
-  return <FontAwesome size={28} style={{ marginBottom: -3 }} {...props} />;
+  return <FontAwesome size={30} style={{ marginBottom: -3 }} {...props} />;
 }
+
+const USER_TAB_BAR_HEIGHT = 52;
+const USER_TAB_BAR_TARGET_GAP = 32;
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme ?? "light"];
   const { session, loading, isAdmin, activeGroup } = useAuth();
+  const insets = useSafeAreaInsets();
+  const rawBottomInset = insets?.bottom ?? 0;
+  const adjustedBottomInset = Math.min(
+    rawBottomInset,
+    USER_TAB_BAR_TARGET_GAP,
+  );
+  const tabBarHeight = USER_TAB_BAR_HEIGHT + adjustedBottomInset;
 
   if (loading) {
     return (
@@ -50,6 +61,9 @@ export default function TabLayout() {
           backgroundColor: theme.card,
           borderTopWidth: 0,
           elevation: 0, // Android shadow
+          height: tabBarHeight,
+          paddingBottom: adjustedBottomInset,
+          paddingTop: 2,
         },
         // Disable the static render of the header on web
         // to prevent a hydration error in React Navigation v6.

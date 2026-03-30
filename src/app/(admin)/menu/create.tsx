@@ -62,6 +62,8 @@ const CreateProductScreen = () => {
   const theme = Colors[scheme];
   
   const [name, setName] = useState("");
+  const [sku, setSku] = useState("");
+  const [barcode, setBarcode] = useState("");
   const [activeSizes, setActiveSizes] = useState<Record<ProductSize, boolean>>({
     S: true,
     M: true,
@@ -75,7 +77,9 @@ const CreateProductScreen = () => {
     XL: "",
   });
   const [description, setDescription] = useState("");
+  const [unitCostInput, setUnitCostInput] = useState("");
   const [inStock, setInStock] = useState(true);
+  const [trackInventory, setTrackInventory] = useState(true);
   const [image, setImage] = useState<string | null>(null);
   const [pickedImageAsset, setPickedImageAsset] = useState<PickedImageAsset | null>(null);
   const [error, setError] = useState("");
@@ -106,6 +110,8 @@ const CreateProductScreen = () => {
     if (hydratedProductId === productToEdit.id) return;
 
     setName(productToEdit.name ?? "");
+    setSku(productToEdit.sku ?? "");
+    setBarcode(productToEdit.barcode ?? "");
     const sizePrices = getProductSizePriceMap(productToEdit);
     setActiveSizes({
       S: sizePrices.S > 0,
@@ -120,7 +126,13 @@ const CreateProductScreen = () => {
       XL: String(sizePrices.XL),
     });
     setDescription(productToEdit.description?.trim() ?? "");
+    setUnitCostInput(
+      productToEdit.unit_cost !== undefined && productToEdit.unit_cost !== null
+        ? String(productToEdit.unit_cost)
+        : "",
+    );
     setInStock(productToEdit.in_stock ?? true);
+    setTrackInventory(productToEdit.track_inventory ?? true);
     setImage(productToEdit.image ?? null);
     setPickedImageAsset(null);
     setHydratedProductId(productToEdit.id);
@@ -128,10 +140,14 @@ const CreateProductScreen = () => {
 
   const resetForm = () => {
     setName("");
+    setSku("");
+    setBarcode("");
     setActiveSizes({ S: true, M: true, L: true, XL: true });
     setSizePricesRaw({ S: "", M: "", L: "", XL: "" });
     setDescription("");
+    setUnitCostInput("");
     setInStock(true);
+    setTrackInventory(true);
     setImage(null);
     setPickedImageAsset(null);
     setError("");
@@ -145,6 +161,14 @@ const CreateProductScreen = () => {
     return value > 0 ? value : null;
   }, []);
 
+  const parseNonNegativeCurrency = useCallback((input: string): number | null => {
+    const normalized = input.trim().replace(",", ".");
+    if (!normalized) return 0;
+    if (!/^\d+(\.\d{1,2})?$/.test(normalized)) return null;
+    const value = Number(normalized);
+    return value >= 0 ? value : null;
+  }, []);
+
   const sizePrices = useMemo(() => {
     return {
       S: parsePrice(sizePricesRaw.S),
@@ -153,6 +177,11 @@ const CreateProductScreen = () => {
       XL: parsePrice(sizePricesRaw.XL),
     };
   }, [parsePrice, sizePricesRaw]);
+
+  const unitCost = useMemo(
+    () => parseNonNegativeCurrency(unitCostInput),
+    [parseNonNegativeCurrency, unitCostInput],
+  );
 
   const hasAtLeastOneActiveSize = useMemo(
     () => PRODUCT_SIZES.some((size) => activeSizes[size]),
@@ -192,9 +221,14 @@ const CreateProductScreen = () => {
       return false;
     }
 
+    if (unitCost === null) {
+      setError("Enter a valid unit cost.");
+      return false;
+    }
+
     setError("");
     return true;
-  }, [hasAtLeastOneActiveSize, hasValidActiveSizePrices, name]);
+  }, [hasAtLeastOneActiveSize, hasValidActiveSizePrices, name, unitCost]);
 
   const pickImage = useCallback(async () => {
     try {
@@ -323,6 +357,10 @@ const CreateProductScreen = () => {
         image: imageUrl,
         description: description.trim() || null,
         in_stock: inStock,
+        sku: sku.trim() || null,
+        barcode: barcode.trim() || null,
+        track_inventory: trackInventory,
+        unit_cost: unitCost ?? 0,
         size_prices: normalizedSizePrices,
       };
 
@@ -342,9 +380,13 @@ const CreateProductScreen = () => {
     isDeleting,
     isSubmitting,
     name,
+    sku,
+    barcode,
     description,
     inStock,
+    trackInventory,
     basePrice,
+    unitCost,
     normalizedSizePrices,
     router,
     uploadImageIfNeeded,
@@ -367,6 +409,10 @@ const CreateProductScreen = () => {
         image: imageUrl,
         description: description.trim() || null,
         in_stock: inStock,
+        sku: sku.trim() || null,
+        barcode: barcode.trim() || null,
+        track_inventory: trackInventory,
+        unit_cost: unitCost ?? 0,
         size_prices: normalizedSizePrices,
       };
 
@@ -386,8 +432,12 @@ const CreateProductScreen = () => {
     isDeleting,
     isSubmitting,
     name,
+    sku,
+    barcode,
     inStock,
+    trackInventory,
     basePrice,
+    unitCost,
     normalizedSizePrices,
     productId,
     router,
@@ -471,7 +521,27 @@ const CreateProductScreen = () => {
           keyboardType="default"
         />
 
-        <Text style={[styles.label, { color: theme.textSecondary }]}>Prices by Size ($)</Text>
+        <Text style={[styles.label, { color: theme.textSecondary }]}>SKU</Text>
+        <TextInput
+          value={sku}
+          onChangeText={setSku}
+          placeholder="Optional stock keeping unit"
+          placeholderTextColor={theme.textSecondary}
+          style={[styles.input, { backgroundColor: theme.background, borderColor: theme.border, color: theme.textPrimary }]}
+          autoCapitalize="characters"
+        />
+
+        <Text style={[styles.label, { color: theme.textSecondary }]}>Barcode / QR</Text>
+        <TextInput
+          value={barcode}
+          onChangeText={setBarcode}
+          placeholder="Optional barcode or QR code"
+          placeholderTextColor={theme.textSecondary}
+          style={[styles.input, { backgroundColor: theme.background, borderColor: theme.border, color: theme.textPrimary }]}
+          autoCapitalize="none"
+        />
+
+        <Text style={[styles.label, { color: theme.textSecondary }]}>Prices by Size (R)</Text>
         <View style={styles.sizePriceRow}>
           {PRODUCT_SIZES.map((size) => (
             <View key={size} style={styles.sizePriceCell}>
@@ -529,6 +599,60 @@ const CreateProductScreen = () => {
           multiline
           textAlignVertical="top"
         />
+
+        <Text style={[styles.label, { color: theme.textSecondary }]}>Unit cost (R)</Text>
+        <TextInput
+          value={unitCostInput}
+          onChangeText={setUnitCostInput}
+          placeholder="0.00"
+          keyboardType="decimal-pad"
+          placeholderTextColor={theme.textSecondary}
+          style={[
+            styles.input,
+            { backgroundColor: theme.background, borderColor: theme.border, color: theme.textPrimary },
+          ]}
+        />
+
+        <Text style={[styles.label, { color: theme.textSecondary }]}>Track inventory</Text>
+        <View style={styles.stockRow}>
+          <Pressable
+            onPress={() => setTrackInventory(true)}
+            style={[
+              styles.stockButton,
+              { borderColor: theme.border, backgroundColor: theme.background },
+              trackInventory && { backgroundColor: theme.tint, borderColor: theme.tint },
+            ]}
+          >
+            <Text
+              style={[
+                styles.stockText,
+                { color: trackInventory ? theme.card : theme.textPrimary },
+              ]}
+            >
+              Track stock
+            </Text>
+          </Pressable>
+          <Pressable
+            onPress={() => setTrackInventory(false)}
+            style={[
+              styles.stockButton,
+              { borderColor: theme.border, backgroundColor: theme.background },
+              !trackInventory && { backgroundColor: theme.tint, borderColor: theme.tint },
+            ]}
+          >
+            <Text
+              style={[
+                styles.stockText,
+                { color: !trackInventory ? theme.card : theme.textPrimary },
+              ]}
+            >
+              Do not track
+            </Text>
+          </Pressable>
+        </View>
+        <Text style={[styles.helper, { color: theme.textSecondary }]}>
+          Disable tracking for made-to-order items that do not require stock checks.
+        </Text>
 
         <Text style={[styles.label, { color: theme.textSecondary }]}>Stock Status</Text>
         <View style={styles.stockRow}>
@@ -673,6 +797,11 @@ const styles = StyleSheet.create({
   error: {
     textAlign: "center",
     marginBottom: 12,
+  },
+  helper: {
+    fontSize: 12,
+    lineHeight: 18,
+    marginBottom: 16,
   },
   deleteWrapper: {
     marginTop: 16,

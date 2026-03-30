@@ -1556,3 +1556,10 @@ https://<project-ref>.functions.supabase.co/handle-payment-webhook
 Local testing:
 http://127.0.0.1:54321/functions/v1/handle-payment-webhook
 If you want me to add Payfast/Ozow stubs in the UI selector text or wire payment status into the order details screen, say the word.
+
+# Optional, if you want to override the default routing endpoint later:
+supabase secrets set ROUTING_API_BASE_URL=https://router.project-osrm.org
+supabase secrets set ROUTING_PROFILE=driving
+
+One practical note: the default OSRM public server is fine for development and light use, but it is not ideal for production reliability. If you want, I can next switch this to a production-grade provider such as Google Maps, Mapbox, or OpenRouteService with API-key-based configuration.
+

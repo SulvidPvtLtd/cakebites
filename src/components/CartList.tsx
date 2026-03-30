@@ -13,6 +13,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Colors from "@constants/Colors";
 import { useCart } from "@providers/CartProvider";
 import { getSafeImageUrl } from "./ProductListItem";
+import { formatCurrencyZAR } from "@/src/lib/formatCurrency";
 
 const IMAGE_SIZE = 44;
 
@@ -79,10 +80,10 @@ export default function CartList() {
                 </Text>
 
                 <Text style={[styles.meta, { color: theme.textSecondary }]} numberOfLines={1}>
-                  ${unitPrice.toFixed(2)} · Size {item.size}
+                  {formatCurrencyZAR(unitPrice)} · Size {item.size}
                 </Text>
                 <Text style={[styles.meta, { color: theme.textSecondary }]}>
-                  Line total: ${lineTotal.toFixed(2)}
+                  Line total: {formatCurrencyZAR(lineTotal)}
                 </Text>
               </View>
 

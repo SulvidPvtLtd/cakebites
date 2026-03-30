@@ -19,6 +19,7 @@ type AuthData = {
   activeGroup: "ADMIN" | "USER" | null;
   setActiveGroup: (group: "ADMIN" | "USER" | null) => void;
   signOut: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthData>({
@@ -29,6 +30,7 @@ const AuthContext = createContext<AuthData>({
   activeGroup: null,
   setActiveGroup: () => {},
   signOut: async () => {},
+  refreshProfile: async () => {},
 });
 
 const PROFILE_REQUEST_TIMEOUT_MS = 3500;
@@ -53,6 +55,68 @@ const withTimeout = async <T,>(promise: PromiseLike<T>, timeoutMs: number) => {
         reject(err);
       });
   });
+};
+
+const fetchOrCreateProfile = async (session: Session) => {
+  const userId = session.user.id;
+  const userEmail = session.user.email ?? null;
+  const userMobile =
+    typeof session.user.user_metadata?.mobile_number === "string"
+      ? session.user.user_metadata.mobile_number
+      : null;
+
+  let data: Tables<"profiles"> | null = null;
+  let error: Error | null = null;
+  try {
+    const response = await withTimeout(
+      supabase.from("profiles").select("*").eq("id", userId).maybeSingle(),
+      PROFILE_REQUEST_TIMEOUT_MS
+    );
+    data = response.data;
+    error = response.error;
+  } catch {
+    // Keep startup responsive when network is slow/unavailable.
+    return null;
+  }
+
+  if (error) {
+    console.log("Profile fetch error:", error.message);
+    return null;
+  }
+
+  if (data) {
+    return data;
+  }
+
+  let createdProfile: Tables<"profiles"> | null = null;
+  let createError: Error | null = null;
+  try {
+    const response = await withTimeout(
+      supabase
+        .from("profiles")
+        .insert({
+          id: userId,
+          email: userEmail,
+          mobile_number: userMobile,
+          group: "user",
+        })
+        .select("*")
+        .single(),
+      PROFILE_REQUEST_TIMEOUT_MS
+    );
+    createdProfile = response.data;
+    createError = response.error;
+  } catch {
+    // Keep startup responsive when network is slow/unavailable.
+    return null;
+  }
+
+  if (createError) {
+    console.log("Profile create error:", createError.message);
+    return null;
+  }
+
+  return createdProfile ?? null;
 };
 
 export default function AuthProvider({ children }: PropsWithChildren) {
@@ -81,68 +145,6 @@ export default function AuthProvider({ children }: PropsWithChildren) {
       setProfile(null);
       lastUserIdRef.current = null;
       setActiveGroup(null);
-    };
-
-    const fetchOrCreateProfile = async (session: Session) => {
-      const userId = session.user.id;
-      const userEmail = session.user.email ?? null;
-      const userMobile =
-        typeof session.user.user_metadata?.mobile_number === "string"
-          ? session.user.user_metadata.mobile_number
-          : null;
-
-      let data: Tables<"profiles"> | null = null;
-      let error: Error | null = null;
-      try {
-        const response = await withTimeout(
-          supabase.from("profiles").select("*").eq("id", userId).maybeSingle(),
-          PROFILE_REQUEST_TIMEOUT_MS
-        );
-        data = response.data;
-        error = response.error;
-      } catch {
-        // Keep startup responsive when network is slow/unavailable.
-        return null;
-      }
-
-      if (error) {
-        console.log("Profile fetch error:", error.message);
-        return null;
-      }
-
-      if (data) {
-        return data;
-      }
-
-      let createdProfile: Tables<"profiles"> | null = null;
-      let createError: Error | null = null;
-      try {
-        const response = await withTimeout(
-          supabase
-            .from("profiles")
-            .insert({
-              id: userId,
-              email: userEmail,
-              mobile_number: userMobile,
-              group: "user",
-            })
-            .select("*")
-            .single(),
-          PROFILE_REQUEST_TIMEOUT_MS
-        );
-        createdProfile = response.data;
-        createError = response.error;
-      } catch {
-        // Keep startup responsive when network is slow/unavailable.
-        return null;
-      }
-
-      if (createError) {
-        console.log("Profile create error:", createError.message);
-        return null;
-      }
-
-      return createdProfile ?? null;
     };
 
     const fetchSession = async () => {
@@ -257,6 +259,16 @@ export default function AuthProvider({ children }: PropsWithChildren) {
         isAdmin: normalizeGroup(profile?.group) === "admin",
         activeGroup,
         setActiveGroup,
+        refreshProfile: async () => {
+          if (!session) {
+            setProfile(null);
+            return;
+          }
+          const data = await fetchOrCreateProfile(session);
+          if (data) {
+            setProfile(data);
+          }
+        },
         signOut: async () => {
           const startedAt = Date.now();
           setSession(null);
