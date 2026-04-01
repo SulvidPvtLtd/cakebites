@@ -245,7 +245,7 @@ export default function ProfileScreen({ title }: ProfileScreenProps) {
 
       if (cameFromCheckout && nextDeliveryAddress) {
         Alert.alert("Profile updated", successMessage, [
-          { text: "Back to cart", onPress: () => router.replace(returnPath) },
+          { text: "Back to cart", onPress: () => router.replace(returnPath as never) },
           { text: "Stay here", style: "cancel" },
         ]);
       } else {
@@ -446,40 +446,6 @@ export default function ProfileScreen({ title }: ProfileScreenProps) {
           </View>
         )}
       </View>
-
-        {isAdminProfile && (
-          <View style={[styles.groupCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
-            <Pressable
-              style={styles.optionRow}
-              onPress={() => router.push("/(admin)/delivery-settings")}
-            >
-              <View style={styles.optionLeft}>
-                <View style={[styles.iconBadge, { backgroundColor: theme.background }]}>
-                  <FontAwesome name="truck" size={15} color={theme.textPrimary} />
-                </View>
-                <Text style={[styles.optionText, { color: theme.textPrimary }]}>
-                  Delivery Settings
-                </Text>
-              </View>
-              <FontAwesome name="angle-right" size={18} color={theme.textPrimary} />
-            </Pressable>
-            <View
-              style={[
-                styles.sectionBody,
-                styles.sectionBorderTop,
-                { borderTopColor: theme.border },
-              ]}
-            >
-              <Text style={[styles.sectionHelper, { color: theme.textSecondary }]}>
-                Update the collection address and per-km delivery rate used for delivery quotes.
-              </Text>
-              <Button
-                text="Open Delivery Settings"
-                onPress={() => router.push("/(admin)/delivery-settings")}
-              />
-            </View>
-          </View>
-        )}
 
       <View style={[styles.groupCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
         <Pressable

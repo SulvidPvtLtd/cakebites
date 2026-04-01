@@ -104,7 +104,6 @@ export default function ProductDetailsScreen() {
 
   const imageSource = { uri: getSafeImageUrl(product.image) };
   const visibleDescription = getVisibleProductDescription(product.description);
-  const hasIdentifiers = !!product.sku || !!product.barcode;
 
   /* ---------------- Actions ---------------- */
 
@@ -247,21 +246,6 @@ export default function ProductDetailsScreen() {
             {formatCurrencyZAR(product.price)}
           </Text>
 
-          {hasIdentifiers && (
-            <View style={styles.identifiers}>
-              {!!product.sku && (
-                <Text style={[styles.identifierText, { color: theme.textSecondary }]}>
-                  SKU: {product.sku}
-                </Text>
-              )}
-              {!!product.barcode && (
-                <Text style={[styles.identifierText, { color: theme.textSecondary }]}>
-                  Barcode: {product.barcode}
-                </Text>
-              )}
-            </View>
-          )}
-
           <Text
             numberOfLines={expanded ? undefined : 2}
             style={[styles.description, { color: theme.textSecondary }]}
@@ -330,14 +314,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginBottom: 16,
   },
-  identifiers: {
-    marginBottom: 12,
-    gap: 2,
-  },
-  identifierText: {
-    fontSize: 12,
-  },
-
   sectionLabel: {
     fontSize: 14,
     marginBottom: 8,

@@ -333,18 +333,6 @@ export const useUpdateOrderStatus = () => {
                 );
             }
 
-            if (normalizedNextStatus === "Cancelled") {
-                const { data, error } = await supabase.rpc("cancel_order_and_restock", {
-                    p_order_id: orderId,
-                });
-
-                if (error) {
-                    throw new Error(error.message);
-                }
-
-                return data as OrderRow;
-            }
-
             const { data, error } = await supabase
                 .from("orders")
                 .update({ status: normalizedNextStatus })

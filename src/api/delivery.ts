@@ -127,21 +127,13 @@ export const useUpdateDeliverySettings = () => {
   return useMutation<
     DeliverySettingsRow,
     Error,
-    Pick<
-      DeliverySettingsUpdate,
-      "collection_address" | "delivery_rate" | "fulfillment_location_id"
-    >
+    Pick<DeliverySettingsUpdate, "collection_address" | "delivery_rate">
   >({
-    mutationFn: async ({
-      collection_address,
-      delivery_rate,
-      fulfillment_location_id,
-    }) => {
+    mutationFn: async ({ collection_address, delivery_rate }) => {
       const payload: DeliverySettingsInsert = {
         id: 1,
         collection_address: collection_address?.trim() || null,
         delivery_rate: Number(delivery_rate ?? 0),
-        fulfillment_location_id: fulfillment_location_id ?? null,
       };
 
       const { data, error } = await supabase

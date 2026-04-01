@@ -81,14 +81,6 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="inventory"
-        options={{
-          title: "Inventory",
-          headerShown: false,
-          tabBarIcon: ({ color }) => <TabBarIcon name="archive" color={color} />,
-        }}
-      />
-      <Tabs.Screen
         name="orders"
         options={{
           title: "Admin Orders",
