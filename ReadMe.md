@@ -1330,7 +1330,7 @@ npx supabase stop
 
 ## Troubleshooting
 
-### A) `No such container: supabase_db_cakebites`
+### A) `No such container: supabase_db_jaymimicakes`
 Containers are not running. Run:
 
 ```powershell
@@ -1342,7 +1342,7 @@ npx supabase status
 Migration filenames have duplicate numeric version prefixes.
 Each migration filename must have a unique leading timestamp number.
 
-### C) `supabase_storage_cakebites container is not ready: unhealthy`
+### C) `supabase_storage_jaymimicakes container is not ready: unhealthy`
 Run a clean restart:
 
 ```powershell
@@ -1550,7 +1550,7 @@ npx supabase db reset
 Set Supabase secrets for edge functions:
 npx supabase secrets set YOCO_SECRET_KEY=YOUR_KEY
 npx supabase secrets set YOCO_WEBHOOK_SECRET=YOUR_WEBHOOK_SECRET
-npx supabase secrets set PAYMENT_RETURN_URL=cakebites://payment-return
+npx supabase secrets set PAYMENT_RETURN_URL=jaymimicakes://payment-return
 Register webhook URL in Yoco dashboard:
 https://<project-ref>.functions.supabase.co/handle-payment-webhook
 Local testing:

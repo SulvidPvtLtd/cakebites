@@ -199,7 +199,7 @@ export default function PaymentWebViewScreen() {
       <WebView
         source={{ uri: redirectUrl }}
         onShouldStartLoadWithRequest={shouldStartLoad}
-        originWhitelist={["http://", "https://", "cakebites://*"]}
+        originWhitelist={["http://", "https://", "jaymimicakes://*"]}
         startInLoadingState
         renderLoading={() => (
           <View style={styles.loading}>

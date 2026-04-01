@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "cakebites",
-    "slug": "cakebites",
+    "name": "jaymimicakes",
+    "slug": "jaymimicakes",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "cakebites",
+    "scheme": "jaymimicakes",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {

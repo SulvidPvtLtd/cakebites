@@ -1,4 +1,4 @@
-# CakeBites
+# JaymimiCakes
 
 ## Mobile Cake-Ordering Application
 
@@ -6,7 +6,7 @@
 
 ## Abstract
 
-CakeBites is a mobile commerce application developed to support digital cake ordering through a structured customer and administrator workflow. The project was built using Expo and React Native for the frontend, while Supabase was used to provide authentication, database services, storage, realtime updates, and edge-function support. The system enables customers to browse products, select cake sizes, add items to a cart, place orders, and observe order progress. It also provides an administrative environment for product management and operational order tracking.
+JaymimiCakes is a mobile commerce application developed to support digital cake ordering through a structured customer and administrator workflow. The project was built using Expo and React Native for the frontend, while Supabase was used to provide authentication, database services, storage, realtime updates, and edge-function support. The system enables customers to browse products, select cake sizes, add items to a cart, place orders, and observe order progress. It also provides an administrative environment for product management and operational order tracking.
 
 This project demonstrates the practical development of a modern mobile application supported by a cloud backend. It also illustrates how sprint-based development can be applied to move a system from initial setup to a more advanced state that includes authentication, data persistence, realtime synchronization, and payment integration. The report outlines the purpose of the system, the technologies used, the sprint stages completed, the current level of system maturity, the challenges identified, and the recommended future development path.
 
@@ -14,9 +14,9 @@ This project demonstrates the practical development of a modern mobile applicati
 
 The increasing use of mobile applications in commerce has created opportunities for small businesses to improve the way they interact with customers. In the bakery and food-ordering space, many businesses still rely on manual methods such as walk-in orders, phone calls, or messaging platforms. Although these approaches may work at a small scale, they often lead to inefficiency, inconsistent record keeping, delayed communication, and poor visibility of order progress.
 
-CakeBites was developed as a response to this problem. The system is designed to provide a mobile platform through which customers can browse cake options, select sizes, place orders, and track order progress, while administrators can manage available products and update the state of customer orders. The project also serves an academic purpose by demonstrating how a software system can be planned, implemented, and evaluated through iterative sprint stages.
+JaymimiCakes was developed as a response to this problem. The system is designed to provide a mobile platform through which customers can browse cake options, select sizes, place orders, and track order progress, while administrators can manage available products and update the state of customer orders. The project also serves an academic purpose by demonstrating how a software system can be planned, implemented, and evaluated through iterative sprint stages.
 
-The report presents CakeBites not only as a software artifact, but also as a learning project that demonstrates practical software engineering principles, including modular frontend design, backend integration, role-based access control, realtime synchronization, and payment workflow coordination.
+The report presents JaymimiCakes not only as a software artifact, but also as a learning project that demonstrates practical software engineering principles, including modular frontend design, backend integration, role-based access control, realtime synchronization, and payment workflow coordination.
 
 ## 2. Background and Problem Statement
 
@@ -30,7 +30,7 @@ Many small and medium-sized food businesses face operational challenges when han
 
 In such environments, customers may not know whether their order has been accepted or how far it has progressed, while administrators may struggle to manage products and workflow efficiently. This creates a need for a centralized digital system that supports both customer convenience and business administration.
 
-CakeBites addresses this problem by introducing a mobile ordering workflow backed by a cloud database and administrative tools. The system is intended to reduce manual friction, improve order visibility, and provide a stronger foundation for reliable service delivery.
+JaymimiCakes addresses this problem by introducing a mobile ordering workflow backed by a cloud database and administrative tools. The system is intended to reduce manual friction, improve order visibility, and provide a stronger foundation for reliable service delivery.
 
 ## 3. Aim of the Project
 
@@ -52,7 +52,7 @@ The project objectives are:
 
 ## 5. Scope of the Project
 
-The scope of CakeBites includes the following functional areas:
+The scope of JaymimiCakes includes the following functional areas:
 
 - Customer registration and authentication
 - Customer browsing of cake products
@@ -71,7 +71,7 @@ The project currently focuses on core mobile ordering functionality and does not
 
 ## 6. Significance of the Project
 
-The significance of CakeBites can be considered from both practical and educational perspectives.
+The significance of JaymimiCakes can be considered from both practical and educational perspectives.
 
 ### 6.1 Practical Significance
 
@@ -90,7 +90,7 @@ From an educational point of view, the project is valuable because it demonstrat
 
 ## 7. Development Methodology
 
-CakeBites was developed using an iterative sprint-based approach. Rather than attempting to implement the entire system at once, the project progressed through multiple stages, with each stage focusing on a specific set of deliverables. This method allowed the system to evolve gradually from a simple application structure into a more complete mobile commerce solution.
+JaymimiCakes was developed using an iterative sprint-based approach. Rather than attempting to implement the entire system at once, the project progressed through multiple stages, with each stage focusing on a specific set of deliverables. This method allowed the system to evolve gradually from a simple application structure into a more complete mobile commerce solution.
 
 The sprint-based approach was appropriate because:
 
@@ -103,7 +103,7 @@ The development pattern observed in the repository shows a progression from layo
 
 ## 8. System Architecture Overview
 
-CakeBites follows a client-cloud architecture.
+JaymimiCakes follows a client-cloud architecture.
 
 ### 8.1 Frontend Layer
 
@@ -165,7 +165,7 @@ React Query was used for server-state management. It supported better data fetch
 
 ## 10. Features Implemented
 
-The current version of CakeBites includes the following features:
+The current version of JaymimiCakes includes the following features:
 
 - User sign-up and sign-in
 - Customer and administrator route separation
@@ -317,7 +317,7 @@ This stage moved the project closer to a real commerce environment by connecting
 
 ## 12. Results and Current System Status
 
-The current version of CakeBites demonstrates that the project has achieved several important results:
+The current version of JaymimiCakes demonstrates that the project has achieved several important results:
 
 - A customer can authenticate and access the application
 - A customer can browse available products and select different sizes
@@ -332,7 +332,7 @@ These outcomes show that the application functions as a meaningful end-to-end pr
 
 ## 13. Challenges Encountered
 
-Like many software projects, CakeBites reflects both achievements and ongoing challenges. The following technical and project-level challenges are evident from the current system state.
+Like many software projects, JaymimiCakes reflects both achievements and ongoing challenges. The following technical and project-level challenges are evident from the current system state.
 
 ### 13.1 Payment Verification Reliability
 
@@ -352,7 +352,7 @@ Although the application is functionally mature in several areas, full productio
 
 ## 14. Evaluation of the Project
 
-From an academic and engineering point of view, CakeBites can be evaluated positively in the following ways:
+From an academic and engineering point of view, JaymimiCakes can be evaluated positively in the following ways:
 
 - It demonstrates clear progression from foundation to advanced features
 - It integrates frontend and backend concerns effectively
@@ -439,7 +439,7 @@ This will support long-term sustainability and professional deployment practice.
 
 ## 16. Educational Lessons Learned
 
-The CakeBites project demonstrates several lessons that are valuable in software engineering education:
+The JaymimiCakes project demonstrates several lessons that are valuable in software engineering education:
 
 - Building a strong project structure early makes later feature work easier
 - Authentication and authorization should be planned carefully in multi-role systems
@@ -452,9 +452,9 @@ These lessons show that the project is useful not only for its final functionali
 
 ## 17. Conclusion
 
-CakeBites is a substantial academic and practical software project that demonstrates the development of a mobile cake-ordering platform using modern frontend and backend technologies. The system has progressed from a basic project structure to a feature-rich application that includes product browsing, role-based access, cart functionality, order processing, realtime updates, and payment integration.
+JaymimiCakes is a substantial academic and practical software project that demonstrates the development of a mobile cake-ordering platform using modern frontend and backend technologies. The system has progressed from a basic project structure to a feature-rich application that includes product browsing, role-based access, cart functionality, order processing, realtime updates, and payment integration.
 
-The completed sprint stages show clear and meaningful development progress. The project already serves as a credible example of applied mobile commerce development. Its next major priorities should focus on payment hardening, stronger testing, improved security, and more formal deployment preparation. With those improvements, CakeBites would move from being a strong prototype and academic project toward a more dependable production-oriented system.
+The completed sprint stages show clear and meaningful development progress. The project already serves as a credible example of applied mobile commerce development. Its next major priorities should focus on payment hardening, stronger testing, improved security, and more formal deployment preparation. With those improvements, JaymimiCakes would move from being a strong prototype and academic project toward a more dependable production-oriented system.
 
 ## 18. Suggested Academic Use of This Report
 

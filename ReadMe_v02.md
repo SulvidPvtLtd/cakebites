@@ -1,4 +1,4 @@
-# Inventory Management System Plan (CakeBites)
+# Inventory Management System Plan (JaymimiCakes)
 
 ## Context
 - React Native (Expo) and Supabase

@@ -305,7 +305,7 @@ Deno.serve(async (req) => {
     const amount = Math.round(total * 100);
     const currency = "ZAR";
     const returnBaseUrl =
-      Deno.env.get("PAYMENT_RETURN_URL") ?? "cakebites://payment-return";
+      Deno.env.get("PAYMENT_RETURN_URL") ?? "jaymimicakes://payment-return";
 
     const { data: existing } = await supabase
       .from("payment_transactions")

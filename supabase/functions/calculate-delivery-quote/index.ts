@@ -107,7 +107,7 @@ const geocodeAddress = async (address: string): Promise<Coordinates> => {
 
   const response = await fetch(url, {
     headers: {
-      "User-Agent": "cakebites-delivery-quote/1.0",
+      "User-Agent": "jaymimicakes-delivery-quote/1.0",
       Accept: "application/json",
     },
   });
