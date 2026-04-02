@@ -1,4 +1,5 @@
 import { SUPABASE_AUTH_STORAGE_KEY, supabase } from "@/src/lib/supabase";
+import { registerForPushNotificationsAsync } from "@/src/lib/pushNotifications";
 import type { Tables } from "@/src/database.types";
 import { Session } from "@supabase/supabase-js";
 import * as SecureStore from "expo-secure-store";
@@ -249,6 +250,36 @@ export default function AuthProvider({ children }: PropsWithChildren) {
       }
     }
   }, [session, profile?.group, activeGroup]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const syncPushToken = async () => {
+      const userId = session?.user?.id;
+      if (!userId) return;
+
+      const token = await registerForPushNotificationsAsync();
+      if (!token || cancelled) return;
+
+      const currentToken = profile?.expo_push_token?.trim();
+      if (currentToken === token) return;
+
+      const { error } = await supabase
+        .from("profiles")
+        .update({ expo_push_token: token })
+        .eq("id", userId);
+
+      if (error) {
+        console.log("Failed to store Expo push token:", error.message);
+      }
+    };
+
+    syncPushToken();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [session?.user?.id, profile?.expo_push_token]);
 
   return (
     <AuthContext.Provider

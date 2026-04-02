@@ -234,3 +234,70 @@ eas submit --platform ios --latest
 - Submit app in App Store Connect: https://developer.apple.com/help/app-store-connect/manage-submissions-to-app-review/submit-an-app
 - App Store app privacy details: https://developer.apple.com/app-store/app-privacy-details/
 
+## 8. Supabase Deployment Runbook (Migrations + Functions)
+
+Use these steps whenever you need to deploy backend changes.
+
+### Step 8.1 Link and authenticate CLI
+
+```bash
+npx supabase login
+npx supabase link --project-ref ctfirvzwlecmpwhfgvyy
+```
+
+### Step 8.2 Push database migrations
+
+```bash
+npx supabase db push
+```
+
+If `db push` fails with migration history mismatch, run recovery:
+
+```bash
+git pull
+npx supabase migration repair --status reverted 20260325120000 20260325130000 20260325140000 20260325150000
+npx supabase db pull
+npx supabase db push
+```
+
+If Supabase CLI suggests additional `migration repair` commands, run those exact commands, then repeat:
+
+```bash
+npx supabase db pull
+npx supabase db push
+```
+
+### Step 8.3 Deploy edge functions
+
+Deploy each function that changed:
+
+```bash
+npx supabase functions deploy send-order-status-notification
+npx supabase functions deploy create-payment-checkout
+npx supabase functions deploy handle-payment-webhook
+npx supabase functions deploy refund-payment
+```
+
+### Step 8.4 Verify deployment
+
+```bash
+npx supabase functions list
+npx supabase db push
+```
+
+Expected result for DB: `Remote database is up to date.`
+
+### Step 8.5 Set/Update required function secrets (production)
+
+```bash
+npx supabase secrets set SUPABASE_URL=... SUPABASE_ANON_KEY=... SUPABASE_SERVICE_ROLE_KEY=... YOCO_SECRET_KEY=... YOCO_WEBHOOK_SECRET=... PAYMENT_RETURN_URL=...
+```
+
+### Step 8.6 Mobile rebuild note (important)
+
+For push notifications, after backend deploys, rebuild and reinstall app binaries (Expo notifications are native and require a new build):
+
+```bash
+eas build --platform android --profile production
+eas build --platform ios --profile production
+```

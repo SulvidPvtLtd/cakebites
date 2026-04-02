@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { z } from "npm:zod@3.24.1";
+import { notifyOrderStatusChange } from "../_shared/order-status-push.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -266,6 +267,13 @@ Deno.serve(async (req) => {
     }
 
     const archivedOrder = await cancelLinkedOrder(supabase, transaction);
+    if (archivedOrder?.id) {
+      await notifyOrderStatusChange({
+        supabase,
+        orderId: archivedOrder.id,
+        nextStatus: "Cancelled",
+      });
+    }
 
     return jsonResponse(200, {
       ok: true,

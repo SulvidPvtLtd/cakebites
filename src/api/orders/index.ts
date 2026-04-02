@@ -347,10 +347,31 @@ export const useUpdateOrderStatus = () => {
 
             return data;
         },
-        onSuccess: async (updatedOrder) => {
+        onSuccess: async (updatedOrder, variables) => {
             await queryClient.invalidateQueries({ queryKey: ["orders"] });
             await queryClient.invalidateQueries({ queryKey: ["orders", { userId }] });
             await queryClient.invalidateQueries({ queryKey: ["order", updatedOrder.id] });
+
+            try {
+                const { error: notificationError } = await supabase.functions.invoke("send-order-status-notification", {
+                    body: {
+                        orderId: updatedOrder.id,
+                        nextStatus: updatedOrder.status,
+                        previousStatus: variables.currentStatus,
+                    },
+                });
+
+                if (notificationError) {
+                    throw new Error(notificationError.message);
+                }
+            } catch (notificationError) {
+                console.log(
+                    "Order status updated but push notification failed:",
+                    notificationError instanceof Error
+                        ? notificationError.message
+                        : notificationError,
+                );
+            }
         },
         onError(error) {
             console.log(error);

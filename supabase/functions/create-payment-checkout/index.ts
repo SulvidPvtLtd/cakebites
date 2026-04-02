@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { z } from "npm:zod@3.24.1";
+import { notifyOrderStatusChange } from "../_shared/order-status-push.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -263,15 +264,20 @@ Deno.serve(async (req) => {
         }
 
         if (!updateTransactionError && nextOrderStatus && resolvedOrderId) {
-          const orderUpdate = supabase
+          const { data: updatedOrder } = await supabase
             .from("orders")
             .update({ status: nextOrderStatus, payment_transaction_id: transaction.id })
-            .eq("id", resolvedOrderId);
+            .eq("id", resolvedOrderId)
+            .in("status", ["Pending Payment", "New"])
+            .select("id")
+            .maybeSingle();
 
-          if (nextOrderStatus === "New") {
-            await orderUpdate.in("status", ["Pending Payment", "New"]);
-          } else {
-            await orderUpdate.in("status", ["Pending Payment", "New"]);
+          if (updatedOrder?.id) {
+            await notifyOrderStatusChange({
+              supabase,
+              orderId: updatedOrder.id,
+              nextStatus: nextOrderStatus,
+            });
           }
         }
       }

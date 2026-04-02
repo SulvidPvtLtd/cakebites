@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { notifyOrderStatusChange } from "../_shared/order-status-push.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -283,6 +284,14 @@ const cancelLinkedOrder = async (
     throw new Error(error.message);
   }
 
+  if (data?.id) {
+    await notifyOrderStatusChange({
+      supabase,
+      orderId: data.id,
+      nextStatus: "Cancelled",
+    });
+  }
+
   return data?.id ?? transaction.order_id;
 };
 
@@ -469,19 +478,24 @@ Deno.serve(async (req) => {
       }
 
       if (resolvedOrderId && nextOrderStatus) {
-        const orderUpdate = supabase
+        const { data: updatedOrder } = await supabase
           .from("orders")
           .update({
             payment_gateway: "yoco",
             payment_transaction_id: transaction.id,
             status: nextOrderStatus,
           })
-          .eq("id", resolvedOrderId);
+          .eq("id", resolvedOrderId)
+          .in("status", ["Pending Payment", "New"])
+          .select("id")
+          .maybeSingle();
 
-        if (nextOrderStatus === "Cancelled") {
-          await orderUpdate.in("status", ["Pending Payment", "New"]);
-        } else {
-          await orderUpdate.eq("status", "Pending Payment");
+        if (updatedOrder?.id) {
+          await notifyOrderStatusChange({
+            supabase,
+            orderId: updatedOrder.id,
+            nextStatus: nextOrderStatus,
+          });
         }
       }
 
