@@ -61,6 +61,8 @@ export type RefundPaymentInput = {
 export type RefundPaymentResponse = {
   ok: boolean;
   transactionId: string;
+  reference: string;
+  description: string;
   amount: number;
   idempotencyKey: string;
   refundableAmount: number;

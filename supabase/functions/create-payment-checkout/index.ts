@@ -198,6 +198,66 @@ const ensureOrderFromTransaction = async (
   return newOrder.id;
 };
 
+const createPendingOrderForCheckout = async (
+  supabase: ReturnType<typeof getSupabaseAdmin>,
+  input: {
+    userId: string;
+    gateway: "yoco" | "payfast" | "ozow";
+    transactionId: string;
+    draftOrder: z.infer<typeof BodySchema>["draftOrder"];
+  },
+) => {
+  const total = Number(input.draftOrder.total ?? 0);
+  const deliveryOption = input.draftOrder.delivery_option === "No" ? "No" : "Yes";
+
+  const { data: newOrder, error: orderError } = await supabase
+    .from("orders")
+    .insert({
+      total,
+      status: "Pending Payment",
+      user_id: input.userId,
+      delivery_option: deliveryOption,
+      payment_gateway: input.gateway,
+      payment_transaction_id: input.transactionId,
+    })
+    .select("*")
+    .single();
+
+  if (orderError || !newOrder) {
+    throw new Error(orderError?.message ?? "Failed to create pending order.");
+  }
+
+  const orderItemsPayload = input.draftOrder.items
+    .map((item) => ({
+      order_id: newOrder.id,
+      product_id: Number(item.product_id ?? 0),
+      quantity: Number(item.quantity ?? 0),
+      size: typeof item.size === "string" ? item.size : "",
+    }))
+    .filter(
+      (item) =>
+        Number.isFinite(item.product_id) &&
+        item.product_id > 0 &&
+        Number.isFinite(item.quantity) &&
+        item.quantity > 0 &&
+        item.size.length > 0,
+    );
+
+  if (orderItemsPayload.length === 0) {
+    throw new Error("Draft order items were invalid.");
+  }
+
+  const { error: orderItemsError } = await supabase
+    .from("order_items")
+    .insert(orderItemsPayload);
+
+  if (orderItemsError) {
+    throw new Error(orderItemsError.message);
+  }
+
+  return newOrder.id;
+};
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -310,6 +370,7 @@ Deno.serve(async (req) => {
 
     const amount = Math.round(total * 100);
     const currency = "ZAR";
+    const checkoutReferencePrefix = "ORDER-";
     const returnBaseUrl =
       Deno.env.get("PAYMENT_RETURN_URL") ?? "jaymimicakes://payment-return";
 
@@ -317,7 +378,6 @@ Deno.serve(async (req) => {
       .from("payment_transactions")
       .select("*")
       .eq("gateway", body.gateway)
-      .is("order_id", null)
       .in("status", ["created", "pending"])
       .contains("metadata", { user_id: authData.user.id })
       .order("created_at", { ascending: false })
@@ -356,6 +416,48 @@ Deno.serve(async (req) => {
       return jsonResponse(500, { error: seedError?.message ?? "Failed to create transaction." });
     }
 
+    let appOrderId: number;
+    try {
+      appOrderId = await createPendingOrderForCheckout(supabase, {
+        userId: authData.user.id,
+        gateway: body.gateway,
+        transactionId: transactionSeed.id,
+        draftOrder: body.draftOrder,
+      });
+    } catch (orderCreationError) {
+      await supabase
+        .from("payment_transactions")
+        .update({
+          status: "failed",
+          metadata: {
+            stage: "order_create_failed",
+            user_id: authData.user.id,
+            draftOrder: body.draftOrder,
+            error:
+              orderCreationError instanceof Error
+                ? orderCreationError.message
+                : "Failed to create pending order.",
+          },
+        })
+        .eq("id", transactionSeed.id);
+      throw orderCreationError;
+    }
+
+    await supabase
+      .from("payment_transactions")
+      .update({
+        order_id: appOrderId,
+        metadata: {
+          stage: "order_created",
+          user_id: authData.user.id,
+          draftOrder: body.draftOrder,
+          orderId: appOrderId,
+          orderNumber: String(appOrderId),
+          checkoutReference: `${checkoutReferencePrefix}${appOrderId}`,
+        },
+      })
+      .eq("id", transactionSeed.id);
+
     switch (body.gateway) {
       case "yoco": {
         const yocoSecretKey = Deno.env.get("YOCO_SECRET_KEY");
@@ -363,15 +465,21 @@ Deno.serve(async (req) => {
           return jsonResponse(500, { error: "Missing YOCO_SECRET_KEY." });
         }
 
+        const checkoutReference = `${checkoutReferencePrefix}${appOrderId}`;
         const payload = {
           amount,
           currency,
           cancelUrl: buildReturnUrl(returnBaseUrl, "cancelled", transactionSeed.id),
           successUrl: buildReturnUrl(returnBaseUrl, "success", transactionSeed.id),
           failureUrl: buildReturnUrl(returnBaseUrl, "failed", transactionSeed.id),
+          clientReferenceId: checkoutReference,
+          externalId: String(appOrderId),
           metadata: {
             transactionId: transactionSeed.id,
             userId: authData.user.id,
+            orderId: appOrderId,
+            orderNumber: String(appOrderId),
+            checkoutReference,
           },
         };
 
@@ -400,6 +508,9 @@ Deno.serve(async (req) => {
               error: errorBody,
               draftOrder: body.draftOrder,
               user_id: authData.user.id,
+              orderId: appOrderId,
+              orderNumber: String(appOrderId),
+              checkoutReference,
             },
           })
             .eq("id", transactionSeed.id);
@@ -426,6 +537,9 @@ Deno.serve(async (req) => {
                 error: "Invalid Yoco response.",
                 draftOrder: body.draftOrder,
                 user_id: authData.user.id,
+                orderId: appOrderId,
+                orderNumber: String(appOrderId),
+                checkoutReference,
               },
             })
             .eq("id", transactionSeed.id);
@@ -440,6 +554,9 @@ Deno.serve(async (req) => {
               draftOrder: body.draftOrder,
               redirectUrl,
               user_id: authData.user.id,
+              orderId: appOrderId,
+              orderNumber: String(appOrderId),
+              checkoutReference,
               yocoResponse: yocoCheckout,
             },
           })

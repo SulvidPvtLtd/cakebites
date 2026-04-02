@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import * as Linking from "expo-linking";
@@ -17,6 +17,35 @@ const wait = (ms: number) =>
     setTimeout(resolve, ms);
   });
 
+const PAYMENT_RETURN_SEGMENT = "payment-return";
+
+const parseReturnUrl = (url: string) => {
+  const parsed = Linking.parse(url);
+  const path = typeof parsed.path === "string" ? parsed.path.toLowerCase() : "";
+  const normalizedPath = path.startsWith("/") ? path.slice(1) : path;
+  const isCustomSchemeReturn = url.startsWith("jaymimicakes://");
+  const isPathReturn =
+    normalizedPath === PAYMENT_RETURN_SEGMENT ||
+    normalizedPath.endsWith(`/${PAYMENT_RETURN_SEGMENT}`);
+  const status = typeof parsed.queryParams?.status === "string" ? parsed.queryParams.status : null;
+  const transactionId =
+    typeof parsed.queryParams?.transactionId === "string"
+      ? parsed.queryParams.transactionId
+      : null;
+
+  const isReturnUrl = Boolean(
+    isCustomSchemeReturn ||
+      isPathReturn ||
+      (status && transactionId && url.toLowerCase().includes(PAYMENT_RETURN_SEGMENT)),
+  );
+
+  return {
+    isReturnUrl,
+    status,
+    transactionId,
+  };
+};
+
 export default function PaymentWebViewScreen() {
   const params = useLocalSearchParams<{
     transactionId?: string;
@@ -29,26 +58,25 @@ export default function PaymentWebViewScreen() {
   const router = useRouter();
   const { showToast } = useToast();
   const [isHandlingReturn, setIsHandlingReturn] = useState(false);
+  const isHandlingReturnRef = useRef(false);
   const { clearCart } = useCart();
   const { session, loading: authLoading } = useAuth();
 
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme ?? "light"];
-  const returnBaseUrl = Linking.createURL("payment-return");
-
   const handleReturnUrl = useCallback(
     async (url: string) => {
-      if (isHandlingReturn) return;
+      if (isHandlingReturnRef.current) return;
+      isHandlingReturnRef.current = true;
       setIsHandlingReturn(true);
-      let handledNavigation = false;
       let resolvedOrderId: number | null = null;
       let resolvedTransactionId = transactionId;
+      let redirectTarget: `/(user)/orders/${number}` | "/(user)/orders" | "/cart" = "/(user)/orders";
 
       try {
-        // console.log("[payment] return url", url);
-        const parsed = new URL(url);
-        const statusParam = parsed.searchParams.get("status");
-        const transactionParam = parsed.searchParams.get("transactionId");
+        const parsedReturn = parseReturnUrl(url);
+        const statusParam = parsedReturn.status;
+        const transactionParam = parsedReturn.transactionId;
         // console.log("[payment] return params", {
         //   status: statusParam,
         //   transactionId: transactionParam ?? transactionId ?? null,
@@ -95,24 +123,27 @@ export default function PaymentWebViewScreen() {
         if (resolvedStatus === "succeeded") {
           clearCart();
           showToast("Payment successful.", "success");
+          redirectTarget = "/(user)/orders";
         } else if (resolvedStatus === "cancelled") {
           showToast("Payment cancelled.", "info");
+          redirectTarget = "/cart";
         } else if (resolvedStatus === "failed") {
           showToast("Payment failed.", "error");
+          redirectTarget = "/cart";
         } else if (statusFromReturn === "cancelled") {
           showToast("Payment cancellation is pending confirmation.", "info");
+          redirectTarget = "/cart";
         } else if (statusFromReturn === "failed") {
           showToast("Payment failure is pending confirmation.", "info");
+          redirectTarget = "/cart";
         } else {
           showToast("Payment confirmation is still pending.", "info");
+          redirectTarget = "/(user)/orders";
         }
       } catch (error) {
         showToast("Failed to verify payment.", "error");
+        redirectTarget = "/cart";
       } finally {
-        if (handledNavigation) {
-          setIsHandlingReturn(false);
-          return;
-        }
         if (resolvedTransactionId && !resolvedOrderId) {
           try {
             const record = await fetchPaymentTransaction(resolvedTransactionId);
@@ -127,32 +158,31 @@ export default function PaymentWebViewScreen() {
         if (resolvedOrderId && Number.isFinite(resolvedOrderId) && resolvedOrderId > 0) {
           router.replace(`/(user)/orders/${resolvedOrderId}`);
         } else {
-          router.replace("/(user)/orders");
+          router.replace(redirectTarget);
         }
+        isHandlingReturnRef.current = false;
+        setIsHandlingReturn(false);
       }
     },
-    [isHandlingReturn, router, showToast, transactionId, clearCart],
+    [router, showToast, transactionId, clearCart],
   );
 
   const shouldStartLoad = useCallback(
     (request: { url: string }) => {
       const url = request.url;
-      if (url.startsWith(returnBaseUrl)) {
-        void handleReturnUrl(url);
-        return false;
-      }
-      if (!url.startsWith("http://") && !url.startsWith("https://")) {
+      const parsedReturn = parseReturnUrl(url);
+      if (parsedReturn.isReturnUrl) {
         void handleReturnUrl(url);
         return false;
       }
       return true;
     },
-    [handleReturnUrl, returnBaseUrl],
+    [handleReturnUrl],
   );
 
   useEffect(() => {
     const subscription = Linking.addEventListener("url", ({ url }) => {
-      if (url.startsWith(returnBaseUrl)) {
+      if (parseReturnUrl(url).isReturnUrl) {
         void handleReturnUrl(url);
       }
     });
@@ -160,7 +190,7 @@ export default function PaymentWebViewScreen() {
     return () => {
       subscription.remove();
     };
-  }, [handleReturnUrl, returnBaseUrl]);
+  }, [handleReturnUrl]);
 
   if (authLoading) {
     return (
@@ -199,6 +229,11 @@ export default function PaymentWebViewScreen() {
       <WebView
         source={{ uri: redirectUrl }}
         onShouldStartLoadWithRequest={shouldStartLoad}
+        onNavigationStateChange={(navState) => {
+          if (parseReturnUrl(navState.url).isReturnUrl) {
+            void handleReturnUrl(navState.url);
+          }
+        }}
         originWhitelist={["http://", "https://", "jaymimicakes://*"]}
         startInLoadingState
         renderLoading={() => (

@@ -3,8 +3,14 @@ import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
 
 let isNotificationHandlerConfigured = false;
+let hasLoggedMissingProjectIdWarning = false;
 
 const resolveProjectId = () => {
+  const envProjectId = process.env.EXPO_PUBLIC_EAS_PROJECT_ID;
+  if (typeof envProjectId === "string" && envProjectId.trim().length > 0) {
+    return envProjectId;
+  }
+
   const easProjectId = Constants?.easConfig?.projectId;
   if (typeof easProjectId === "string" && easProjectId.trim().length > 0) {
     return easProjectId;
@@ -64,9 +70,17 @@ export const registerForPushNotificationsAsync = async (): Promise<string | null
     }
 
     const projectId = resolveProjectId();
-    const tokenResponse = projectId
-      ? await Notifications.getExpoPushTokenAsync({ projectId })
-      : await Notifications.getExpoPushTokenAsync();
+    if (!projectId) {
+      if (!hasLoggedMissingProjectIdWarning) {
+        console.log(
+          "Push notification registration skipped: missing Expo EAS projectId. Set EXPO_PUBLIC_EAS_PROJECT_ID in .env or configure expo.extra.eas.projectId."
+        );
+        hasLoggedMissingProjectIdWarning = true;
+      }
+      return null;
+    }
+
+    const tokenResponse = await Notifications.getExpoPushTokenAsync({ projectId });
 
     return tokenResponse.data ?? null;
   } catch (error) {

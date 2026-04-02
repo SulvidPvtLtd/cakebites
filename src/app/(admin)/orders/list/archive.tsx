@@ -1,11 +1,18 @@
 import { useOrderList } from "@/src/api/orders";
 import OrderListItem from "@components/OrderListItem";
-import { Stack } from "expo-router";
+import { Stack, useFocusEffect } from "expo-router";
+import { useCallback } from "react";
 import { ActivityIndicator, FlatList, Text } from "react-native";
 
 export default function OrdersScreen() {
 
-   const { data: orders, isLoading, error } = useOrderList({ archived: true });
+   const { data: orders, isLoading, error, refetch } = useOrderList({ archived: true });
+
+    useFocusEffect(
+      useCallback(() => {
+        refetch();
+      }, [refetch]),
+    );
 
     if (isLoading) {
       return <ActivityIndicator />;

@@ -70,6 +70,14 @@ const appendRefundEntry = (
   return [...existingEntries, entry];
 };
 
+const getStringMetadataValue = (
+  metadata: Record<string, unknown> | null,
+  key: string,
+) => {
+  const value = metadata?.[key];
+  return typeof value === "string" && value.trim().length > 0 ? value.trim() : null;
+};
+
 const cancelLinkedOrder = async (
   supabase: ReturnType<typeof getSupabaseAdmin>,
   transaction: {
@@ -187,28 +195,61 @@ Deno.serve(async (req) => {
       return jsonResponse(500, { error: "Missing YOCO_SECRET_KEY." });
     }
 
-    const idempotencyKey = `refund:${transaction.id}:${refundedAmountTotal}:${amount}`;
-    const response = await fetch(
-      `https://payments.yoco.com/api/checkouts/${transaction.gateway_transaction_id}/refund`,
-      {
+    const yocoResponse = getObject(metadata?.yocoResponse);
+    const checkoutReference =
+      getStringMetadataValue(metadata, "checkoutReference") ??
+      getStringMetadataValue(metadata, "clientReferenceId") ??
+      (typeof yocoResponse?.clientReferenceId === "string" &&
+      yocoResponse.clientReferenceId.trim().length > 0
+        ? yocoResponse.clientReferenceId.trim()
+        : null) ??
+      (transaction.order_id ? `ORDER-${transaction.order_id}` : null) ??
+      `TRANSACTION-${transaction.id}`;
+    const refundReference = checkoutReference;
+    const refundDescription = `${checkoutReference} Online Refund`;
+    const idempotencyKey = `refund:${refundReference}:${refundedAmountTotal}:${amount}`;
+    const requestHeaders = {
+      "Idempotency-Key": idempotencyKey,
+      Authorization: `Bearer ${yocoSecretKey}`,
+      "Content-Type": "application/json",
+    };
+    const refundUrl = `https://payments.yoco.com/api/checkouts/${transaction.gateway_transaction_id}/refund`;
+    const sendRefundRequest = async (payload: Record<string, unknown>) => {
+      const response = await fetch(refundUrl, {
         method: "POST",
-        headers: {
-          "Idempotency-Key": idempotencyKey,
-          Authorization: `Bearer ${yocoSecretKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ amount }),
-      },
-    );
+        headers: requestHeaders,
+        body: JSON.stringify(payload),
+      });
 
-    const responseText = await response.text();
-    let responseBody: Record<string, unknown> | string | null = null;
-    if (responseText) {
-      try {
-        responseBody = JSON.parse(responseText) as Record<string, unknown>;
-      } catch {
-        responseBody = responseText;
+      const responseText = await response.text();
+      let responseBody: Record<string, unknown> | string | null = null;
+      if (responseText) {
+        try {
+          responseBody = JSON.parse(responseText) as Record<string, unknown>;
+        } catch {
+          responseBody = responseText;
+        }
       }
+
+      return { response, responseBody };
+    };
+
+    let { response, responseBody } = await sendRefundRequest({
+      amount,
+      description: refundDescription,
+      reference: checkoutReference,
+      clientReferenceId: checkoutReference,
+      metadata: {
+        checkoutReference,
+        orderId: transaction.order_id,
+      },
+    });
+
+    if (!response.ok && (response.status === 400 || response.status === 422)) {
+      ({ response, responseBody } = await sendRefundRequest({
+        amount,
+        description: refundDescription,
+      }));
     }
 
     if (!response.ok) {
@@ -227,6 +268,10 @@ Deno.serve(async (req) => {
     const updatedRefundedAmountTotal = Math.max(0, totalAmount - refundableAmount);
 
     const refundEntry = {
+      reference: refundReference,
+      description: refundDescription,
+      orderNumber: transaction.order_id ? `ORDER-${transaction.order_id}` : null,
+      refundChannel: "Online refund",
       amount,
       idempotencyKey,
       createdAt: new Date().toISOString(),
@@ -249,6 +294,12 @@ Deno.serve(async (req) => {
       refundStatus:
         updatedRefundedAmountTotal >= totalAmount ? "refunded" : "partially_refunded",
       lastRefundAt: new Date().toISOString(),
+      lastRefundReference: refundReference,
+      lastRefundDescription: refundDescription,
+      lastRefundOrderNumber: transaction.order_id
+        ? `ORDER-${transaction.order_id}`
+        : null,
+      lastRefundChannel: "Online refund",
       lastRefundAmount: amount,
       lastRefundIdempotencyKey: idempotencyKey,
       lastRefundReason: body.reason.trim(),
@@ -278,6 +329,8 @@ Deno.serve(async (req) => {
     return jsonResponse(200, {
       ok: true,
       transactionId: transaction.id,
+      reference: refundReference,
+      description: refundDescription,
       amount,
       idempotencyKey,
       refundableAmount,

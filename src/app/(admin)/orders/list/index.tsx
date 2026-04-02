@@ -1,7 +1,8 @@
 import { useOrderList } from "@/src/api/orders";
 import OrderListItem from "@components/OrderListItem";
 import type { Tables } from "@/src/database.types";
-import { Stack } from "expo-router";
+import { Stack, useFocusEffect } from "expo-router";
+import { useCallback } from "react";
 import { ActivityIndicator,  Text,  FlatList } from "react-native";
 import { useInsertOrderSubscription } from "@/src/lib/subscriptions/adminOrderSubscriptions";
 
@@ -11,9 +12,15 @@ export default function OrdersScreen() {
 
   // project-defined mock import usage (replaced by Supabase query data)
   // import ordersData from "@assets/data/orders";
-  const { data: orders, isLoading, error } = useOrderList({ archived: false });
+  const { data: orders, isLoading, error, refetch } = useOrderList({ archived: false });
 
   useInsertOrderSubscription();
+
+  useFocusEffect(
+    useCallback(() => {
+      refetch();
+    }, [refetch]),
+  );
 
 
   if (isLoading) {
