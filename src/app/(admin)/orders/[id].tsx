@@ -4,9 +4,9 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ActivityIndicator,
   Alert,
-  FlatList,
   Pressable,
   ScrollView,
+  StyleSheet,
   Text,
   View,
   useColorScheme,
@@ -153,10 +153,6 @@ export default function OrderDetailScreen() {
     },
   );
 
-  const renderPlacedItem = ({ item }: { item: OrderItem }) => (
-    <PlacedOrderListItems item={item} />
-  );
-
   const orderTotal = Number(orderFetched.total ?? 0);
   const customerEmail = orderFetched.profiles?.email ?? "Not available";
   const customerMobile = orderFetched.profiles?.mobile_number ?? "+27 XX XXX XXXX";
@@ -176,7 +172,7 @@ export default function OrderDetailScreen() {
       : null;
 
   return (
-    <View style={{ padding: 10, gap: 10, backgroundColor: theme.background, flex: 1 }}>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
       <Stack.Screen
         options={{
           title: `Admin Order #${id}`,
@@ -190,125 +186,142 @@ export default function OrderDetailScreen() {
         }}
       />
 
-      {/* Order summary */}
-      <OrderListItem
-        order={orderFetched}
-        routeGroup="admin"
-        statusSubtext={formatCurrencyZAR(orderTotal)}
-        customerEmail={customerEmail}
-        customerMobile={customerMobile}
-      />
-
-      {orderFetched.payment_gateway === "yoco" && orderFetched.payment_transaction_id ? (
-        <View
-          style={{
-            borderWidth: 1,
-            borderColor: theme.border,
-            borderRadius: 10,
-            padding: 14,
-            gap: 10,
-            backgroundColor: theme.card,
-          }}
-        >
-          <Text style={{ color: theme.textPrimary, fontWeight: "700" }}>
-            Refund Summary
-          </Text>
-          <Text style={{ color: theme.textSecondary, fontSize: 13 }}>
-            Refunded so far: {formatCurrencyZAR(refundedAmountTotal, { isCents: true })}
-          </Text>
-          {refundStatus ? (
-            <Text style={{ color: theme.tint, fontSize: 13, fontWeight: "600" }}>
-              Refund status: {refundStatus}
-            </Text>
-          ) : null}
-          <Pressable
-            onPress={() =>
-              router.push(`/(admin)/orders/${orderFetched.id}/refund` as never)
-            }
-            style={{
-              borderWidth: 1,
-              borderColor: theme.tint,
-              borderRadius: 10,
-              paddingVertical: 12,
-              paddingHorizontal: 14,
-              backgroundColor: theme.card,
-            }}
-          >
-            <Text style={{ color: theme.tint, fontWeight: "700", textAlign: "center" }}>
-              Open Refund Flow
-            </Text>
-          </Pressable>
-        </View>
-      ) : null}
-
-      {/* Items in the order */}
-      <FlatList<OrderItem>
-        data={orderItems}
-        keyExtractor={(item) => item.id.toString()}
-        renderItem={renderPlacedItem}
-        contentContainerStyle={{ gap: 10 }}
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
-        ListFooterComponent={() => (
-          <>
-            <Text style={{ fontWeight: "bold" }}>Status</Text>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ gap: 5, paddingVertical: 10 }}
-            >
-              {OrderStatusList.map((status) => (
-                <Pressable
-                  key={status}
-                  onPress={async () => {
-                    if (!orderFetched || !isStatusSelectable(status)) return;
+      >
+        {/* Order summary */}
+        <OrderListItem
+          order={orderFetched}
+          routeGroup="admin"
+          statusSubtext={formatCurrencyZAR(orderTotal)}
+          customerEmail={customerEmail}
+          customerMobile={customerMobile}
+        />
 
-                    try {
-                      await updateOrderStatus({
-                        orderId: orderFetched.id,
-                        currentStatus: orderFetched.status,
-                        nextStatus: status,
-                      });
-                    } catch (err) {
-                      const message =
-                        err instanceof Error
-                          ? err.message
-                          : "Failed to update order status.";
-                      Alert.alert("Status update failed", message);
-                    }
-                  }}
-                  disabled={!isStatusSelectable(status) || isUpdatingStatus}
+        {orderFetched.payment_gateway === "yoco" && orderFetched.payment_transaction_id ? (
+          <View
+            style={[
+              styles.refundCard,
+              { borderColor: theme.border, backgroundColor: theme.card },
+            ]}
+          >
+            <Text style={{ color: theme.textPrimary, fontWeight: "700" }}>
+              Refund Summary
+            </Text>
+            <Text style={{ color: theme.textSecondary, fontSize: 13 }}>
+              Refunded so far: {formatCurrencyZAR(refundedAmountTotal, { isCents: true })}
+            </Text>
+            {refundStatus ? (
+              <Text style={{ color: theme.tint, fontSize: 13, fontWeight: "600" }}>
+                Refund status: {refundStatus}
+              </Text>
+            ) : null}
+            <Pressable
+              onPress={() =>
+                router.push(`/(admin)/orders/${orderFetched.id}/refund` as never)
+              }
+              style={[styles.refundButton, { borderColor: theme.tint, backgroundColor: theme.card }]}
+            >
+              <Text style={{ color: theme.tint, fontWeight: "700", textAlign: "center" }}>
+                Open Refund Flow
+              </Text>
+            </Pressable>
+          </View>
+        ) : null}
+
+        {/* Items in the order */}
+        <View style={styles.itemsList}>
+          {orderItems.map((item) => (
+            <PlacedOrderListItems key={item.id} item={item} />
+          ))}
+        </View>
+
+        <View>
+          <Text style={{ fontWeight: "bold" }}>Status</Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ gap: 5, paddingVertical: 10 }}
+          >
+            {OrderStatusList.map((status) => (
+              <Pressable
+                key={status}
+                onPress={async () => {
+                  if (!orderFetched || !isStatusSelectable(status)) return;
+
+                  try {
+                    await updateOrderStatus({
+                      orderId: orderFetched.id,
+                      currentStatus: orderFetched.status,
+                      nextStatus: status,
+                    });
+                  } catch (err) {
+                    const message =
+                      err instanceof Error
+                        ? err.message
+                        : "Failed to update order status.";
+                    Alert.alert("Status update failed", message);
+                  }
+                }}
+                disabled={!isStatusSelectable(status) || isUpdatingStatus}
+                style={{
+                  borderColor: theme.tint,
+                  borderWidth: 1,
+                  padding: 10,
+                  borderRadius: 5,
+                  backgroundColor:
+                    normalizedCurrentStatus === status
+                      ? theme.tint
+                      : !isStatusSelectable(status)
+                        ? theme.placeholder
+                        : "transparent",
+                  opacity: !isStatusSelectable(status) || isUpdatingStatus ? 0.6 : 1,
+                }}
+              >
+                <Text
                   style={{
-                    borderColor: theme.tint,
-                    borderWidth: 1,
-                    padding: 10,
-                    borderRadius: 5,
-                    backgroundColor:
+                    color:
                       normalizedCurrentStatus === status
-                        ? theme.tint
+                        ? theme.card
                         : !isStatusSelectable(status)
-                          ? theme.placeholder
-                          : "transparent",
-                    opacity: !isStatusSelectable(status) || isUpdatingStatus ? 0.6 : 1,
+                          ? theme.textSecondary
+                          : theme.tint,
                   }}
                 >
-                  <Text
-                    style={{
-                      color:
-                        normalizedCurrentStatus === status
-                          ? theme.card
-                          : !isStatusSelectable(status)
-                            ? theme.textSecondary
-                            : theme.tint,
-                    }}
-                  >
-                    {status}
-                  </Text>
-                </Pressable>
-              ))}
-            </ScrollView>
-          </>
-        )}
-      />
+                  {status}
+                </Text>
+              </Pressable>
+            ))}
+          </ScrollView>
+        </View>
+      </ScrollView>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    padding: 10,
+  },
+  scrollContent: {
+    gap: 10,
+    paddingBottom: 16,
+  },
+  refundCard: {
+    borderWidth: 1,
+    borderRadius: 10,
+    padding: 14,
+    gap: 10,
+  },
+  refundButton: {
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+  },
+  itemsList: {
+    gap: 10,
+  },
+});

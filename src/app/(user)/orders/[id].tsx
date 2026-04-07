@@ -3,8 +3,8 @@ import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   ActivityIndicator,
-  FlatList,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -98,9 +98,6 @@ export default function OrderDetailScreen() {
     );
   }
 
-  /**
-   * Normalize possibly undefined array -> always safe for FlatList
-   */
   const orderItems: OrderItem[] = (orderFetched.order_items ?? []).flatMap(
     (item) => {
       if (!item.products) return [];
@@ -115,10 +112,6 @@ export default function OrderDetailScreen() {
         },
       ];
     },
-  );
-
-  const renderPlacedItem = ({ item }: { item: OrderItem }) => (
-    <PlacedOrderListItems item={item} />
   );
 
   const orderTotal = Number(orderFetched.total ?? 0);
@@ -136,20 +129,23 @@ export default function OrderDetailScreen() {
         }}
       />
 
-      {/* Order summary */}
-      <OrderListItem
-        order={orderFetched}
-        statusSubtext={formatCurrencyZAR(orderTotal)}
-      />
-
-      {/* Items in the order */}
-      <FlatList<OrderItem>
-        data={orderItems}
-        keyExtractor={(item) => item.id.toString()}
-        renderItem={renderPlacedItem}
-        contentContainerStyle={styles.listContent}
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
-      />
+      >
+        {/* Order summary */}
+        <OrderListItem
+          order={orderFetched}
+          statusSubtext={formatCurrencyZAR(orderTotal)}
+        />
+
+        {/* Items in the order */}
+        <View style={styles.listContent}>
+          {orderItems.map((item) => (
+            <PlacedOrderListItems key={item.id} item={item} />
+          ))}
+        </View>
+      </ScrollView>
     </View>
   );
 }
@@ -158,7 +154,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 10,
+  },
+
+  scrollContent: {
     gap: 10,
+    paddingBottom: 16,
   },
 
   centeredContainer: {
@@ -170,22 +170,6 @@ const styles = StyleSheet.create({
 
   listContent: {
     gap: 10,
-  },
-
-  statusSection: {
-    marginTop: 20,
-  },
-
-  statusTitle: {
-    fontWeight: "bold",
-    fontSize: 16,
-  },
-
-  statusContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-    marginTop: 8,
   },
 
   headerLink: {

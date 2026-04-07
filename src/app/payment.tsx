@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 
 import Colors from "@constants/Colors";
@@ -134,68 +134,72 @@ export default function PaymentScreen() {
         styles.container,
         {
           backgroundColor: theme.background,
-          paddingBottom: 20,
         },
       ]}
     >
-      <View style={styles.section}>
-        <Text style={[styles.title, { color: theme.textPrimary }]}>Choose a gateway</Text>
-        <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
-          If a gateway is slow, switch instantly before you pay.
-        </Text>
-      </View>
-
-      <PaymentMethodSelector
-        selectedGateway={selectedGateway}
-        onSelect={setSelectedGateway}
-      />
-
-      <View style={[styles.summaryCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
-        <Text style={[styles.summaryLabel, { color: theme.textSecondary }]}>Subtotal</Text>
-        <Text style={[styles.summaryMinorValue, { color: theme.textPrimary }]}>
-          {formatCurrencyZAR(total)}
-        </Text>
-        <Text style={[styles.summaryLabel, { color: theme.textSecondary, marginTop: 12 }]}>
-          Delivery
-        </Text>
-        <Text style={[styles.summaryMinorValue, { color: theme.textPrimary }]}>
-          {fulfillmentOption !== "DELIVERY"
-            ? formatCurrencyZAR(0)
-            : !deliveryAddress
-              ? "Add delivery address in profile"
-              : isDeliveryQuoteLoading
-                ? "Calculating..."
-                : deliveryQuoteError
-                  ? "Unavailable"
-                  : `${formatCurrencyZAR(deliveryFee)} (${deliveryQuote?.distanceKm.toFixed(2)} km)`}
-        </Text>
-        <Text style={[styles.summaryLabel, { color: theme.textSecondary, marginTop: 12 }]}>
-          Order total
-        </Text>
-        <Text style={[styles.summaryValue, { color: theme.tint }]}>
-          {formatCurrencyZAR(finalTotal)}
-        </Text>
-      </View>
-
-      <Pressable
-        style={[styles.payButton, { backgroundColor: theme.tint }]}
-        onPress={onPayPress}
-        disabled={
-          authLoading ||
-          !session ||
-          createCheckout.isPending ||
-          (fulfillmentOption === "DELIVERY" &&
-            (!deliveryAddress || isDeliveryQuoteLoading || !deliveryQuote || Boolean(deliveryQuoteError)))
-        }
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
       >
-        {createCheckout.isPending ? (
-          <ActivityIndicator color={theme.card} />
-        ) : (
-          <Text style={[styles.payText, { color: theme.card }]}>
-            {session ? "Pay now" : "Sign in to pay"}
+        <View style={styles.section}>
+          <Text style={[styles.title, { color: theme.textPrimary }]}>Choose a gateway</Text>
+          <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
+            If a gateway is slow, switch instantly before you pay.
           </Text>
-        )}
-      </Pressable>
+        </View>
+
+        <PaymentMethodSelector
+          selectedGateway={selectedGateway}
+          onSelect={setSelectedGateway}
+        />
+
+        <View style={[styles.summaryCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
+          <Text style={[styles.summaryLabel, { color: theme.textSecondary }]}>Subtotal</Text>
+          <Text style={[styles.summaryMinorValue, { color: theme.textPrimary }]}>
+            {formatCurrencyZAR(total)}
+          </Text>
+          <Text style={[styles.summaryLabel, { color: theme.textSecondary, marginTop: 12 }]}>
+            Delivery
+          </Text>
+          <Text style={[styles.summaryMinorValue, { color: theme.textPrimary }]}>
+            {fulfillmentOption !== "DELIVERY"
+              ? formatCurrencyZAR(0)
+              : !deliveryAddress
+                ? "Add delivery address in profile"
+                : isDeliveryQuoteLoading
+                  ? "Calculating..."
+                  : deliveryQuoteError
+                    ? "Unavailable"
+                    : `${formatCurrencyZAR(deliveryFee)} (${deliveryQuote?.distanceKm.toFixed(2)} km)`}
+          </Text>
+          <Text style={[styles.summaryLabel, { color: theme.textSecondary, marginTop: 12 }]}>
+            Order total
+          </Text>
+          <Text style={[styles.summaryValue, { color: theme.tint }]}>
+            {formatCurrencyZAR(finalTotal)}
+          </Text>
+        </View>
+
+        <Pressable
+          style={[styles.payButton, { backgroundColor: theme.tint }]}
+          onPress={onPayPress}
+          disabled={
+            authLoading ||
+            !session ||
+            createCheckout.isPending ||
+            (fulfillmentOption === "DELIVERY" &&
+              (!deliveryAddress || isDeliveryQuoteLoading || !deliveryQuote || Boolean(deliveryQuoteError)))
+          }
+        >
+          {createCheckout.isPending ? (
+            <ActivityIndicator color={theme.card} />
+          ) : (
+            <Text style={[styles.payText, { color: theme.card }]}>
+              {session ? "Pay now" : "Sign in to pay"}
+            </Text>
+          )}
+        </Pressable>
+      </ScrollView>
     </View>
   );
 }
@@ -203,8 +207,11 @@ export default function PaymentScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  scrollContent: {
     padding: 20,
     gap: 16,
+    paddingBottom: 24,
   },
   section: {
     gap: 6,
@@ -240,7 +247,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     alignItems: "center",
     justifyContent: "center",
-    marginTop: "auto",
+    marginTop: 16,
   },
   payText: {
     fontSize: 16,
