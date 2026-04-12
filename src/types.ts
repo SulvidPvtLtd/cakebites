@@ -62,7 +62,8 @@ export type OrderStatus =
   | "Cooking"
   | "Delivering"
   | "Delivered"
-  | "Cancelled";
+  | "Cancelled"
+  | "Payment failed";
 
 export const OrderStatusList: OrderStatus[] = [
   "Pending Payment",
@@ -71,6 +72,7 @@ export const OrderStatusList: OrderStatus[] = [
   "Delivering",
   "Delivered",
   "Cancelled",
+  "Payment failed",
 ];
 
 // project-defined Order type (replaced with Supabase table row type)

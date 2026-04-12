@@ -27,6 +27,8 @@ const formatStatusForMessage = (status: string) => {
       return "Cancelled";
     case "pending payment":
       return "Pending Payment";
+    case "payment failed":
+      return "Payment failed";
     default:
       return status.trim();
   }
@@ -49,6 +51,9 @@ const getMessageBody = (orderId: number, status: string) => {
   }
   if (normalized === "cancelled") {
     return `Order #${orderId} has been cancelled.`;
+  }
+  if (normalized === "payment failed") {
+    return `Order #${orderId} payment was not completed.`;
   }
 
   return `Order #${orderId} status changed to ${formatStatusForMessage(status)}.`;

@@ -48,9 +48,9 @@ const normalizePaymentStatus = (
 
 const resolveOrderStatus = (
   status: "created" | "pending" | "succeeded" | "failed" | "cancelled" | null,
-): "New" | "Cancelled" | null => {
+): "New" | "Payment failed" | null => {
   if (status === "succeeded") return "New";
-  if (status === "failed" || status === "cancelled") return "Cancelled";
+  if (status === "failed" || status === "cancelled") return "Payment failed";
   return null;
 };
 
@@ -101,6 +101,33 @@ const getObject = (value: unknown): Record<string, unknown> | null =>
   value && typeof value === "object" && !Array.isArray(value)
     ? (value as Record<string, unknown>)
     : null;
+
+const buildDraftSignature = (draftOrder: z.infer<typeof BodySchema>["draftOrder"]) => {
+  const normalizedItems = draftOrder.items
+    .map((item) => ({
+      product_id: Number(item.product_id),
+      quantity: Number(item.quantity),
+      size: item.size,
+      unitPrice: Number(item.unitPrice),
+    }))
+    .sort((a, b) => {
+      if (a.product_id !== b.product_id) return a.product_id - b.product_id;
+      if (a.size !== b.size) return a.size.localeCompare(b.size);
+      if (a.unitPrice !== b.unitPrice) return a.unitPrice - b.unitPrice;
+      return a.quantity - b.quantity;
+    });
+
+  return JSON.stringify({
+    total: Number(draftOrder.total),
+    delivery_option: draftOrder.delivery_option,
+    delivery_fee: Number(draftOrder.delivery_fee ?? 0),
+    delivery_distance_km: Number(draftOrder.delivery_distance_km ?? 0),
+    delivery_rate: Number(draftOrder.delivery_rate ?? 0),
+    collection_address: draftOrder.collection_address ?? "",
+    delivery_address: draftOrder.delivery_address ?? "",
+    items: normalizedItems,
+  });
+};
 
 const ensureOrderFromTransaction = async (
   supabase: ReturnType<typeof getSupabaseAdmin>,
@@ -373,6 +400,7 @@ Deno.serve(async (req) => {
     const checkoutReferencePrefix = "ORDER-";
     const returnBaseUrl =
       Deno.env.get("PAYMENT_RETURN_URL") ?? "jaymimicakes://payment-return";
+    const currentDraftSignature = buildDraftSignature(body.draftOrder);
 
     const { data: existing } = await supabase
       .from("payment_transactions")
@@ -387,7 +415,23 @@ Deno.serve(async (req) => {
     if (existing?.metadata && typeof existing.metadata === "object") {
       const existingRedirectUrl = (existing.metadata as Record<string, unknown>)
         .redirectUrl;
-      if (typeof existingRedirectUrl === "string") {
+      const existingDraftOrder = getObject(
+        (existing.metadata as Record<string, unknown>).draftOrder,
+      );
+      const existingAmount = Number(existing.amount ?? 0);
+      const parsedExistingDraft = existingDraftOrder
+        ? BodySchema.shape.draftOrder.safeParse(existingDraftOrder)
+        : null;
+      const existingDraftSignature =
+        parsedExistingDraft?.success
+          ? buildDraftSignature(parsedExistingDraft.data)
+          : null;
+      const canReuseExistingCheckout =
+        typeof existingRedirectUrl === "string" &&
+        existingAmount === amount &&
+        existingDraftSignature === currentDraftSignature;
+
+      if (canReuseExistingCheckout) {
         return jsonResponse(200, {
           redirectUrl: existingRedirectUrl,
           transactionId: existing.id,

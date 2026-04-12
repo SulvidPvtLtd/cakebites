@@ -53,6 +53,8 @@ export default function OrderDetailScreen() {
         return "Delivered";
       case "cancelled":
         return "Cancelled";
+      case "payment failed":
+        return "Payment failed";
       default:
         return null;
     }
@@ -71,11 +73,19 @@ export default function OrderDetailScreen() {
       if (!currentStatus) return false;
       if (currentStatus === "Pending Payment") return false;
       if (currentStatus === nextStatus) return false;
-      if (currentStatus === "Delivered" || currentStatus === "Cancelled") return false;
+      if (
+        currentStatus === "Delivered" ||
+        currentStatus === "Cancelled" ||
+        currentStatus === "Payment failed"
+      ) {
+        return false;
+      }
 
       if (nextStatus === "Cancelled") {
         return currentStatus === "New" || currentStatus === "Cooking" || currentStatus === "Delivering";
       }
+
+      if (nextStatus === "Payment failed") return false;
 
       const currentIndex = getStatusIndex(currentStatus);
       const nextIndex = getStatusIndex(nextStatus);

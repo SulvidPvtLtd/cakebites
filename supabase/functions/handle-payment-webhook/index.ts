@@ -420,7 +420,7 @@ Deno.serve(async (req) => {
           ? "New"
         : resourceType === "payment" &&
               (resolvedStatus === "failed" || resolvedStatus === "cancelled")
-            ? "Cancelled"
+            ? "Payment failed"
         : resourceType === "refund" && status === "succeeded"
           ? "Cancelled"
             : null;

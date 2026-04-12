@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useLocalSearchParams, useNavigation, useRouter } from "expo-router";
 import * as Linking from "expo-linking";
 import { WebView } from "react-native-webview";
 
@@ -56,19 +56,86 @@ export default function PaymentWebViewScreen() {
   const transactionId = params.transactionId ?? "";
   const redirectUrl = params.redirectUrl ?? "";
   const router = useRouter();
+  const navigation = useNavigation();
   const { showToast } = useToast();
   const [isHandlingReturn, setIsHandlingReturn] = useState(false);
+  const [isCancellingCheckout, setIsCancellingCheckout] = useState(false);
   const isHandlingReturnRef = useRef(false);
+  const isCancellingCheckoutRef = useRef(false);
+  const canExitRef = useRef(false);
   const { clearCart } = useCart();
   const { session, loading: authLoading } = useAuth();
 
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme ?? "light"];
+  const cancelPendingCheckout = useCallback(async () => {
+    if (!transactionId) return false;
+
+    try {
+      const transaction = await fetchPaymentTransaction(transactionId);
+      const paymentStatus = normalizePaymentStatus(transaction?.status);
+      const shouldCancel =
+        paymentStatus === "created" || paymentStatus === "pending";
+
+      if (!shouldCancel) {
+        return false;
+      }
+
+      const metadata =
+        transaction?.metadata &&
+        typeof transaction.metadata === "object" &&
+        !Array.isArray(transaction.metadata)
+          ? (transaction.metadata as Record<string, unknown>)
+          : {};
+
+      const { error: transactionUpdateError } = await supabase
+        .from("payment_transactions")
+        .update({
+          status: "cancelled",
+          metadata: {
+            ...metadata,
+            cancelledBy: "user_back_navigation",
+            cancelledAt: new Date().toISOString(),
+          },
+        })
+        .eq("id", transactionId)
+        .in("status", ["created", "pending"]);
+
+      if (transactionUpdateError) {
+        throw new Error(transactionUpdateError.message);
+      }
+
+      if (
+        typeof transaction?.order_id === "number" &&
+        Number.isFinite(transaction.order_id) &&
+        transaction.order_id > 0
+      ) {
+        const { error: orderUpdateError } = await supabase
+          .from("orders")
+          .update({ status: "Payment failed" })
+          .eq("id", transaction.order_id)
+          .eq("status", "Pending Payment");
+
+        if (orderUpdateError) {
+          throw new Error(orderUpdateError.message);
+        }
+      }
+
+      clearCart();
+      showToast("Checkout cancelled.", "info");
+      return true;
+    } catch {
+      showToast("Could not cancel this checkout. Please check your orders.", "error");
+      return false;
+    }
+  }, [transactionId, clearCart, showToast]);
+
   const handleReturnUrl = useCallback(
     async (url: string) => {
       if (isHandlingReturnRef.current) return;
       isHandlingReturnRef.current = true;
       setIsHandlingReturn(true);
+      canExitRef.current = true;
       let resolvedOrderId: number | null = null;
       let resolvedTransactionId = transactionId;
       let redirectTarget: `/(user)/orders/${number}` | "/(user)/orders" | "/cart" = "/(user)/orders";
@@ -192,6 +259,29 @@ export default function PaymentWebViewScreen() {
     };
   }, [handleReturnUrl]);
 
+  useEffect(() => {
+    const unsubscribe = navigation.addListener("beforeRemove", (event) => {
+      if (canExitRef.current || isHandlingReturnRef.current) {
+        return;
+      }
+
+      event.preventDefault();
+
+      void (async () => {
+        if (isCancellingCheckoutRef.current) return;
+        isCancellingCheckoutRef.current = true;
+        setIsCancellingCheckout(true);
+        await cancelPendingCheckout();
+        setIsCancellingCheckout(false);
+        isCancellingCheckoutRef.current = false;
+        canExitRef.current = true;
+        navigation.dispatch(event.data.action);
+      })();
+    });
+
+    return unsubscribe;
+  }, [navigation, cancelPendingCheckout]);
+
   if (authLoading) {
     return (
       <View style={[styles.container, { backgroundColor: theme.background }]}>
@@ -242,11 +332,11 @@ export default function PaymentWebViewScreen() {
           </View>
         )}
       />
-      {isHandlingReturn ? (
+      {isHandlingReturn || isCancellingCheckout ? (
         <View style={styles.overlay}>
           <ActivityIndicator color={theme.card} />
           <Text style={[styles.overlayText, { color: theme.card }]}>
-            Confirming payment...
+            {isCancellingCheckout ? "Cancelling checkout..." : "Confirming payment..."}
           </Text>
         </View>
       ) : null}

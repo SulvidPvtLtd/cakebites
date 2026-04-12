@@ -48,7 +48,9 @@ export const useMyOrders = () => {
 };
 
 export const useOrderList = ({ archived = false }: { archived: boolean }) => {
-    const statuses = archived ? ["Delivered", "Cancelled"] : ["Pending Payment", "New", "Cooking", "Delivering"];
+    const statuses = archived
+        ? ["Delivered", "Cancelled", "Payment failed"]
+        : ["Pending Payment", "New", "Cooking", "Delivering"];
 
     return useQuery<OrderRow[]>({
         queryKey: ['orders', { archived }],
@@ -94,6 +96,7 @@ const VALID_ORDER_STATUSES = new Set([
     "Delivering",
     "Delivered",
     "Cancelled",
+    "Payment failed",
 ]);
 
 type InsertOrderInput = Pick<
@@ -112,9 +115,10 @@ const ORDER_STATUS_FLOW: readonly OrderStatus[] = [
     "Delivering",
     "Delivered",
     "Cancelled",
+    "Payment failed",
 ];
 
-const TERMINAL_STATUSES = new Set<OrderStatus>(["Delivered", "Cancelled"]);
+const TERMINAL_STATUSES = new Set<OrderStatus>(["Delivered", "Cancelled", "Payment failed"]);
 
 const normalizeOrderStatus = (status: unknown): OrderStatus | null => {
     if (typeof status !== "string") return null;
@@ -133,6 +137,8 @@ const normalizeOrderStatus = (status: unknown): OrderStatus | null => {
             return "Delivered";
         case "cancelled":
             return "Cancelled";
+        case "payment failed":
+            return "Payment failed";
         default:
             return null;
     }
@@ -152,6 +158,10 @@ const canTransitionOrderStatus = (
             currentStatus === "Cooking" ||
             currentStatus === "Delivering"
         );
+    }
+
+    if (nextStatus === "Payment failed") {
+        return false;
     }
 
     const currentIndex = ORDER_STATUS_FLOW.indexOf(currentStatus);
