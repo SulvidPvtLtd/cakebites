@@ -138,7 +138,12 @@ export default function PaymentWebViewScreen() {
       canExitRef.current = true;
       let resolvedOrderId: number | null = null;
       let resolvedTransactionId = transactionId;
-      let redirectTarget: `/(user)/orders/${number}` | "/(user)/orders" | "/cart" = "/(user)/orders";
+      let redirectTarget:
+        | `/(user)/orders/${number}`
+        | "/(user)/orders"
+        | "/cart"
+        | "/(user)/menu" = "/(user)/orders";
+      let forceMenuRedirect = false;
 
       try {
         const parsedReturn = parseReturnUrl(url);
@@ -153,7 +158,13 @@ export default function PaymentWebViewScreen() {
         const statusFromReturn = normalizePaymentStatus(statusParam);
         let resolvedStatus: ReturnType<typeof normalizePaymentStatus> = null;
 
-        if (resolvedTransactionId) {
+        if (statusFromReturn === "failed") {
+          showToast("Payment failed.", "error", 2400, "center");
+          redirectTarget = "/(user)/menu";
+          forceMenuRedirect = true;
+        }
+
+        if (!forceMenuRedirect && resolvedTransactionId) {
           try {
             const queryParams = new URLSearchParams({
               transactionId: resolvedTransactionId,
@@ -176,7 +187,7 @@ export default function PaymentWebViewScreen() {
           }
         }
 
-        if (!resolvedStatus && resolvedTransactionId) {
+        if (!forceMenuRedirect && !resolvedStatus && resolvedTransactionId) {
           for (let attempt = 0; attempt < 4; attempt += 1) {
             await wait(1500);
             const record = await fetchPaymentTransaction(resolvedTransactionId);
@@ -195,14 +206,16 @@ export default function PaymentWebViewScreen() {
           showToast("Payment cancelled.", "info");
           redirectTarget = "/cart";
         } else if (resolvedStatus === "failed") {
-          showToast("Payment failed.", "error");
-          redirectTarget = "/cart";
+          showToast("Payment failed.", "error", 2400, "center");
+          redirectTarget = "/(user)/menu";
+          forceMenuRedirect = true;
         } else if (statusFromReturn === "cancelled") {
           showToast("Payment cancellation is pending confirmation.", "info");
           redirectTarget = "/cart";
         } else if (statusFromReturn === "failed") {
-          showToast("Payment failure is pending confirmation.", "info");
-          redirectTarget = "/cart";
+          showToast("Payment failure is pending confirmation.", "error", 2400, "center");
+          redirectTarget = "/(user)/menu";
+          forceMenuRedirect = true;
         } else {
           showToast("Payment confirmation is still pending.", "info");
           redirectTarget = "/(user)/orders";
@@ -211,7 +224,7 @@ export default function PaymentWebViewScreen() {
         showToast("Failed to verify payment.", "error");
         redirectTarget = "/cart";
       } finally {
-        if (resolvedTransactionId && !resolvedOrderId) {
+        if (resolvedTransactionId && !resolvedOrderId && !forceMenuRedirect) {
           try {
             const record = await fetchPaymentTransaction(resolvedTransactionId);
             resolvedOrderId =
@@ -222,7 +235,9 @@ export default function PaymentWebViewScreen() {
             // ignore
           }
         }
-        if (resolvedOrderId && Number.isFinite(resolvedOrderId) && resolvedOrderId > 0) {
+        if (forceMenuRedirect) {
+          router.replace("/(user)/menu");
+        } else if (resolvedOrderId && Number.isFinite(resolvedOrderId) && resolvedOrderId > 0) {
           router.replace(`/(user)/orders/${resolvedOrderId}`);
         } else {
           router.replace(redirectTarget);

@@ -12,14 +12,21 @@ import { useColorScheme } from "@components/useColorScheme";
 import Colors from "@constants/Colors";
 
 type ToastKind = "success" | "error" | "info";
+type ToastPlacement = "top" | "center";
 
 type ToastPayload = {
   message: string;
   kind: ToastKind;
+  placement: ToastPlacement;
 };
 
 type ToastContextValue = {
-  showToast: (message: string, kind?: ToastKind, durationMs?: number) => void;
+  showToast: (
+    message: string,
+    kind?: ToastKind,
+    durationMs?: number,
+    placement?: ToastPlacement,
+  ) => void;
 };
 
 const ToastContext = createContext<ToastContextValue | undefined>(undefined);
@@ -31,7 +38,12 @@ export default function ToastProvider({ children }: PropsWithChildren) {
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const showToast = useCallback(
-    (message: string, kind: ToastKind = "info", durationMs = DEFAULT_DURATION) => {
+    (
+      message: string,
+      kind: ToastKind = "info",
+      durationMs = DEFAULT_DURATION,
+      placement: ToastPlacement = "center",
+    ) => {
       if (!message) return;
 
       if (timeoutRef.current) {
@@ -39,7 +51,7 @@ export default function ToastProvider({ children }: PropsWithChildren) {
         timeoutRef.current = null;
       }
 
-      setToast({ message, kind });
+      setToast({ message, kind, placement });
       Animated.timing(opacity, {
         toValue: 1,
         duration: 200,
@@ -94,7 +106,10 @@ const ToastHost = ({ toast, opacity }: ToastHostProps) => {
         : theme.tint;
 
   return (
-    <View pointerEvents="none" style={styles.host}>
+    <View
+      pointerEvents="none"
+      style={[styles.hostBase, toast.placement === "center" ? styles.hostCenter : styles.hostTop]}
+    >
       <Animated.View style={[styles.toast, { backgroundColor, opacity }]}>
         <Text style={[styles.text, { color: theme.card }]}>{toast.message}</Text>
       </Animated.View>
@@ -103,13 +118,21 @@ const ToastHost = ({ toast, opacity }: ToastHostProps) => {
 };
 
 const styles = StyleSheet.create({
-  host: {
+  hostBase: {
     position: "absolute",
     left: 16,
     right: 16,
+    zIndex: 999,
+  },
+  hostTop: {
     top: 56,
     alignItems: "center",
-    zIndex: 999,
+  },
+  hostCenter: {
+    top: 0,
+    bottom: 0,
+    alignItems: "center",
+    justifyContent: "center",
   },
   toast: {
     borderRadius: 12,

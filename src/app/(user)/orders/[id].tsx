@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   ActivityIndicator,
+  Alert,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -11,7 +12,7 @@ import {
   useColorScheme,
 } from "react-native";
 
-import { useOrderDetails } from "@/src/api/orders";
+import { useHideFailedOrderForUser, useOrderDetails } from "@/src/api/orders";
 import OrderListItem from "@/src/components/OrderListItem";
 import PlacedOrderListItems from "@/src/components/PlacedOrderListItems";
 import Colors from "@/src/constants/Colors";
@@ -31,6 +32,8 @@ export default function OrderDetailScreen() {
   const idString = typeof idParam === "string" ? idParam : idParam?.[0]; // Make sure id is a string.
 
   const { data: orderFetched, isLoading, error, refetch } = useOrderDetails(idString);
+  const { mutateAsync: hideFailedOrder, isPending: isDeletingFailedOrder } =
+    useHideFailedOrderForUser();
 
   // Notify the user once they've landed on the order details screen.
   useEffect(() => {
@@ -138,6 +141,42 @@ export default function OrderDetailScreen() {
           order={orderFetched}
           statusSubtext={formatCurrencyZAR(orderTotal)}
         />
+        {orderFetched.status === "Payment failed" ? (
+          <Pressable
+            disabled={isDeletingFailedOrder}
+            onPress={() => {
+              Alert.alert(
+                "Delete failed order",
+                "Remove this failed payment order from your list? Admin can still see it.",
+                [
+                  { text: "Cancel", style: "cancel" },
+                  {
+                    text: "Delete",
+                    style: "destructive",
+                    onPress: async () => {
+                      try {
+                        await hideFailedOrder(orderFetched.id);
+                        router.replace("/(user)/orders");
+                      } catch (deleteError) {
+                        Alert.alert(
+                          "Delete failed",
+                          deleteError instanceof Error
+                            ? deleteError.message
+                            : "Could not delete failed order.",
+                        );
+                      }
+                    },
+                  },
+                ],
+              );
+            }}
+            style={[styles.deleteButton, { borderColor: theme.error }]}
+          >
+            <Text style={[styles.deleteButtonText, { color: theme.error }]}>
+              {isDeletingFailedOrder ? "Deleting..." : "Delete failed order"}
+            </Text>
+          </Pressable>
+        ) : null}
 
         {/* Items in the order */}
         <View style={styles.listContent}>
@@ -174,5 +213,16 @@ const styles = StyleSheet.create({
 
   headerLink: {
     fontWeight: "600",
+  },
+  deleteButton: {
+    alignSelf: "flex-end",
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  deleteButtonText: {
+    fontSize: 12,
+    fontWeight: "700",
   },
 });

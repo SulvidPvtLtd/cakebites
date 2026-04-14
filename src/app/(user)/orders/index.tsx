@@ -1,12 +1,13 @@
 import { Stack, router, useLocalSearchParams } from "expo-router";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { ActivityIndicator, FlatList, Pressable, Text } from "react-native";
+import { ActivityIndicator, Alert, FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 import OrderListItem from "@components/OrderListItem";
-import { useMyOrders, type UserOrderRow } from "@/src/api/orders";
-import type { Tables } from "@/src/database.types";
+import { useHideFailedOrderForUser, useMyOrders, type UserOrderRow } from "@/src/api/orders";
 import { useAuth } from "@/src/providers/AuthProvider";
 import { supabase } from "@/src/lib/supabase";
+import Colors from "@/src/constants/Colors";
+import { useColorScheme } from "@/src/components/useColorScheme";
 
 type UserOrder = UserOrderRow;
 
@@ -15,6 +16,10 @@ export default function OrdersScreen() {
   const queryClient = useQueryClient();
   const { session } = useAuth();
   const userId = session?.user.id;
+  const { mutateAsync: hideFailedOrder } = useHideFailedOrderForUser();
+  const [deletingOrderId, setDeletingOrderId] = useState<number | null>(null);
+  const colorScheme = useColorScheme();
+  const theme = Colors[colorScheme ?? "light"];
 
   const { data: orders, isLoading, error, refetch } = useMyOrders();
   const safeOrders = orders ?? [];
@@ -106,13 +111,68 @@ export default function OrdersScreen() {
           const isPaid =
             normalizedStatus === "succeeded" || normalizedStatus === "success";
           return (
-            <OrderListItem
-              order={item}
-              paymentStatusLabel={isPaid ? "Paid" : "Unpaid"}
-            />
+            <View style={styles.row}>
+              <OrderListItem
+                order={item}
+                paymentStatusLabel={isPaid ? "Paid" : "Unpaid"}
+              />
+              {item.status === "Payment failed" ? (
+                <Pressable
+                  disabled={deletingOrderId === item.id}
+                  onPress={() => {
+                    Alert.alert(
+                      "Delete failed order",
+                      "Remove this failed payment order from your list? Admin can still see it.",
+                      [
+                        { text: "Cancel", style: "cancel" },
+                        {
+                          text: "Delete",
+                          style: "destructive",
+                          onPress: async () => {
+                            try {
+                              setDeletingOrderId(item.id);
+                              await hideFailedOrder(item.id);
+                            } catch (error) {
+                              Alert.alert(
+                                "Delete failed",
+                                error instanceof Error ? error.message : "Could not delete failed order.",
+                              );
+                            } finally {
+                              setDeletingOrderId(null);
+                            }
+                          },
+                        },
+                      ],
+                    );
+                  }}
+                  style={[styles.deleteButton, { borderColor: theme.error }]}
+                >
+                  <Text style={[styles.deleteText, { color: theme.error }]}>
+                    {deletingOrderId === item.id ? "Deleting..." : "Delete failed order"}
+                  </Text>
+                </Pressable>
+              ) : null}
+            </View>
           );
         }}
       />
     </>
   );
 }
+
+const styles = StyleSheet.create({
+  row: {
+    gap: 8,
+  },
+  deleteButton: {
+    alignSelf: "flex-end",
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  deleteText: {
+    fontSize: 12,
+    fontWeight: "700",
+  },
+});

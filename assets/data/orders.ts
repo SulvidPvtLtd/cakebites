@@ -12,6 +12,7 @@ const orders: Order[] = [
     status: 'Cooking',
     user_id: '1',
     delivery_option: 'Yes',
+    hidden_from_customer: false,
     payment_gateway: null,
     payment_transaction_id: null,
     order_items: [
@@ -40,6 +41,7 @@ const orders: Order[] = [
     status: 'Delivered',
     user_id: '1',
     delivery_option: 'Yes',
+    hidden_from_customer: false,
     payment_gateway: null,
     payment_transaction_id: null,
     order_items: [
@@ -60,6 +62,7 @@ const orders: Order[] = [
     status: 'Delivered',
     user_id: '1',
     delivery_option: 'Yes',
+    hidden_from_customer: false,
     payment_gateway: null,
     payment_transaction_id: null,
     order_items: [

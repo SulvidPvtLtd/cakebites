@@ -101,6 +101,7 @@ export type Database = {
         Row: {
           created_at: string
           delivery_option: string
+          hidden_from_customer: boolean
           id: number
           payment_gateway: string | null
           payment_transaction_id: string | null
@@ -111,6 +112,7 @@ export type Database = {
         Insert: {
           created_at?: string
           delivery_option?: string
+          hidden_from_customer?: boolean
           id?: number
           payment_gateway?: string | null
           payment_transaction_id?: string | null
@@ -121,6 +123,7 @@ export type Database = {
         Update: {
           created_at?: string
           delivery_option?: string
+          hidden_from_customer?: boolean
           id?: number
           payment_gateway?: string | null
           payment_transaction_id?: string | null

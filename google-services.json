@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1034652509141",
+    "project_id": "jaymmimicakes",
+    "storage_bucket": "jaymmimicakes.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1034652509141:android:944f79f833d50ad9e1d35c",
+        "android_client_info": {
+          "package_name": "za.co.jaymmimicakes"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCjlaQTNAM6xN-JfQaK_sy3imqGhP6r204"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

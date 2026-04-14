@@ -22,7 +22,7 @@
     },
     "android": {
       "package": "za.co.jaymmimicakes",
-      "versionCode": 1,
+      "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/icon.png",
         "backgroundColor": "#000000"
@@ -39,11 +39,17 @@
       "expo-router",
       "expo-secure-store",
       "expo-notifications",
-      "expo-system-ui" // ← Added here
+      "expo-system-ui"
     ],
     "experiments": {
       "typedRoutes": true,
       "tsconfigPaths": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "030ef30c-e4a2-43e1-9adb-ad815ab14e4a"
+      }
     }
   }
 }

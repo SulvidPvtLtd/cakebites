@@ -38,12 +38,51 @@ export const useMyOrders = () => {
                 .from('orders')
                 .select('*, payment_transactions!orders_payment_transaction_id_fkey(status)')
                 .eq('user_id', userId)
+                .eq('hidden_from_customer', false)
                 .order('created_at', { ascending: false });
             if (error) {
                 throw new Error(error.message);
             }
             return (data ?? []) as UserOrderRow[];
         }
+    });
+};
+
+export const useHideFailedOrderForUser = () => {
+    const queryClient = useQueryClient();
+    const { session } = useAuth();
+    const userId = session?.user.id;
+
+    return useMutation<void, Error, number>({
+        async mutationFn(orderId) {
+            if (!userId) {
+                throw new Error("You must be signed in.");
+            }
+
+            const parsedOrderId = Number(orderId);
+            if (!Number.isFinite(parsedOrderId) || parsedOrderId <= 0) {
+                throw new Error("Invalid order id.");
+            }
+
+            const { error } = await supabase
+                .from("orders")
+                .update({ hidden_from_customer: true })
+                .eq("id", parsedOrderId)
+                .eq("user_id", userId)
+                .eq("status", "Payment failed");
+
+            if (error) {
+                throw new Error(error.message);
+            }
+        },
+        onSuccess: async (_data, orderId) => {
+            await queryClient.invalidateQueries({ queryKey: ["orders"] });
+            await queryClient.invalidateQueries({ queryKey: ["orders", { userId }] });
+            await queryClient.invalidateQueries({ queryKey: ["order", orderId] });
+        },
+        onError(error) {
+            console.log(error);
+        },
     });
 };
 
