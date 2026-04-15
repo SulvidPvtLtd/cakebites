@@ -8,13 +8,14 @@
     "scheme": "jaymimicakes",
     "userInterfaceStyle": "automatic",
     "splash": {
-      "image": "./assets/images/icon.png",
+      "image": "./assets/images/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff",
+      "backgroundColor": "#7DCD5D",
       "dark": {
-        "image": "./assets/images/icon.png",
-        "backgroundColor": "#000000"
-      }
+        "image": "./assets/images/splash-icon-dark.png",
+        "backgroundColor": "#7DCD5D"
+      },
+      "imageWidth": 610
     },
     "ios": {
       "bundleIdentifier": "za.co.jaymmimicakes",
