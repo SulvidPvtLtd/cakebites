@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Jaymimi Cakes",
-    "slug": "jaymimicakes",
+    "slug": "JayCakes",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -15,7 +15,7 @@
         "image": "./assets/images/splash-icon-dark.png",
         "backgroundColor": "#7DCD5D"
       },
-      "imageWidth": 610
+      "imageWidth": 1024
     },
     "ios": {
       "bundleIdentifier": "za.co.jaymmimicakes",
@@ -23,10 +23,9 @@
     },
     "android": {
       "package": "za.co.jaymmimicakes",
-      "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/icon.png",
-        "backgroundColor": "#000000"
+        "backgroundColor": "#7DCD5D"
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false
@@ -49,7 +48,7 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "030ef30c-e4a2-43e1-9adb-ad815ab14e4a"
+        "projectId": "1ea6ba65-0078-4e4a-85c1-3ccb2c960a17"
       }
     }
   }
