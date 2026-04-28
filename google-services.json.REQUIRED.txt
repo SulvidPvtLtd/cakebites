@@ -1,0 +1,3 @@
+PLACE YOUR NEW FIREBASE google-services.json HERE.
+Required Android package for this app: za.co.jaycakes
+Create a new Firebase project you own, add Android app with this package, then download the file as google-services.json.

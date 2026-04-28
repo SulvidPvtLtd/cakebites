@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "Jaymimi Cakes",
-    "slug": "JayCakes",
+    "name": "Jay Cakes",
+    "slug": "jay-cakes",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "jaymimicakes",
+    "scheme": "jaycakes",
     "userInterfaceStyle": "automatic",
     "splash": {
       "image": "./assets/images/splash-icon.png",
@@ -18,17 +18,19 @@
       "imageWidth": 1024
     },
     "ios": {
-      "bundleIdentifier": "za.co.jaymmimicakes",
+      "bundleIdentifier": "za.co.jaycakes",
       "supportsTablet": true
     },
     "android": {
-      "package": "za.co.jaymmimicakes",
+      "package": "za.co.jaycakes",
+      "versionCode": 1,
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/icon.png",
         "backgroundColor": "#7DCD5D"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": []
     },
     "web": {
       "bundler": "metro",
@@ -48,8 +50,9 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "1ea6ba65-0078-4e4a-85c1-3ccb2c960a17"
+        "projectId": "97d2c2bd-4083-4d0b-83ce-3855590c27a8"
       }
-    }
+    },
+    "owner": "sulvid"
   }
 }

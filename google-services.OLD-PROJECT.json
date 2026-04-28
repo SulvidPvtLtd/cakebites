@@ -1,21 +1,21 @@
-﻿{
+{
   "project_info": {
-    "project_number": "119743955607",
-    "project_id": "jay-cakes",
-    "storage_bucket": "jay-cakes.firebasestorage.app"
+    "project_number": "1034652509141",
+    "project_id": "jaymmimicakes",
+    "storage_bucket": "jaymmimicakes.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:119743955607:android:f2435b11830d35edd55fd2",
+        "mobilesdk_app_id": "1:1034652509141:android:944f79f833d50ad9e1d35c",
         "android_client_info": {
-          "package_name": "za.co.jaycakes"
+          "package_name": "za.co.jaymmimicakes"
         }
       },
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyC3_g5-UaQe_mtToaeFGLEJvrIBCS1adSY"
+          "current_key": "AIzaSyCjlaQTNAM6xN-JfQaK_sy3imqGhP6r204"
         }
       ],
       "services": {

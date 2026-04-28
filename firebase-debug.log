@@ -1,0 +1,287 @@
+[debug] [2026-04-28T22:42:21.956Z] ----------------------------------------------------------------------
+[debug] [2026-04-28T22:42:21.963Z] Command:       C:\nvm4w\nodejs\node.exe C:\Users\chiku\AppData\Roaming\npm\node_modules\firebase-tools\lib\bin\firebase.js login --no-localhost
+[debug] [2026-04-28T22:42:21.964Z] CLI Version:   15.15.0
+[debug] [2026-04-28T22:42:21.965Z] Platform:      win32
+[debug] [2026-04-28T22:42:21.966Z] Node Version:  v20.19.5
+[debug] [2026-04-28T22:42:21.966Z] Time:          Wed Apr 29 2026 00:42:21 GMT+0200 (Central Africa Time)
+[debug] [2026-04-28T22:42:21.967Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-04-28T22:42:21.974Z] >>> [apiv2][query] GET https://firebase-public.firebaseio.com/cli.json [none]
+[error] 
+[error] Error: Cannot run login in non-interactive mode. See login:ci to generate a token for use in non-interactive environments.
+[debug] [2026-04-28T22:42:40.496Z] ----------------------------------------------------------------------
+[debug] [2026-04-28T22:42:40.501Z] Command:       C:\nvm4w\nodejs\node.exe C:\Users\chiku\AppData\Roaming\npm\node_modules\firebase-tools\lib\bin\firebase.js projects:list
+[debug] [2026-04-28T22:42:40.501Z] CLI Version:   15.15.0
+[debug] [2026-04-28T22:42:40.502Z] Platform:      win32
+[debug] [2026-04-28T22:42:40.502Z] Node Version:  v20.19.5
+[debug] [2026-04-28T22:42:40.502Z] Time:          Wed Apr 29 2026 00:42:40 GMT+0200 (Central Africa Time)
+[debug] [2026-04-28T22:42:40.503Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-04-28T22:42:40.507Z] >>> [apiv2][query] GET https://firebase-public.firebaseio.com/cli.json [none]
+[debug] [2026-04-28T22:42:40.635Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-04-28T22:42:41.570Z] <<< [apiv2][status] GET https://firebase-public.firebaseio.com/cli.json 200
+[debug] [2026-04-28T22:42:41.571Z] <<< [apiv2][body] GET https://firebase-public.firebaseio.com/cli.json {"cloudBuildErrorAfter":1594252800000,"cloudBuildWarnAfter":1590019200000,"defaultNode10After":1594252800000,"minVersion":"3.0.5","node8DeploysDisabledAfter":1613390400000,"node8RuntimeDisabledAfter":1615809600000,"node8WarnAfter":1600128000000}
+[debug] [2026-04-28T22:42:41.893Z] Running auto auth
+[debug] [2026-04-28T22:42:41.899Z] No OAuth tokens found
+[debug] [2026-04-28T22:42:41.901Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects pageSize=1000
+[debug] [2026-04-28T22:42:43.372Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects 403
+[debug] [2026-04-28T22:42:43.373Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects [omitted]
+[debug] [2026-04-28T22:42:43.376Z] Request to https://firebase.googleapis.com/v1beta1/projects?pageSize=1000 had HTTP Error: 403, Firebase Management API has not been used in project 49822899954 before or it is disabled. Enable it by visiting https://console.developers.google.com/apis/api/firebase.googleapis.com/overview?project=49822899954 then retry. If you enabled this API recently, wait a few minutes for the action to propagate to our systems and retry.
+[debug] [2026-04-28T22:42:43.380Z] FirebaseError: Request to https://firebase.googleapis.com/v1beta1/projects?pageSize=1000 had HTTP Error: 403, Firebase Management API has not been used in project 49822899954 before or it is disabled. Enable it by visiting https://console.developers.google.com/apis/api/firebase.googleapis.com/overview?project=49822899954 then retry. If you enabled this API recently, wait a few minutes for the action to propagate to our systems and retry.
+    at responseToError (C:\Users\chiku\AppData\Roaming\npm\node_modules\firebase-tools\lib\responseToError.js:53:12)
+    at RetryOperation._fn (C:\Users\chiku\AppData\Roaming\npm\node_modules\firebase-tools\lib\apiv2.js:333:77)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+[error] 
+[error] Error: Failed to list Firebase projects. See firebase-debug.log for more info.
+[debug] [2026-04-28T22:46:06.864Z] ----------------------------------------------------------------------
+[debug] [2026-04-28T22:46:06.869Z] Command:       C:\nvm4w\nodejs\node.exe C:\Users\chiku\AppData\Roaming\npm\node_modules\firebase-tools\lib\bin\firebase.js projects:list
+[debug] [2026-04-28T22:46:06.870Z] CLI Version:   15.15.0
+[debug] [2026-04-28T22:46:06.870Z] Platform:      win32
+[debug] [2026-04-28T22:46:06.870Z] Node Version:  v20.19.5
+[debug] [2026-04-28T22:46:06.870Z] Time:          Wed Apr 29 2026 00:46:06 GMT+0200 (Central Africa Time)
+[debug] [2026-04-28T22:46:06.871Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-04-28T22:46:06.891Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-04-28T22:46:08.093Z] Running auto auth
+[debug] [2026-04-28T22:46:08.101Z] No OAuth tokens found
+[debug] [2026-04-28T22:46:08.105Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects pageSize=1000
+[debug] [2026-04-28T22:46:09.935Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects 200
+[debug] [2026-04-28T22:46:30.889Z] ----------------------------------------------------------------------
+[debug] [2026-04-28T22:46:30.893Z] Command:       C:\nvm4w\nodejs\node.exe C:\Users\chiku\AppData\Roaming\npm\node_modules\firebase-tools\lib\bin\firebase.js projects:create jaycakes-prod-2026 --display-name Jay Cakes
+[debug] [2026-04-28T22:46:30.894Z] CLI Version:   15.15.0
+[debug] [2026-04-28T22:46:30.895Z] Platform:      win32
+[debug] [2026-04-28T22:46:30.895Z] Node Version:  v20.19.5
+[debug] [2026-04-28T22:46:30.895Z] Time:          Wed Apr 29 2026 00:46:30 GMT+0200 (Central Africa Time)
+[debug] [2026-04-28T22:46:30.895Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-04-28T22:46:30.919Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-04-28T22:46:32.381Z] Running auto auth
+[debug] [2026-04-28T22:46:32.392Z] No OAuth tokens found
+[debug] [2026-04-28T22:46:32.395Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects [none]
+[debug] [2026-04-28T22:46:32.396Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects {"projectId":"jaycakes-prod-2026","name":"Jay Cakes"}
+[debug] [2026-04-28T22:46:34.363Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects 403
+[debug] [2026-04-28T22:46:34.364Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects {"error":{"code":403,"message":"Cloud Resource Manager API has not been used in project 49822899954 before or it is disabled. Enable it by visiting https://console.developers.google.com/apis/api/cloudresourcemanager.googleapis.com/overview?project=49822899954 then retry. If you enabled this API recently, wait a few minutes for the action to propagate to our systems and retry.","status":"PERMISSION_DENIED","details":[{"@type":"type.googleapis.com/google.rpc.ErrorInfo","reason":"SERVICE_DISABLED","domain":"googleapis.com","metadata":{"service":"cloudresourcemanager.googleapis.com","activationUrl":"https://console.developers.google.com/apis/api/cloudresourcemanager.googleapis.com/overview?project=49822899954","consumer":"projects/49822899954","containerInfo":"49822899954","serviceTitle":"Cloud Resource Manager API"}},{"@type":"type.googleapis.com/google.rpc.LocalizedMessage","locale":"en-US","message":"Cloud Resource Manager API has not been used in project 49822899954 before or it is disabled. Enable it by visiting https://console.developers.google.com/apis/api/cloudresourcemanager.googleapis.com/overview?project=49822899954 then retry. If you enabled this API recently, wait a few minutes for the action to propagate to our systems and retry."},{"@type":"type.googleapis.com/google.rpc.Help","links":[{"description":"Google developers console API activation","url":"https://console.developers.google.com/apis/api/cloudresourcemanager.googleapis.com/overview?project=49822899954"}]}]}}
+[debug] [2026-04-28T22:46:34.368Z] FirebaseError: Request to https://cloudresourcemanager.googleapis.com/v1/projects had HTTP Error: 403, Cloud Resource Manager API has not been used in project 49822899954 before or it is disabled. Enable it by visiting https://console.developers.google.com/apis/api/cloudresourcemanager.googleapis.com/overview?project=49822899954 then retry. If you enabled this API recently, wait a few minutes for the action to propagate to our systems and retry.
+    at responseToError (C:\Users\chiku\AppData\Roaming\npm\node_modules\firebase-tools\lib\responseToError.js:53:12)
+    at RetryOperation._fn (C:\Users\chiku\AppData\Roaming\npm\node_modules\firebase-tools\lib\apiv2.js:333:77)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+[error] 
+[error] Error: Failed to create project. See firebase-debug.log for more info.
+[debug] [2026-04-28T22:48:23.817Z] ----------------------------------------------------------------------
+[debug] [2026-04-28T22:48:23.828Z] Command:       C:\nvm4w\nodejs\node.exe C:\Users\chiku\AppData\Roaming\npm\node_modules\firebase-tools\lib\bin\firebase.js projects:create jaycakes-prod-2026 --display-name Jay Cakes
+[debug] [2026-04-28T22:48:23.829Z] CLI Version:   15.15.0
+[debug] [2026-04-28T22:48:23.829Z] Platform:      win32
+[debug] [2026-04-28T22:48:23.830Z] Node Version:  v20.19.5
+[debug] [2026-04-28T22:48:23.830Z] Time:          Wed Apr 29 2026 00:48:23 GMT+0200 (Central Africa Time)
+[debug] [2026-04-28T22:48:23.830Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-04-28T22:48:23.858Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-04-28T22:48:25.634Z] Running auto auth
+[debug] [2026-04-28T22:48:25.642Z] No OAuth tokens found
+[debug] [2026-04-28T22:48:25.645Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects [none]
+[debug] [2026-04-28T22:48:25.646Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects {"projectId":"jaycakes-prod-2026","name":"Jay Cakes"}
+[debug] [2026-04-28T22:48:27.462Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects 403
+[debug] [2026-04-28T22:48:27.463Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects {"error":{"code":403,"message":"Service accounts cannot create projects without a parent.","status":"PERMISSION_DENIED"}}
+[debug] [2026-04-28T22:48:27.468Z] FirebaseError: Request to https://cloudresourcemanager.googleapis.com/v1/projects had HTTP Error: 403, Service accounts cannot create projects without a parent.
+    at responseToError (C:\Users\chiku\AppData\Roaming\npm\node_modules\firebase-tools\lib\responseToError.js:53:12)
+    at RetryOperation._fn (C:\Users\chiku\AppData\Roaming\npm\node_modules\firebase-tools\lib\apiv2.js:333:77)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+[error] 
+[error] Error: Failed to create project. See firebase-debug.log for more info.
+[debug] [2026-04-28T22:58:18.541Z] ----------------------------------------------------------------------
+[debug] [2026-04-28T22:58:18.549Z] Command:       C:\nvm4w\nodejs\node.exe C:\Users\chiku\AppData\Roaming\npm\node_modules\firebase-tools\lib\bin\firebase.js projects:list
+[debug] [2026-04-28T22:58:18.550Z] CLI Version:   15.15.0
+[debug] [2026-04-28T22:58:18.550Z] Platform:      win32
+[debug] [2026-04-28T22:58:18.551Z] Node Version:  v20.19.5
+[debug] [2026-04-28T22:58:18.551Z] Time:          Wed Apr 29 2026 00:58:18 GMT+0200 (Central Africa Time)
+[debug] [2026-04-28T22:58:18.551Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-04-28T22:58:18.583Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-04-28T22:58:20.298Z] Running auto auth
+[debug] [2026-04-28T22:58:20.308Z] No OAuth tokens found
+[debug] [2026-04-28T22:58:20.311Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects pageSize=1000
+[debug] [2026-04-28T22:58:22.160Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects 200
+[debug] [2026-04-28T23:00:08.044Z] ----------------------------------------------------------------------
+[debug] [2026-04-28T23:00:08.049Z] Command:       C:\nvm4w\nodejs\node.exe C:\Users\chiku\AppData\Roaming\npm\node_modules\firebase-tools\lib\bin\firebase.js projects:addfirebase jay-cakes
+[debug] [2026-04-28T23:00:08.050Z] CLI Version:   15.15.0
+[debug] [2026-04-28T23:00:08.050Z] Platform:      win32
+[debug] [2026-04-28T23:00:08.051Z] Node Version:  v20.19.5
+[debug] [2026-04-28T23:00:08.051Z] Time:          Wed Apr 29 2026 01:00:08 GMT+0200 (Central Africa Time)
+[debug] [2026-04-28T23:00:08.052Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-04-28T23:00:08.076Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-04-28T23:00:09.500Z] Running auto auth
+[debug] [2026-04-28T23:00:09.507Z] No OAuth tokens found
+[debug] [2026-04-28T23:00:09.511Z] >>> [apiv2][query] POST https://firebase.googleapis.com/v1beta1/projects/jay-cakes:addFirebase [none]
+[debug] [2026-04-28T23:00:11.243Z] <<< [apiv2][status] POST https://firebase.googleapis.com/v1beta1/projects/jay-cakes:addFirebase 403
+[debug] [2026-04-28T23:00:11.243Z] <<< [apiv2][body] POST https://firebase.googleapis.com/v1beta1/projects/jay-cakes:addFirebase {"error":{"code":403,"message":"The caller does not have permission","status":"PERMISSION_DENIED"}}
+[debug] [2026-04-28T23:00:11.246Z] Request to https://firebase.googleapis.com/v1beta1/projects/jay-cakes:addFirebase had HTTP Error: 403, The caller does not have permission
+[debug] [2026-04-28T23:00:11.249Z] FirebaseError: Request to https://firebase.googleapis.com/v1beta1/projects/jay-cakes:addFirebase had HTTP Error: 403, The caller does not have permission
+    at responseToError (C:\Users\chiku\AppData\Roaming\npm\node_modules\firebase-tools\lib\responseToError.js:53:12)
+    at RetryOperation._fn (C:\Users\chiku\AppData\Roaming\npm\node_modules\firebase-tools\lib\apiv2.js:333:77)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+[error] 
+[error] Error: Failed to add Firebase to Google Cloud Platform project. See firebase-debug.log for more info.
+[debug] [2026-04-28T23:05:59.166Z] ----------------------------------------------------------------------
+[debug] [2026-04-28T23:05:59.176Z] Command:       C:\nvm4w\nodejs\node.exe C:\Users\chiku\AppData\Roaming\npm\node_modules\firebase-tools\lib\bin\firebase.js projects:addfirebase jay-cakes
+[debug] [2026-04-28T23:05:59.179Z] CLI Version:   15.15.0
+[debug] [2026-04-28T23:05:59.180Z] Platform:      win32
+[debug] [2026-04-28T23:05:59.181Z] Node Version:  v20.19.5
+[debug] [2026-04-28T23:05:59.182Z] Time:          Wed Apr 29 2026 01:05:59 GMT+0200 (Central Africa Time)
+[debug] [2026-04-28T23:05:59.184Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-04-28T23:05:59.220Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-04-28T23:06:01.020Z] Running auto auth
+[debug] [2026-04-28T23:06:01.031Z] No OAuth tokens found
+[debug] [2026-04-28T23:06:01.034Z] >>> [apiv2][query] POST https://firebase.googleapis.com/v1beta1/projects/jay-cakes:addFirebase [none]
+[debug] [2026-04-28T23:06:03.496Z] <<< [apiv2][status] POST https://firebase.googleapis.com/v1beta1/projects/jay-cakes:addFirebase 403
+[debug] [2026-04-28T23:06:03.497Z] <<< [apiv2][body] POST https://firebase.googleapis.com/v1beta1/projects/jay-cakes:addFirebase {"error":{"code":403,"message":"com.google.apps.framework.auth.IamPermissionDeniedException: Permission denied to enable service [firebase.googleapis.com] {\n  IAM{policy: 'serviceusage_services-/resourcemanager_projectnumbers/\\/0000001be14bc297/services/firebase.googleapis.com' resource: 'projectnumbers/119743955607/services/firebase.googleapis.com' \tpermission: 'serviceusage.services.enable'} denied {auditlog: false, cloudaudit: true}\n} (Neither system permission tenantmanagement.write granted nor fine-grained check com.google.api.tenant.auth.PublicAnnotations$DefaultTenantManagerAuthChecker passed): securityContext=ValidatedSecurityContext{gaiauser/0x1}","status":"PERMISSION_DENIED"}}
+[debug] [2026-04-28T23:06:03.499Z] Request to https://firebase.googleapis.com/v1beta1/projects/jay-cakes:addFirebase had HTTP Error: 403, com.google.apps.framework.auth.IamPermissionDeniedException: Permission denied to enable service [firebase.googleapis.com] {
+  IAM{policy: 'serviceusage_services-/resourcemanager_projectnumbers/\/0000001be14bc297/services/firebase.googleapis.com' resource: 'projectnumbers/119743955607/services/firebase.googleapis.com' 	permission: 'serviceusage.services.enable'} denied {auditlog: false, cloudaudit: true}
+} (Neither system permission tenantmanagement.write granted nor fine-grained check com.google.api.tenant.auth.PublicAnnotations$DefaultTenantManagerAuthChecker passed): securityContext=ValidatedSecurityContext{gaiauser/0x1}
+[debug] [2026-04-28T23:06:03.503Z] FirebaseError: Request to https://firebase.googleapis.com/v1beta1/projects/jay-cakes:addFirebase had HTTP Error: 403, com.google.apps.framework.auth.IamPermissionDeniedException: Permission denied to enable service [firebase.googleapis.com] {
+  IAM{policy: 'serviceusage_services-/resourcemanager_projectnumbers/\/0000001be14bc297/services/firebase.googleapis.com' resource: 'projectnumbers/119743955607/services/firebase.googleapis.com' 	permission: 'serviceusage.services.enable'} denied {auditlog: false, cloudaudit: true}
+} (Neither system permission tenantmanagement.write granted nor fine-grained check com.google.api.tenant.auth.PublicAnnotations$DefaultTenantManagerAuthChecker passed): securityContext=ValidatedSecurityContext{gaiauser/0x1}
+    at responseToError (C:\Users\chiku\AppData\Roaming\npm\node_modules\firebase-tools\lib\responseToError.js:53:12)
+    at RetryOperation._fn (C:\Users\chiku\AppData\Roaming\npm\node_modules\firebase-tools\lib\apiv2.js:333:77)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+[error] 
+[error] Error: Failed to add Firebase to Google Cloud Platform project. See firebase-debug.log for more info.
+[debug] [2026-04-28T23:08:26.066Z] ----------------------------------------------------------------------
+[debug] [2026-04-28T23:08:26.070Z] Command:       C:\nvm4w\nodejs\node.exe C:\Users\chiku\AppData\Roaming\npm\node_modules\firebase-tools\lib\bin\firebase.js projects:addfirebase jay-cakes
+[debug] [2026-04-28T23:08:26.070Z] CLI Version:   15.15.0
+[debug] [2026-04-28T23:08:26.071Z] Platform:      win32
+[debug] [2026-04-28T23:08:26.071Z] Node Version:  v20.19.5
+[debug] [2026-04-28T23:08:26.071Z] Time:          Wed Apr 29 2026 01:08:26 GMT+0200 (Central Africa Time)
+[debug] [2026-04-28T23:08:26.072Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-04-28T23:08:26.091Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-04-28T23:08:27.787Z] Running auto auth
+[debug] [2026-04-28T23:08:27.794Z] No OAuth tokens found
+[debug] [2026-04-28T23:08:27.797Z] >>> [apiv2][query] POST https://firebase.googleapis.com/v1beta1/projects/jay-cakes:addFirebase [none]
+[debug] [2026-04-28T23:08:30.814Z] <<< [apiv2][status] POST https://firebase.googleapis.com/v1beta1/projects/jay-cakes:addFirebase 200
+[debug] [2026-04-28T23:08:30.815Z] <<< [apiv2][body] POST https://firebase.googleapis.com/v1beta1/projects/jay-cakes:addFirebase {"name":"operations/workflows/ZjY5ZGQ0NGQtMzJhOS00ODk0LTg0NzYtMGY0MmUzYThjNTQ5"}
+[debug] [2026-04-28T23:08:30.817Z] No OAuth tokens found
+[debug] [2026-04-28T23:08:30.818Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/operations/workflows/ZjY5ZGQ0NGQtMzJhOS00ODk0LTg0NzYtMGY0MmUzYThjNTQ5 [none]
+[debug] [2026-04-28T23:08:33.774Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/operations/workflows/ZjY5ZGQ0NGQtMzJhOS00ODk0LTg0NzYtMGY0MmUzYThjNTQ5 200
+[debug] [2026-04-28T23:08:33.775Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/operations/workflows/ZjY5ZGQ0NGQtMzJhOS00ODk0LTg0NzYtMGY0MmUzYThjNTQ5 {"name":"operations/workflows/ZjY5ZGQ0NGQtMzJhOS00ODk0LTg0NzYtMGY0MmUzYThjNTQ5"}
+[debug] [2026-04-28T23:08:34.283Z] [Add Firebase Poller] Retrying task index 0
+[debug] [2026-04-28T23:08:34.284Z] No OAuth tokens found
+[debug] [2026-04-28T23:08:34.286Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/operations/workflows/ZjY5ZGQ0NGQtMzJhOS00ODk0LTg0NzYtMGY0MmUzYThjNTQ5 [none]
+[debug] [2026-04-28T23:08:34.821Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/operations/workflows/ZjY5ZGQ0NGQtMzJhOS00ODk0LTg0NzYtMGY0MmUzYThjNTQ5 200
+[debug] [2026-04-28T23:08:34.821Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/operations/workflows/ZjY5ZGQ0NGQtMzJhOS00ODk0LTg0NzYtMGY0MmUzYThjNTQ5 {"name":"operations/workflows/ZjY5ZGQ0NGQtMzJhOS00ODk0LTg0NzYtMGY0MmUzYThjNTQ5"}
+[debug] [2026-04-28T23:08:35.823Z] [Add Firebase Poller] Retrying task index 0
+[debug] [2026-04-28T23:08:35.825Z] No OAuth tokens found
+[debug] [2026-04-28T23:08:35.826Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/operations/workflows/ZjY5ZGQ0NGQtMzJhOS00ODk0LTg0NzYtMGY0MmUzYThjNTQ5 [none]
+[debug] [2026-04-28T23:08:36.345Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/operations/workflows/ZjY5ZGQ0NGQtMzJhOS00ODk0LTg0NzYtMGY0MmUzYThjNTQ5 200
+[debug] [2026-04-28T23:08:36.345Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/operations/workflows/ZjY5ZGQ0NGQtMzJhOS00ODk0LTg0NzYtMGY0MmUzYThjNTQ5 {"name":"operations/workflows/ZjY5ZGQ0NGQtMzJhOS00ODk0LTg0NzYtMGY0MmUzYThjNTQ5"}
+[debug] [2026-04-28T23:08:38.362Z] [Add Firebase Poller] Retrying task index 0
+[debug] [2026-04-28T23:08:38.363Z] No OAuth tokens found
+[debug] [2026-04-28T23:08:38.364Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/operations/workflows/ZjY5ZGQ0NGQtMzJhOS00ODk0LTg0NzYtMGY0MmUzYThjNTQ5 [none]
+[debug] [2026-04-28T23:08:39.254Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/operations/workflows/ZjY5ZGQ0NGQtMzJhOS00ODk0LTg0NzYtMGY0MmUzYThjNTQ5 200
+[debug] [2026-04-28T23:09:01.886Z] ----------------------------------------------------------------------
+[debug] [2026-04-28T23:09:01.895Z] Command:       C:\nvm4w\nodejs\node.exe C:\Users\chiku\AppData\Roaming\npm\node_modules\firebase-tools\lib\bin\firebase.js apps:list --project jay-cakes
+[debug] [2026-04-28T23:09:01.896Z] CLI Version:   15.15.0
+[debug] [2026-04-28T23:09:01.896Z] Platform:      win32
+[debug] [2026-04-28T23:09:01.897Z] Node Version:  v20.19.5
+[debug] [2026-04-28T23:09:01.897Z] Time:          Wed Apr 29 2026 01:09:01 GMT+0200 (Central Africa Time)
+[debug] [2026-04-28T23:09:01.898Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-04-28T23:09:02.020Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-04-28T23:09:03.556Z] Running auto auth
+[debug] [2026-04-28T23:09:03.565Z] No OAuth tokens found
+[debug] [2026-04-28T23:09:03.574Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/jay-cakes:searchApps pageSize=100
+[debug] [2026-04-28T23:09:05.096Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/jay-cakes:searchApps 200
+[debug] [2026-04-28T23:09:31.987Z] ----------------------------------------------------------------------
+[debug] [2026-04-28T23:09:31.993Z] Command:       C:\nvm4w\nodejs\node.exe C:\Users\chiku\AppData\Roaming\npm\node_modules\firebase-tools\lib\bin\firebase.js apps:create ANDROID Jay Cakes Android --package-name za.co.jaycakes --project jay-cakes --json
+[debug] [2026-04-28T23:09:31.994Z] CLI Version:   15.15.0
+[debug] [2026-04-28T23:09:31.997Z] Platform:      win32
+[debug] [2026-04-28T23:09:31.997Z] Node Version:  v20.19.5
+[debug] [2026-04-28T23:09:31.997Z] Time:          Wed Apr 29 2026 01:09:31 GMT+0200 (Central Africa Time)
+[debug] [2026-04-28T23:09:31.998Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-04-28T23:09:32.234Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-04-28T23:09:33.663Z] Running auto auth
+[info] Create your ANDROID app in project jay-cakes:
+[debug] [2026-04-28T23:09:33.673Z] No OAuth tokens found
+[debug] [2026-04-28T23:09:33.676Z] >>> [apiv2][query] POST https://firebase.googleapis.com/v1beta1/projects/jay-cakes/androidApps [none]
+[debug] [2026-04-28T23:09:33.677Z] >>> [apiv2][body] POST https://firebase.googleapis.com/v1beta1/projects/jay-cakes/androidApps {"displayName":"Jay Cakes Android","packageName":"za.co.jaycakes"}
+[debug] [2026-04-28T23:09:36.021Z] <<< [apiv2][status] POST https://firebase.googleapis.com/v1beta1/projects/jay-cakes/androidApps 200
+[debug] [2026-04-28T23:09:36.022Z] <<< [apiv2][body] POST https://firebase.googleapis.com/v1beta1/projects/jay-cakes/androidApps {"name":"operations/workflows/MDJiYmExMWItZmFmNC00ZGRmLWFlMjItY2ViZjdiZjQxMWY5"}
+[debug] [2026-04-28T23:09:36.024Z] No OAuth tokens found
+[debug] [2026-04-28T23:09:36.026Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/operations/workflows/MDJiYmExMWItZmFmNC00ZGRmLWFlMjItY2ViZjdiZjQxMWY5 [none]
+[debug] [2026-04-28T23:09:36.935Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/operations/workflows/MDJiYmExMWItZmFmNC00ZGRmLWFlMjItY2ViZjdiZjQxMWY5 200
+[debug] [2026-04-28T23:09:36.935Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/operations/workflows/MDJiYmExMWItZmFmNC00ZGRmLWFlMjItY2ViZjdiZjQxMWY5 {"name":"operations/workflows/MDJiYmExMWItZmFmNC00ZGRmLWFlMjItY2ViZjdiZjQxMWY5"}
+[debug] [2026-04-28T23:09:37.448Z] [Create Android app Poller] Retrying task index 0
+[debug] [2026-04-28T23:09:37.449Z] No OAuth tokens found
+[debug] [2026-04-28T23:09:37.450Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/operations/workflows/MDJiYmExMWItZmFmNC00ZGRmLWFlMjItY2ViZjdiZjQxMWY5 [none]
+[debug] [2026-04-28T23:09:38.415Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/operations/workflows/MDJiYmExMWItZmFmNC00ZGRmLWFlMjItY2ViZjdiZjQxMWY5 200
+[debug] [2026-04-28T23:09:38.415Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/operations/workflows/MDJiYmExMWItZmFmNC00ZGRmLWFlMjItY2ViZjdiZjQxMWY5 {"name":"operations/workflows/MDJiYmExMWItZmFmNC00ZGRmLWFlMjItY2ViZjdiZjQxMWY5"}
+[debug] [2026-04-28T23:09:39.421Z] [Create Android app Poller] Retrying task index 0
+[debug] [2026-04-28T23:09:39.422Z] No OAuth tokens found
+[debug] [2026-04-28T23:09:39.422Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/operations/workflows/MDJiYmExMWItZmFmNC00ZGRmLWFlMjItY2ViZjdiZjQxMWY5 [none]
+[debug] [2026-04-28T23:09:40.384Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/operations/workflows/MDJiYmExMWItZmFmNC00ZGRmLWFlMjItY2ViZjdiZjQxMWY5 200
+[debug] [2026-04-28T23:10:00.597Z] ----------------------------------------------------------------------
+[debug] [2026-04-28T23:10:00.612Z] Command:       C:\nvm4w\nodejs\node.exe C:\Users\chiku\AppData\Roaming\npm\node_modules\firebase-tools\lib\bin\firebase.js apps:sdkconfig ANDROID 1:119743955607:android:f2435b11830d35edd55fd2 --project jay-cakes
+[debug] [2026-04-28T23:10:00.615Z] CLI Version:   15.15.0
+[debug] [2026-04-28T23:10:00.616Z] Platform:      win32
+[debug] [2026-04-28T23:10:00.617Z] Node Version:  v20.19.5
+[debug] [2026-04-28T23:10:00.617Z] Time:          Wed Apr 29 2026 01:10:00 GMT+0200 (Central Africa Time)
+[debug] [2026-04-28T23:10:00.618Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-04-28T23:10:00.776Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-04-28T23:10:02.316Z] Running auto auth
+[debug] [2026-04-28T23:10:02.323Z] No OAuth tokens found
+[debug] [2026-04-28T23:10:02.327Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/-/androidApps/1:119743955607:android:f2435b11830d35edd55fd2/config [none]
+[debug] [2026-04-28T23:10:04.019Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/-/androidApps/1:119743955607:android:f2435b11830d35edd55fd2/config 200
+[debug] [2026-04-28T23:10:42.045Z] ----------------------------------------------------------------------
+[debug] [2026-04-28T23:10:42.049Z] Command:       C:\nvm4w\nodejs\node.exe C:\Users\chiku\AppData\Roaming\npm\node_modules\firebase-tools\lib\bin\firebase.js apps:sdkconfig ANDROID 1:119743955607:android:f2435b11830d35edd55fd2 --project jay-cakes --json
+[debug] [2026-04-28T23:10:42.050Z] CLI Version:   15.15.0
+[debug] [2026-04-28T23:10:42.050Z] Platform:      win32
+[debug] [2026-04-28T23:10:42.050Z] Node Version:  v20.19.5
+[debug] [2026-04-28T23:10:42.050Z] Time:          Wed Apr 29 2026 01:10:42 GMT+0200 (Central Africa Time)
+[debug] [2026-04-28T23:10:42.051Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-04-28T23:10:42.153Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-04-28T23:10:43.589Z] Running auto auth
+[debug] [2026-04-28T23:10:43.597Z] No OAuth tokens found
+[debug] [2026-04-28T23:10:43.599Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/-/androidApps/1:119743955607:android:f2435b11830d35edd55fd2/config [none]
+[debug] [2026-04-28T23:10:45.417Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/-/androidApps/1:119743955607:android:f2435b11830d35edd55fd2/config 200
+[debug] [2026-04-28T23:11:25.657Z] ----------------------------------------------------------------------
+[debug] [2026-04-28T23:11:25.662Z] Command:       C:\nvm4w\nodejs\node.exe C:\Users\chiku\AppData\Roaming\npm\node_modules\firebase-tools\lib\bin\firebase.js apps:sdkconfig ANDROID 1:119743955607:android:f2435b11830d35edd55fd2 --project jay-cakes --json
+[debug] [2026-04-28T23:11:25.663Z] CLI Version:   15.15.0
+[debug] [2026-04-28T23:11:25.663Z] Platform:      win32
+[debug] [2026-04-28T23:11:25.663Z] Node Version:  v20.19.5
+[debug] [2026-04-28T23:11:25.664Z] Time:          Wed Apr 29 2026 01:11:25 GMT+0200 (Central Africa Time)
+[debug] [2026-04-28T23:11:25.664Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-04-28T23:11:25.765Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-04-28T23:11:26.864Z] Running auto auth
+[debug] [2026-04-28T23:11:26.872Z] No OAuth tokens found
+[debug] [2026-04-28T23:11:26.875Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/-/androidApps/1:119743955607:android:f2435b11830d35edd55fd2/config [none]
+[debug] [2026-04-28T23:11:28.934Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/-/androidApps/1:119743955607:android:f2435b11830d35edd55fd2/config 200
+[debug] [2026-04-28T23:11:59.870Z] ----------------------------------------------------------------------
+[debug] [2026-04-28T23:11:59.877Z] Command:       C:\nvm4w\nodejs\node.exe C:\Users\chiku\AppData\Roaming\npm\node_modules\firebase-tools\lib\bin\firebase.js apps:sdkconfig ANDROID 1:119743955607:android:f2435b11830d35edd55fd2 --project jay-cakes
+[debug] [2026-04-28T23:11:59.877Z] CLI Version:   15.15.0
+[debug] [2026-04-28T23:11:59.878Z] Platform:      win32
+[debug] [2026-04-28T23:11:59.878Z] Node Version:  v20.19.5
+[debug] [2026-04-28T23:11:59.879Z] Time:          Wed Apr 29 2026 01:11:59 GMT+0200 (Central Africa Time)
+[debug] [2026-04-28T23:11:59.879Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-04-28T23:11:59.994Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-04-28T23:12:01.432Z] Running auto auth
+[debug] [2026-04-28T23:12:01.440Z] No OAuth tokens found
+[debug] [2026-04-28T23:12:01.443Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/-/androidApps/1:119743955607:android:f2435b11830d35edd55fd2/config [none]
+[debug] [2026-04-28T23:12:19.565Z] ----------------------------------------------------------------------
+[debug] [2026-04-28T23:12:19.571Z] Command:       C:\nvm4w\nodejs\node.exe C:\Users\chiku\AppData\Roaming\npm\node_modules\firebase-tools\lib\bin\firebase.js apps:sdkconfig ANDROID 1:119743955607:android:f2435b11830d35edd55fd2 --project jay-cakes
+[debug] [2026-04-28T23:12:19.572Z] CLI Version:   15.15.0
+[debug] [2026-04-28T23:12:19.572Z] Platform:      win32
+[debug] [2026-04-28T23:12:19.572Z] Node Version:  v20.19.5
+[debug] [2026-04-28T23:12:19.573Z] Time:          Wed Apr 29 2026 01:12:19 GMT+0200 (Central Africa Time)
+[debug] [2026-04-28T23:12:19.573Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-04-28T23:12:19.664Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-04-28T23:12:20.656Z] Running auto auth
+[debug] [2026-04-28T23:12:20.665Z] No OAuth tokens found
+[debug] [2026-04-28T23:12:20.669Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/-/androidApps/1:119743955607:android:f2435b11830d35edd55fd2/config [none]
+[debug] [2026-04-28T23:12:22.696Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/-/androidApps/1:119743955607:android:f2435b11830d35edd55fd2/config 200
