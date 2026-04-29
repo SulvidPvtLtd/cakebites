@@ -41,7 +41,8 @@
       "expo-router",
       "expo-secure-store",
       "expo-notifications",
-      "expo-system-ui"
+      "expo-system-ui",
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true,
