@@ -1,3 +1,2 @@
-alter table "public"."profiles" drop column "expo_push_token";
-
+alter table "public"."profiles" drop column if exists "expo_push_token";
 
